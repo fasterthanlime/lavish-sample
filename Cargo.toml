@@ -9,3 +9,7 @@ os_pipe = "0.8.1"
 serde = "1.0.91"
 rmp-serde = "0.13.7"
 lavish-rpc = { path = "../lavish/lavish-rpc" }
+futures = "0.1.27"
+tokio = "0.1.19"
+tokio-io = "0.1.12"
+bytes = "0.4.12"

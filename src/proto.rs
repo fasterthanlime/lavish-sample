@@ -5,9 +5,10 @@
 #![allow(clippy::all)]
 #![allow(unknown_lints)]
 
-use lavish_rpc::serde_derive::*;
 use lavish_rpc::erased_serde;
+use lavish_rpc::serde_derive::*;
 
+#[allow(unused)]
 pub type Message = lavish_rpc::Message<Params, NotificationParams, Results>;
 
 #[derive(Serialize, Debug)]
@@ -37,17 +38,16 @@ impl lavish_rpc::Atom for Params {
             Params::double_Double(_) => "double.Double",
         }
     }
-    
+
     fn deserialize(
         method: &str,
         de: &mut erased_serde::Deserializer,
     ) -> erased_serde::Result<Self> {
         use erased_serde::deserialize as deser;
         use serde::de::Error;
-        
+
         match method {
-            "double.Double" =>
-                Ok(Params::double_Double(deser::<double::double::Params>(de)?)),
+            "double.Double" => Ok(Params::double_Double(deser::<double::double::Params>(de)?)),
             _ => Err(erased_serde::Error::custom(format!(
                 "unknown method: {}",
                 method,
@@ -62,17 +62,18 @@ impl lavish_rpc::Atom for Results {
             Results::double_Double(_) => "double.Double",
         }
     }
-    
+
     fn deserialize(
         method: &str,
         de: &mut erased_serde::Deserializer,
     ) -> erased_serde::Result<Self> {
         use erased_serde::deserialize as deser;
         use serde::de::Error;
-        
+
         match method {
-            "double.Double" =>
-                Ok(Results::double_Double(deser::<double::double::Results>(de)?)),
+            "double.Double" => Ok(Results::double_Double(deser::<double::double::Results>(
+                de,
+            )?)),
             _ => Err(erased_serde::Error::custom(format!(
                 "unknown method: {}",
                 method,
@@ -87,17 +88,18 @@ impl lavish_rpc::Atom for NotificationParams {
             NotificationParams::double_Log(_) => "double.Log",
         }
     }
-    
+
     fn deserialize(
         method: &str,
         de: &mut erased_serde::Deserializer,
     ) -> erased_serde::Result<Self> {
         use erased_serde::deserialize as deser;
         use serde::de::Error;
-        
+
         match method {
-            "double.Log" =>
-                Ok(NotificationParams::double_Log(deser::<double::log::Params>(de)?)),
+            "double.Log" => Ok(NotificationParams::double_Log(
+                deser::<double::log::Params>(de)?,
+            )),
             _ => Err(erased_serde::Error::custom(format!(
                 "unknown method: {}",
                 method,
@@ -109,26 +111,25 @@ impl lavish_rpc::Atom for NotificationParams {
 pub mod double {
     pub mod double {
         use lavish_rpc::serde_derive::*;
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Params {
             pub x: i64,
         }
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Results {
             pub x: i64,
         }
     }
-    
+
     pub mod log {
         use lavish_rpc::serde_derive::*;
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Params {
             pub msg: String,
         }
     }
-    
-}
 
+}
