@@ -1,0 +1,11 @@
+[package]
+name = "lavish-sample"
+version = "0.1.0"
+authors = ["Amos Wenger <amoswenger@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+os_pipe = "0.8.1"
+serde = "1.0.91"
+rmp-serde = "0.13.7"
+lavish-rpc = { path = "../lavish/lavish-rpc" }
