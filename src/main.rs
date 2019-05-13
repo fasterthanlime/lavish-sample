@@ -1,85 +1,52 @@
 mod proto;
+mod support;
 
-use lavish_rpc::Atom;
 use os_pipe::pipe;
-use rmp_serde::*;
-use serde::Serialize;
-use std::io;
-use std::marker::PhantomData;
 
-struct Transport<P, NP, R> {
-    r: Box<io::Read>,
-    w: Box<io::Write>,
-
-    _p: PhantomData<P>,
-    _np: PhantomData<NP>,
-    _r: PhantomData<R>,
-}
-
-impl<P, NP, R> io::Read for &mut Transport<P, NP, R> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.r.read(buf)
-    }
-}
-
-impl<P, NP, R> io::Write for &mut Transport<P, NP, R> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.w.write(buf)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.w.flush()
-    }
-}
-
-impl<P, NP, R> Transport<P, NP, R>
-where
-    P: Atom,
-    NP: Atom,
-    R: Atom,
-{
-    fn receive(&mut self) -> lavish_rpc::Message<P, NP, R> {
-        decode::from_read(self).unwrap()
-    }
-
-    fn send(&mut self, m: lavish_rpc::Message<P, NP, R>) {
-        m.serialize(&mut Serializer::new_named(self)).unwrap()
-    }
-}
+type Transport = support::Transport<proto::Params, proto::NotificationParams, proto::Results>;
+type Peer<'a> = support::Peer<proto::Params, proto::NotificationParams, proto::Results>;
 
 fn main() {
     let (reader1, writer1) = pipe().unwrap();
     let (reader2, writer2) = pipe().unwrap();
 
-    let transport = std::thread::spawn(move || {
-        let mut transport = Transport::<proto::Params, proto::NotificationParams, proto::Results> {
-            r: Box::new(reader1),
-            w: Box::new(writer2),
-            _p: PhantomData,
-            _np: PhantomData,
-            _r: PhantomData,
-        };
+    let client_thread = std::thread::spawn(move || {
+        let transport = Transport::new(Box::new(reader1), Box::new(writer2));
+        let mut peer = Peer::new(transport);
 
-        let m = proto::Message::request(
-            1,
-            proto::Params::double_Double(proto::double::double::Params { x: 128 }),
-        );
-        transport.send(m);
+        let (_, r) = peer.call(proto::Params::double_Double(
+            proto::double::double::Params { x: 128 },
+        ));
+        match r {
+            proto::Results::double_Double(r) => {
+                println!("result = {}", r.x);
+            }
+        }
     });
 
-    let receiver = std::thread::spawn(move || {
-        let mut transport = Transport::<proto::Params, proto::NotificationParams, proto::Results> {
-            r: Box::new(reader2),
-            w: Box::new(writer1),
-            _p: PhantomData,
-            _np: PhantomData,
-            _r: PhantomData,
-        };
-
-        let m = transport.receive();
+    let server_thread = std::thread::spawn(move || {
+        let transport = Transport::new(Box::new(reader2), Box::new(writer1));
+        let mut peer = Peer::new(transport);
+        let m = peer.receive();
         println!("received: {:#?}", m);
+
+        match m {
+            lavish_rpc::Message::Request { id, params } => match params {
+                proto::Params::double_Double(params) => {
+                    let response = proto::Message::response(
+                        id,
+                        None,
+                        proto::Results::double_Double(proto::double::double::Results {
+                            x: params.x * 2,
+                        }),
+                    );
+                    peer.transport.send(response);
+                }
+            },
+            _ => unimplemented!(),
+        }
     });
 
-    transport.join().unwrap();
-    receiver.join().unwrap();
+    client_thread.join().unwrap();
+    server_thread.join().unwrap();
 }
