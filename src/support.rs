@@ -49,7 +49,7 @@ where
     type Item = lavish_rpc::Message<P, NP, R>;
     type Error = std::io::Error;
 
-    fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
+    fn encode(&mut self, _item: Self::Item, _dst: &mut BytesMut) -> Result<(), Self::Error> {
         println!("encode called");
         Err(std::io::ErrorKind::Other.into())
     }

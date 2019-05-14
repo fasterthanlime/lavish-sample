@@ -1,6 +1,6 @@
+mod badsock;
 mod proto;
 mod support;
-
 use serde::Serialize;
 
 use futures::Future;
@@ -80,7 +80,8 @@ fn main() {
                             buf.resize(0, 0);
                             let mut ser = rmp_serde::Serializer::new_named(&mut buf);
                             m.serialize(&mut ser).unwrap();
-                            tokio::io::write_all(&mut writer, buf).wait().unwrap();
+                            // tokio::io::write_all(&mut writer, buf).wait().unwrap();
+                            badsock::write_two_halves(&mut writer, buf).wait().unwrap();
                         }
                     }
                 });
