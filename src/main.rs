@@ -60,25 +60,21 @@ fn main() {
 
     let server_thread = std::thread::spawn(move || {
         let mut rt = Runtime::new().unwrap();
-        let exec = rt.executor();
 
         let addr = addr.parse().unwrap();
         let listener = TcpListener::bind(&addr).unwrap();
         println!("[server] bound");
 
-        let server = listener
-            .incoming()
-            .map_err(|e| eprintln!("accept failed: {:?}", e))
-            .for_each(move |sock| {
-                println!("[server] accepted");
+        let sock = listener.incoming().wait().next().unwrap().unwrap();
+        println!("[server] accepted");
 
-                sock.set_nodelay(true).unwrap();
-                let (_reader, writer) = sock.split();
+        sock.set_nodelay(true).unwrap();
+        let (_reader, writer) = sock.split();
 
-                use std::time::*;
-                use tokio::timer::Delay;
+        use std::time::*;
+        use tokio::timer::Delay;
 
-                let text = "Lorem ipsum. To most of us, it’s a passage of
+        let text = "Lorem ipsum. To most of us, it’s a passage of
                 meaningless Latin that fills websites or brochure layouts
                 with text while waiting on writers to fill it with real copy.
                 This is bad news for publishers. But if one of those
@@ -92,62 +88,56 @@ fn main() {
                 unrelated thing. Unless your main thing is writing this post,
                 use your main thing as your main thing, and write the other
                 parts of your work as secondary things";
-                let mut lines: Vec<String> = text
-                    .split("\n")
-                    .map(|x| x.trim())
-                    .collect::<Vec<_>>()
-                    .join(" ")
-                    .split(".")
-                    .map(|x| x.trim().into())
-                    .collect();
-                lines.reverse();
-                let first_item = lines.pop();
+        let mut lines: Vec<String> = text
+            .split("\n")
+            .map(|x| x.trim())
+            .collect::<Vec<_>>()
+            .join(" ")
+            .split(".")
+            .map(|x| x.trim().into())
+            .collect();
+        lines.reverse();
+        let first_item = lines.pop();
 
-                let myloop = futures::future::loop_fn(
-                    (writer, lines, first_item),
-                    move |(mut writer, mut lines, item)| {
-                        Delay::new(Instant::now() + Duration::from_millis(80)).then(move |_| {
-                            match item {
-                                Some(line) => {
-                                    let mut buf: Vec<u8> = Vec::new();
-                                    let m = proto::Message::request(
-                                        0,
-                                        proto::Params::double_Print(proto::double::print::Params {
-                                            s: line.into(),
-                                        }),
-                                    );
+        let myloop = futures::future::loop_fn(
+            (writer, lines, first_item),
+            move |(mut writer, mut lines, item)| {
+                Delay::new(Instant::now() + Duration::from_millis(80)).then(move |_| match item {
+                    Some(line) => {
+                        let mut buf: Vec<u8> = Vec::new();
+                        let m = proto::Message::request(
+                            0,
+                            proto::Params::double_Print(proto::double::print::Params {
+                                s: line.into(),
+                            }),
+                        );
 
-                                    buf.resize(0, 0);
-                                    let mut ser = rmp_serde::Serializer::new_named(&mut buf);
-                                    m.serialize(&mut ser).unwrap();
+                        buf.resize(0, 0);
+                        let mut ser = rmp_serde::Serializer::new_named(&mut buf);
+                        m.serialize(&mut ser).unwrap();
 
-                                    Either::A(
-                                        badsock::write_two_halves(writer, buf)
-                                            .map_err(|e| println!("i/o error: {:#?}", e))
-                                            .and_then(move |(writer, _)| {
-                                                let next_item = lines.pop();
-                                                Ok(future::Loop::Continue((
-                                                    writer, lines, next_item,
-                                                )))
-                                            }),
-                                    )
-                                }
-                                None => {
-                                    println!("shutting down writer");
-                                    writer.shutdown().unwrap();
-                                    Either::B(future::result(Ok(future::Loop::Break(()))))
-                                }
-                            }
-                        })
-                    },
-                );
-                exec.spawn(myloop);
+                        Either::A(
+                            badsock::write_two_halves(writer, buf)
+                                .map_err(|e| println!("i/o error: {:#?}", e))
+                                .and_then(move |(writer, _)| {
+                                    let next_item = lines.pop();
+                                    Ok(future::Loop::Continue((writer, lines, next_item)))
+                                }),
+                        )
+                    }
+                    None => {
+                        println!("shutting down writer");
+                        writer.shutdown().unwrap();
+                        Either::B(future::result(Ok(future::Loop::Break(()))))
+                    }
+                })
+            },
+        );
+        rt.spawn(myloop);
 
-                Ok(())
-            })
-            .map_err(|e| eprintln!("server error {:?}", e));
-
-        rt.block_on(server).unwrap();
+        println!("[server] shutting down on idle...");
+        rt.shutdown_on_idle().wait().unwrap();
+        println!("[server] has shut down!");
     });
 
     server_thread.join().unwrap();
