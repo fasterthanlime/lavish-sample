@@ -1,6 +1,8 @@
 mod proto;
 mod support;
 
+use serde::Serialize;
+
 use bytes::*;
 use futures::Future;
 use std::time::*;
@@ -81,37 +83,24 @@ fn main() {
                 println!("[server] accepted");
 
                 sock.set_nodelay(true).unwrap();
-                let (reader, writer) = sock.split();
+                let (reader, mut writer) = sock.split();
 
-                let mut buf = BytesMut::with_capacity(16);
-                buf.resize(16, 0);
-                let task = futures::future::loop_fn(
-                    (reader, writer, buf),
-                    move |(reader, writer, buf)| {
-                        let when = Instant::now() + Duration::from_millis(250);
-                        tokio::timer::Delay::new(when)
-                            .map_err(|_e| {})
-                            .and_then(move |()| {
-                                tokio::io::read(reader, buf)
-                                    .map_err(|e| eprintln!("[server] read error: {:?}", e))
-                                    .map(|(reader, buf, n)| {
-                                        let s = String::from_utf8_lossy(&buf[..n]);
-                                        println!("[server] read {:?}", s);
-                                        (reader, buf, n)
-                                    })
-                            })
-                            .and_then(move |(reader, mut buf, n)| {
-                                buf.truncate(n);
-                                tokio::io::write_all(writer, buf)
-                                    .map_err(|e| eprintln!("[server] write error: {:?}", e))
-                                    .map(|(writer, buf)| {
-                                        println!("[server] wrote!");
-                                        futures::future::Loop::Continue((reader, writer, buf))
-                                    })
-                            })
-                    },
-                );
-                exec.spawn(task);
+                std::thread::spawn(move || {
+                    for i in 0..10 {
+                        println!("[client] writing request {}", i);
+
+                        let mut buf: Vec<u8> = Vec::new();
+                        let m = proto::Message::request(
+                            0,
+                            proto::Params::double_Double(proto::double::double::Params { x: 128 }),
+                        );
+
+                        buf.resize(0, 0);
+                        let mut ser = rmp_serde::Serializer::new_named(&mut buf);
+                        m.serialize(&mut ser).unwrap();
+                        tokio::io::write_all(&mut writer, buf).wait().unwrap();
+                    }
+                });
 
                 println!("[server] spawned task");
                 Ok(())

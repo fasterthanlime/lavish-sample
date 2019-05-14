@@ -53,6 +53,11 @@ where
             Ok(Async::Ready(n)) => {
                 let s = String::from_utf8_lossy(&buf[..n]);
                 println!("[rpc] was ready, read {} bytes: {:?}", n, s);
+                let mut deser = rmp_serde::Deserializer::from_slice(&buf[..n]);
+                let pr = PendingRequests {};
+                let m = lavish_rpc::Message::<P, NP, R>::deserialize(&mut deser, &pr).unwrap();
+                println!("[rpc] decoded message: {:#?}", m);
+
                 Ok(Async::Ready(Some(())))
             }
             Ok(Async::NotReady) => {
@@ -61,5 +66,13 @@ where
             }
             Err(e) => Err(format!("underlying error: {:?}", e)),
         }
+    }
+}
+
+struct PendingRequests {}
+
+impl lavish_rpc::PendingRequests for PendingRequests {
+    fn get_pending<'a>(&self, _id: u32) -> Option<&'a str> {
+        None
     }
 }
