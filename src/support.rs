@@ -36,6 +36,18 @@ where
     }
 }
 
+// use tokio_codec::{Encoder, Decoder}
+
+// impl<P, NP, R, Read> Encoder for RpcSystem<P, NP, R, Read>
+// where
+//     P: Atom,
+//     NP: Atom,
+//     R: Atom,
+//     Read: AsyncRead,
+// {
+
+// }
+
 impl<P, NP, R, Read> Stream for RpcSystem<P, NP, R, Read>
 where
     P: Atom,
@@ -60,9 +72,13 @@ where
 
                 loop {
                     match lavish_rpc::Message::<P, NP, R>::deserialize(&mut deser, &pr) {
-                        Ok(m) => println!("[rpc] decoded message: {:#?}", m),
+                        Ok(m) => {
+                            println!("[rpc] decoded message: {:#?}", m);
+                            println!("[rpc] deser pos: {}", deser.position());
+                        }
                         Err(e) => {
                             println!("[rpc] could not decode further messages: {:#?}", e);
+                            println!("[rpc] stopped at: {} / {}", deser.position(), n);
                             break;
                         }
                     }
