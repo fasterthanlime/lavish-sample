@@ -12,4 +12,5 @@ lavish-rpc = { path = "../lavish/lavish-rpc" }
 futures = "0.1.27"
 tokio = "0.1.19"
 tokio-io = "0.1.12"
+tokio-codec = "0.1.1"
 bytes = "0.4.12"

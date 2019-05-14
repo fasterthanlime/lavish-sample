@@ -53,10 +53,20 @@ where
             Ok(Async::Ready(n)) => {
                 let s = String::from_utf8_lossy(&buf[..n]);
                 println!("[rpc] was ready, read {} bytes: {:?}", n, s);
-                let mut deser = rmp_serde::Deserializer::from_slice(&buf[..n]);
+
+                let cursor = std::io::Cursor::new(&buf[..n]);
+                let mut deser = rmp_serde::Deserializer::from_read(cursor);
                 let pr = PendingRequests {};
-                let m = lavish_rpc::Message::<P, NP, R>::deserialize(&mut deser, &pr).unwrap();
-                println!("[rpc] decoded message: {:#?}", m);
+
+                loop {
+                    match lavish_rpc::Message::<P, NP, R>::deserialize(&mut deser, &pr) {
+                        Ok(m) => println!("[rpc] decoded message: {:#?}", m),
+                        Err(e) => {
+                            println!("[rpc] could not decode further messages: {:#?}", e);
+                            break;
+                        }
+                    }
+                }
 
                 Ok(Async::Ready(Some(())))
             }
