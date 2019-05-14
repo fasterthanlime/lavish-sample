@@ -44,7 +44,6 @@ fn main() {
 
     let server_thread = std::thread::spawn(move || {
         let mut rt = Runtime::new().unwrap();
-        let exec = rt.executor();
 
         let addr = addr.parse().unwrap();
         let listener = TcpListener::bind(&addr).unwrap();
@@ -59,7 +58,7 @@ fn main() {
                 sock.set_nodelay(true).unwrap();
                 let (_reader, mut writer) = sock.split();
 
-                exec.spawn(futures::future::lazy(move || {
+                std::thread::spawn(move || {
                     for i in 0..3 {
                         std::thread::sleep(Duration::from_secs(1));
 
@@ -81,9 +80,7 @@ fn main() {
                             badsock::write_two_halves(&mut writer, buf).wait().unwrap();
                         }
                     }
-
-                    Ok(())
-                }));
+                });
 
                 println!("[server] spawned task");
                 // Ok(())
