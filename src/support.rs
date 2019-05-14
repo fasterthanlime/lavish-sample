@@ -83,10 +83,19 @@ where
                 src.split_to(pos as usize);
                 Ok(Some(m))
             }
-            Err(e) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("rmp serde error: {:#?}", e),
-            )),
+            Err(rmp_serde::decode::Error::InvalidDataRead(_)) => {
+                println!("===================================");
+                println!("need more data!");
+                println!("===================================");
+                Ok(None)
+            }
+            Err(e) => {
+                println!("first of all how dare you");
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("rmp serde error: {:#?}", e),
+                ))
+            }
         }
     }
 }

@@ -13,19 +13,20 @@ where
     let mid = len / 2;
     let mut b = Window::new(b);
 
-    futures::future::lazy(move || {
-        b.set_end(mid);
-        write_all(a, b)
-    })
-    .and_then(|(a, window)| {
-        let when = Instant::now() + Duration::from_millis(250);
-        Delay::new(when)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
-            .map(|()| (a, window))
-    })
-    .and_then(move |(a, mut window)| {
-        window.set_start(mid + 1);
-        window.set_end(len - 1);
-        write_all(a, window)
+    b.set_end(mid);
+
+    write_all(a, b).and_then(move |(a, mut window)| {
+        println!("wrote first part, sleeping");
+        let when = Instant::now() + Duration::from_millis(1000);
+        let delay = Delay::new(when);
+        delay
+            .map_err(|e| println!(">>>>>>>>>>\ndelay error: {:#?}\n>>>>>>>>>>", e))
+            .then(move |delay| {
+                println!("well, our delay's here: {:#?}", delay);
+                println!("writing second part");
+                window.set_end(len);
+                window.set_start(mid);
+                write_all(a, window)
+            })
     })
 }

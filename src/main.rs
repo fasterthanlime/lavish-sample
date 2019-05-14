@@ -16,8 +16,7 @@ fn main() {
     let addr = "127.0.0.1:9596";
 
     let client_thread = std::thread::spawn(move || {
-        let rt = Runtime::new().unwrap();
-        let exec = rt.executor();
+        let mut rt = Runtime::new().unwrap();
 
         println!("[client] waiting a bit...");
         std::thread::sleep(Duration::from_millis(200));
@@ -29,7 +28,7 @@ fn main() {
         println!("[client] connected");
         let rpc_system = RpcSystem::new(sock);
 
-        exec.spawn(
+        rt.block_on(
             rpc_system
                 .for_each(|m| {
                     println!("client read a message: {:#?}", m);
@@ -39,15 +38,13 @@ fn main() {
                     println!("rpc system error: {}", err);
                     std::process::exit(1);
                 }),
-        );
-
-        loop {
-            std::thread::sleep(Duration::from_secs(1));
-        }
+        )
+        .unwrap();
     });
 
     let server_thread = std::thread::spawn(move || {
         let mut rt = Runtime::new().unwrap();
+        let exec = rt.executor();
 
         let addr = addr.parse().unwrap();
         let listener = TcpListener::bind(&addr).unwrap();
@@ -62,7 +59,7 @@ fn main() {
                 sock.set_nodelay(true).unwrap();
                 let (_reader, mut writer) = sock.split();
 
-                std::thread::spawn(move || {
+                exec.spawn(futures::future::lazy(move || {
                     for i in 0..3 {
                         std::thread::sleep(Duration::from_secs(1));
 
@@ -80,19 +77,21 @@ fn main() {
                             buf.resize(0, 0);
                             let mut ser = rmp_serde::Serializer::new_named(&mut buf);
                             m.serialize(&mut ser).unwrap();
-                            // tokio::io::write_all(&mut writer, buf).wait().unwrap();
+
                             badsock::write_two_halves(&mut writer, buf).wait().unwrap();
                         }
                     }
-                });
+
+                    Ok(())
+                }));
 
                 println!("[server] spawned task");
-                Ok(())
+                // Ok(())
+                futures::future::empty()
             })
             .map_err(|e| eprintln!("server error {:?}", e));
 
-        rt.spawn(server);
-        rt.shutdown_on_idle().wait().unwrap();
+        rt.block_on(server).unwrap();
     });
 
     server_thread.join().unwrap();
