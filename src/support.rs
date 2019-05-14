@@ -1,4 +1,6 @@
 use lavish_rpc::Atom;
+use serde::Serialize;
+use std::io::Write;
 use std::marker::PhantomData;
 
 use bytes::*;
@@ -49,9 +51,35 @@ where
     type Item = lavish_rpc::Message<P, NP, R>;
     type Error = std::io::Error;
 
-    fn encode(&mut self, _item: Self::Item, _dst: &mut BytesMut) -> Result<(), Self::Error> {
-        println!("encode called");
-        Err(std::io::ErrorKind::Other.into())
+    fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
+        let mut len = std::cmp::max(16, dst.capacity());
+        println!("starting with len {}", len);
+        dst.resize(len, 0);
+
+        loop {
+            let (cursor, res) = {
+                let cursor = Cursor::new(&mut dst[..len]);
+                let mut ser = rmp_serde::Serializer::new_named(cursor);
+                let res = item.serialize(&mut ser);
+                (ser.into_inner(), res)
+            };
+            use rmp_serde::encode::Error as EncErr;
+
+            match res {
+                Ok(_) => {
+                    let pos = cursor.position();
+                    dst.resize(pos as usize, 0);
+                    return Ok(());
+                }
+                Err(EncErr::InvalidValueWrite(_)) => {
+                    len *= 2;
+                    println!("resizing to {}", len);
+                    dst.resize(len, 0);
+                    continue;
+                }
+                Err(e) => return Err(std::io::Error::new(std::io::ErrorKind::Other, e)),
+            }
+        }
     }
 }
 
@@ -76,7 +104,7 @@ where
             (deser.position(), res)
         };
 
-        use rmp_serde::decode::Error as SE;
+        use rmp_serde::decode::Error as DecErr;
         let need_more = || {
             println!("[decoder] need more than {} bytes", src.len());
             Ok(None)
@@ -92,13 +120,10 @@ where
                 println!("[decoder] decoded messages from {}/{} bytes", pos, len);
                 Ok(Some(m))
             }
-            Err(SE::InvalidDataRead(_)) => need_more(),
-            Err(SE::InvalidMarkerRead(_)) => need_more(),
-            Err(SE::Syntax(_)) => need_more(),
-            Err(e) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("rmp serde error (from {} bytes): {:#?}", src.len(), e),
-            )),
+            Err(DecErr::InvalidDataRead(_)) => need_more(),
+            Err(DecErr::InvalidMarkerRead(_)) => need_more(),
+            Err(DecErr::Syntax(_)) => need_more(),
+            Err(e) => Err(std::io::Error::new(std::io::ErrorKind::Other, e)),
         }
     }
 }

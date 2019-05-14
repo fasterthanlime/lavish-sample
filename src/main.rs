@@ -1,7 +1,6 @@
 mod badsock;
 mod proto;
 mod support;
-use serde::Serialize;
 
 use futures::Future;
 use futures::{future, future::Either};
@@ -9,7 +8,6 @@ use std::time::*;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::prelude::*;
 use tokio::runtime::Runtime;
-use tokio_io::AsyncRead;
 
 type RpcSystem = support::RpcSystem<proto::Params, proto::NotificationParams, proto::Results>;
 
@@ -69,7 +67,7 @@ fn main() {
         println!("[server] accepted");
 
         sock.set_nodelay(true).unwrap();
-        let (_reader, writer) = sock.split();
+        let rpc_system = RpcSystem::new(sock);
 
         use std::time::*;
         use tokio::timer::Delay;
@@ -100,34 +98,32 @@ fn main() {
         let first_item = lines.pop();
 
         let myloop = futures::future::loop_fn(
-            (writer, lines, first_item),
-            move |(mut writer, mut lines, item)| {
+            (rpc_system, lines, first_item),
+            move |(rpc_system, mut lines, item)| {
                 Delay::new(Instant::now() + Duration::from_millis(80)).then(move |_| match item {
                     Some(line) => {
-                        let mut buf: Vec<u8> = Vec::new();
                         let m = proto::Message::request(
                             0,
                             proto::Params::double_Print(proto::double::print::Params {
                                 s: line.into(),
                             }),
                         );
-
-                        buf.resize(0, 0);
-                        let mut ser = rmp_serde::Serializer::new_named(&mut buf);
-                        m.serialize(&mut ser).unwrap();
-
                         Either::A(
-                            badsock::write_two_halves(writer, buf)
+                            rpc_system
+                                .send(m)
                                 .map_err(|e| println!("i/o error: {:#?}", e))
-                                .and_then(move |(writer, _)| {
+                                .and_then(move |rpc_system| {
                                     let next_item = lines.pop();
-                                    Ok(future::Loop::Continue((writer, lines, next_item)))
+                                    Ok(future::Loop::Continue((rpc_system, lines, next_item)))
                                 }),
                         )
                     }
                     None => {
-                        println!("shutting down writer");
-                        writer.shutdown().unwrap();
+                        println!("shutting down rpc system");
+                        rpc_system
+                            .into_inner()
+                            .shutdown(std::net::Shutdown::Both)
+                            .unwrap();
                         Either::B(future::result(Ok(future::Loop::Break(()))))
                     }
                 })
