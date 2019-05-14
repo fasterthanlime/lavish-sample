@@ -65,7 +65,6 @@ where
     type Error = std::io::Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
-        println!("decode called with {} bytes", src.len());
         if src.len() == 0 {
             return Ok(None);
         }
@@ -77,25 +76,29 @@ where
             (deser.position(), res)
         };
 
+        use rmp_serde::decode::Error as SE;
+        let need_more = || {
+            println!("[decoder] need more than {} bytes", src.len());
+            Ok(None)
+        };
+
+        println!("res = {:#?}", res);
+
         match res {
             Ok(m) => {
                 // TODO: set pending
+                let len = src.len();
                 src.split_to(pos as usize);
+                println!("[decoder] decoded messages from {}/{} bytes", pos, len);
                 Ok(Some(m))
             }
-            Err(rmp_serde::decode::Error::InvalidDataRead(_)) => {
-                println!("===================================");
-                println!("need more data!");
-                println!("===================================");
-                Ok(None)
-            }
-            Err(e) => {
-                println!("first of all how dare you");
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("rmp serde error: {:#?}", e),
-                ))
-            }
+            Err(SE::InvalidDataRead(_)) => need_more(),
+            Err(SE::InvalidMarkerRead(_)) => need_more(),
+            Err(SE::Syntax(_)) => need_more(),
+            Err(e) => Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("rmp serde error (from {} bytes): {:#?}", src.len(), e),
+            )),
         }
     }
 }

@@ -2,7 +2,7 @@ use futures::future::Future;
 use tokio::io::{write_all, AsyncWrite};
 use tokio_io::io::Window;
 
-pub fn write_two_halves<A, T>(a: A, b: T) -> impl Future<Error = std::io::Error>
+pub fn write_two_halves<A, T>(a: A, b: T) -> impl Future<Item = (A, T), Error = std::io::Error>
 where
     A: AsyncWrite,
     T: AsRef<[u8]>,
@@ -15,18 +15,14 @@ where
 
     b.set_end(mid);
 
-    write_all(a, b).and_then(move |(a, mut window)| {
-        println!("wrote first part, sleeping");
-        let when = Instant::now() + Duration::from_millis(1000);
-        let delay = Delay::new(when);
-        delay
-            .map_err(|e| println!(">>>>>>>>>>\ndelay error: {:#?}\n>>>>>>>>>>", e))
-            .then(move |delay| {
-                println!("well, our delay's here: {:#?}", delay);
-                println!("writing second part");
+    write_all(a, b)
+        .and_then(move |(a, mut window)| {
+            let when = Instant::now() + Duration::from_millis(20);
+            Delay::new(when).then(move |_| {
                 window.set_end(len);
                 window.set_start(mid);
                 write_all(a, window)
             })
-    })
+        })
+        .map(|(a, b)| (a, b.into_inner()))
 }

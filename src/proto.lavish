@@ -1,0 +1,7 @@
+
+namespace double {
+    server fn print(s: String)
+    server fn double(x: i64) -> (x: i64)
+
+    server nf log(msg: String)
+}
