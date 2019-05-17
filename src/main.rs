@@ -3,33 +3,32 @@
 use futures::executor;
 use futures::prelude::*;
 
-use async_timer::oneshot::*;
 use romio::tcp::{TcpListener, TcpStream};
-use std::time::Duration;
 
 use lavish_rpc as rpc;
 
 mod proto;
+pub mod sleep;
 mod support;
+
+use std::sync::{Arc, Mutex};
+
+use sleep::*;
 
 type RpcSystem<T> = support::RpcSystem<proto::Params, proto::NotificationParams, proto::Results, T>;
 
 static ADDR: &'static str = "127.0.0.1:9596";
 
-async fn sleep_ms(n: u64) {
-    if n > 0 {
-        Timer::new(Duration::from_millis(n)).await;
-    }
-}
-
 fn main() {
-    let mut pool = executor::ThreadPool::new().unwrap();
-    pool.run(async {
-        futures::future::join(client(), server()).await;
+    let mut executor = executor::ThreadPool::new().unwrap();
+    let pool = executor.clone();
+
+    executor.run(async {
+        futures::future::join(client(pool.clone()), server(pool.clone())).await;
     });
 }
 
-async fn server() -> Result<(), Box<dyn std::error::Error + 'static>> {
+async fn server(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Error + 'static>> {
     let addr = ADDR.parse()?;
     let mut listener = TcpListener::bind(&addr)?;
     let mut incoming = listener.incoming();
@@ -42,7 +41,7 @@ async fn server() -> Result<(), Box<dyn std::error::Error + 'static>> {
 
         conn.set_nodelay(true)?;
 
-        let mut rpc_system = RpcSystem::new(conn);
+        let mut rpc_system = RpcSystem::new(conn, pool.clone())?;
 
         for line in &sample_lines() {
             sleep_ms(300).await;
@@ -63,7 +62,7 @@ async fn server() -> Result<(), Box<dyn std::error::Error + 'static>> {
     Ok(())
 }
 
-async fn client() -> Result<(), Box<dyn std::error::Error + 'static>> {
+async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Error + 'static>> {
     sleep_ms(100).await;
 
     let addr = ADDR.parse()?;
@@ -73,13 +72,17 @@ async fn client() -> Result<(), Box<dyn std::error::Error + 'static>> {
 
     conn.set_nodelay(true)?;
 
-    let rpc_system = RpcSystem::new(conn);
-    let (_sink, mut stream) = (rpc_system.sink, rpc_system.stream);
+    let mut rpc_system = RpcSystem::new(conn, pool.clone())?;
 
-    while let Some(m) = stream.next().await {
+    while let Some(m) = rpc_system.stream.next().await {
         match m? {
             rpc::Message::Request { params, id } => match params {
                 proto::Params::double_Print(params) => {
+                    rpc_system
+                        .call(proto::Params::double_Print(proto::double::print::Params {
+                            s: "got it!".into(),
+                        }))
+                        .await?;
                     println!("[client] !! ({}) {:?}", id, params.s);
                 }
                 _ => {

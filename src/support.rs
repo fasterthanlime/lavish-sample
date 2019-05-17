@@ -5,9 +5,14 @@ use std::io::Cursor;
 use std::marker::{PhantomData, Unpin};
 
 use bytes::*;
+use futures::executor;
 use futures::prelude::*;
 use futures::stream::{SplitSink, SplitStream};
 use futures_codec::{Decoder, Encoder, Framed};
+
+use futures::task::SpawnExt;
+
+use super::sleep::*;
 
 pub trait IO: AsyncRead + AsyncWrite + Sized + Unpin {}
 impl<T> IO for T where T: AsyncRead + AsyncWrite + Sized + Unpin {}
@@ -32,7 +37,10 @@ where
     R: Atom,
     T: IO,
 {
-    pub fn new(io: T) -> Self
+    pub fn new(
+        io: T,
+        mut pool: executor::ThreadPool,
+    ) -> Result<Self, Box<dyn std::error::Error + 'static>>
     where
         T: AsyncRead + AsyncWrite + Sized,
     {
@@ -42,11 +50,22 @@ where
         };
         let framed = Framed::new(io, codec);
         let (sink, stream) = framed.split();
-        Self {
+
+        pool.spawn(async {
+            let mut i = 0;
+            loop {
+                println!("Henlo {} from rpc system", i);
+                sleep_ms(250).await;
+                i += 1;
+            }
+        })
+        .map_err(|_| "spawn error")?;
+
+        Ok(Self {
             sink,
             stream,
             id: 0,
-        }
+        })
     }
 
     pub async fn call(&mut self, params: P) -> Result<(), Box<dyn std::error::Error + 'static>> {
