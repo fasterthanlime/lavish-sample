@@ -11,11 +11,9 @@ mod proto;
 pub mod sleep;
 mod support;
 
-use std::sync::{Arc, Mutex};
+use support::{Protocol, RpcSystem};
 
 use sleep::*;
-
-type RpcSystem<T> = support::RpcSystem<proto::Params, proto::NotificationParams, proto::Results, T>;
 
 static ADDR: &'static str = "127.0.0.1:9596";
 
@@ -26,6 +24,10 @@ fn main() {
     executor.run(async {
         futures::future::join(client(pool.clone()), server(pool.clone())).await;
     });
+}
+
+fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Results> {
+    Protocol::new()
 }
 
 async fn server(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Error + 'static>> {
@@ -41,15 +43,10 @@ async fn server(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
         conn.set_nodelay(true)?;
 
-        let mut rpc_system = RpcSystem::new(conn, pool.clone())?;
+        let mut rpc_system = RpcSystem::new(protocol(), conn, pool.clone())?;
 
         for line in &sample_lines() {
             sleep_ms(300).await;
-            // let m = proto::Message::request(
-            //     0,
-            //     proto::Params::double_Print(proto::double::print::Params { s: line.clone() }),
-            // );
-            // sink.send(m).await?;
             rpc_system
                 .call(proto::Params::double_Print(proto::double::print::Params {
                     s: line.clone(),
@@ -72,7 +69,7 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     conn.set_nodelay(true)?;
 
-    let mut rpc_system = RpcSystem::new(conn, pool.clone())?;
+    let mut rpc_system = RpcSystem::new(protocol(), conn, pool.clone())?;
 
     while let Some(m) = rpc_system.stream.next().await {
         match m? {

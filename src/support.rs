@@ -5,6 +5,7 @@ use std::io::Cursor;
 use std::marker::{PhantomData, Unpin};
 
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use bytes::*;
 use futures::channel::oneshot;
@@ -19,6 +20,29 @@ use super::sleep::*;
 
 pub trait IO: AsyncRead + AsyncWrite + Sized + Unpin {}
 impl<T> IO for T where T: AsyncRead + AsyncWrite + Sized + Unpin {}
+
+#[derive(Clone, Copy)]
+pub struct Protocol<P, NP, R>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+{
+    phantom: PhantomData<(P, NP, R)>,
+}
+
+impl<P, NP, R> Protocol<P, NP, R>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+{
+    pub fn new() -> Self {
+        Self {
+            phantom: PhantomData,
+        }
+    }
+}
 
 #[must_use = "futures do nothing unless polled"]
 pub struct RpcSystem<P, NP, R, T>
@@ -41,15 +65,15 @@ where
     T: IO,
 {
     pub fn new(
+        protocol: Protocol<P, NP, R>,
         io: T,
         mut pool: executor::ThreadPool,
     ) -> Result<Self, Box<dyn std::error::Error + 'static>>
     where
         T: AsyncRead + AsyncWrite + Sized,
     {
-        let codec = Codec::<P, NP, R> {
-            phantom: PhantomData,
-            pr: PendingRequests::new(),
+        let codec = Codec {
+            pr: PendingRequests::new(protocol),
         };
         let framed = Framed::new(io, codec);
         let (sink, stream) = framed.split();
@@ -86,7 +110,6 @@ where
     NP: Atom,
     R: Atom,
 {
-    phantom: PhantomData<(P, NP, R)>,
     pr: PendingRequests<P, NP, R>,
 }
 
@@ -195,7 +218,7 @@ where
     NP: Atom,
     R: Atom,
 {
-    fn new() -> Self {
+    fn new(_protocol: Protocol<P, NP, R>) -> Self {
         Self {
             reqs: HashMap::new(),
         }
