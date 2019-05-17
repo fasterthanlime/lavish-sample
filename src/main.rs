@@ -1,14 +1,20 @@
 #![feature(async_await)]
 
-#[allow(unused_imports)]
-use futures::prelude::*;
 use async_timer::oneshot::*;
+use futures::executor;
+use futures::io::{AsyncReadExt, AsyncWriteExt};
+use futures::task::SpawnExt;
+use futures::StreamExt;
+use romio::tcp::{TcpListener, TcpStream};
 use std::time::Duration;
+
 // mod badsock;
-// mod proto;
 // mod support;
+mod proto;
 
 // type RpcSystem<T> = support::RpcSystem<proto::Params, proto::NotificationParams, proto::Results, T>;
+
+static ADDR: &'static str = "127.0.0.1:9596";
 
 async fn sleep_ms(n: u64) {
     if n > 0 {
@@ -16,21 +22,63 @@ async fn sleep_ms(n: u64) {
     }
 }
 
-#[runtime::main]
-async fn main() {
-    let c_handle = runtime::spawn(peer("client", 250));
-    let s_handle = runtime::spawn(peer("server", 0));
-    futures::future::join(c_handle, s_handle).await;
+fn main() {
+    executor::block_on(async {
+        futures::future::join(client(), server()).await;
+    });
 }
 
-async fn peer(name: &str, initial: u64) {
-    sleep_ms(initial).await;
+async fn server() -> Result<(), Box<dyn std::error::Error + 'static>> {
+    let addr = ADDR.parse()?;
+    let mut listener = TcpListener::bind(&addr)?;
+    let mut incoming = listener.incoming();
+    println!("[server] bound");
 
-    println!("{}: One", name);
-    sleep_ms(500).await;
-    println!("{}: Two", name);
-    sleep_ms(500).await;
-    println!("{}: Three", name);
+    if let Some(stream) = incoming.next().await {
+        let mut stream = stream?;
+        let addr = stream.peer_addr()?;
+        println!("[server] accepted connection from {}", addr);
+
+        stream.set_nodelay(true)?;
+
+        println!("[server] making client wait...");
+        sleep_ms(1000).await;
+
+        println!("[server] sending some scraps to client");
+
+        let data: [u8; 5] = [52, 21, 29, 78, 34];
+        stream.write_all(&data).await?;
+
+        println!("[server] dropping all these lemons");
+    }
+
+    println!("[server] exiting");
+    Ok(())
+}
+
+async fn client() -> Result<(), Box<dyn std::error::Error + 'static>> {
+    sleep_ms(100).await;
+
+    println!("[client] hello");
+    sleep_ms(250).await;
+
+    let addr = ADDR.parse()?;
+    let mut stream = TcpStream::connect(&addr).await?;
+    let addr = stream.peer_addr()?;
+    println!("[client] connected to {}", addr);
+
+    stream.set_nodelay(true)?;
+
+    let mut buf: Vec<u8> = Vec::new();
+    buf.resize(16, 0);
+
+    println!("[client] reading...");
+    let m = stream.read(&mut buf).await?;
+    println!("[client] read result: {}", m);
+    println!("[client] buf: {:?}", buf);
+
+    println!("[client] exiting");
+    Ok(())
 }
 
 // fn oldmain () {
