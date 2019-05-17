@@ -1,6 +1,5 @@
 use lavish_rpc::Atom;
 use serde::Serialize;
-use std::io::Write;
 use std::marker::PhantomData;
 
 use bytes::*;
@@ -52,8 +51,8 @@ where
     type Error = std::io::Error;
 
     fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
-        let mut len = std::cmp::max(16, dst.capacity());
-        println!("starting with len {}", len);
+        // TODO: check/improve resize logic
+        let mut len = std::cmp::max(128, dst.capacity());
         dst.resize(len, 0);
 
         loop {
@@ -73,7 +72,6 @@ where
                 }
                 Err(EncErr::InvalidValueWrite(_)) => {
                     len *= 2;
-                    println!("resizing to {}", len);
                     dst.resize(len, 0);
                     continue;
                 }
