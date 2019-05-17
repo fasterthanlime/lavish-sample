@@ -4,7 +4,10 @@ use serde::Serialize;
 use std::io::Cursor;
 use std::marker::{PhantomData, Unpin};
 
+use std::collections::HashMap;
+
 use bytes::*;
+use futures::channel::oneshot;
 use futures::executor;
 use futures::prelude::*;
 use futures::stream::{SplitSink, SplitStream};
@@ -46,7 +49,7 @@ where
     {
         let codec = Codec::<P, NP, R> {
             phantom: PhantomData,
-            pr: PendingRequests {},
+            pr: PendingRequests::new(),
         };
         let framed = Framed::new(io, codec);
         let (sink, stream) = framed.split();
@@ -84,7 +87,7 @@ where
     R: Atom,
 {
     phantom: PhantomData<(P, NP, R)>,
-    pr: PendingRequests,
+    pr: PendingRequests<P, NP, R>,
 }
 
 impl<P, NP, R> Encoder for Codec<P, NP, R>
@@ -167,10 +170,44 @@ where
     }
 }
 
-struct PendingRequests {}
+struct PendingRequest<P, NP, R>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+{
+    method: &'static str,
+    tx: oneshot::Sender<rpc::Message<P, NP, R>>,
+}
 
-impl rpc::PendingRequests for PendingRequests {
-    fn get_pending<'a>(&self, _id: u32) -> Option<&'a str> {
-        None
+struct PendingRequests<P, NP, R>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+{
+    reqs: HashMap<u32, PendingRequest<P, NP, R>>,
+}
+
+impl<P, NP, R> PendingRequests<P, NP, R>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+{
+    fn new() -> Self {
+        Self {
+            reqs: HashMap::new(),
+        }
+    }
+}
+impl<P, NP, R> rpc::PendingRequests for PendingRequests<P, NP, R>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+{
+    fn get_pending(&self, id: u32) -> Option<&'static str> {
+        self.reqs.get(&id).map(|req| req.method)
     }
 }
