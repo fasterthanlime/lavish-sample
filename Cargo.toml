@@ -9,6 +9,7 @@ serde = "1.0.91"
 rmp-serde = "0.13.7"
 lavish-rpc = { path = "../lavish/lavish-rpc" }
 futures-preview = { version = "0.3.0-alpha.16", features = ["compat"] }
+futures_codec = "0.2.2"
 romio = "0.3.0-alpha.8"
 async-timer = { version = "0.2.3", features = ["romio_on"] }
 bytes = "0.4.12"

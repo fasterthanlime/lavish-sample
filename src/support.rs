@@ -1,14 +1,16 @@
-use lavish_rpc::Atom;
+use lavish_rpc as rpc;
+use rpc::Atom;
 use serde::Serialize;
-use std::marker::PhantomData;
+use std::io::Cursor;
+use std::marker::{PhantomData, Unpin};
 
 use bytes::*;
-use futures::stream::{SplitSink, SplitStream, Stream};
-use std::io::Cursor;
-use tokio_io::{AsyncRead, AsyncWrite};
+use futures::prelude::*;
+use futures::stream::{SplitSink, SplitStream};
+use futures_codec::{Decoder, Encoder, Framed};
 
-pub trait IO: AsyncRead + AsyncWrite + Sized {}
-impl<T> IO for T where T: AsyncRead + AsyncWrite + Sized {}
+pub trait IO: AsyncRead + AsyncWrite + Sized + Unpin {}
+impl<T> IO for T where T: AsyncRead + AsyncWrite + Sized + Unpin {}
 
 #[must_use = "futures do nothing unless polled"]
 pub struct RpcSystem<P, NP, R, T>
@@ -18,8 +20,8 @@ where
     R: Atom,
     T: IO,
 {
-    pub sink: SplitSink<tokio_codec::Framed<T, Codec<P, NP, R>>>,
-    pub stream: SplitStream<tokio_codec::Framed<T, Codec<P, NP, R>>>,
+    pub sink: SplitSink<Framed<T, Codec<P, NP, R>>, rpc::Message<P, NP, R>>,
+    pub stream: SplitStream<Framed<T, Codec<P, NP, R>>>,
 }
 
 impl<P, NP, R, T> RpcSystem<P, NP, R, T>
@@ -37,7 +39,7 @@ where
             phantom: PhantomData,
             pr: PendingRequests {},
         };
-        let framed = tokio_codec::Decoder::framed(codec, io);
+        let framed = Framed::new(io, codec);
         let (sink, stream) = framed.split();
         Self { sink, stream }
     }
@@ -53,15 +55,13 @@ where
     pr: PendingRequests,
 }
 
-use tokio_codec::{Decoder, Encoder};
-
 impl<P, NP, R> Encoder for Codec<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
 {
-    type Item = lavish_rpc::Message<P, NP, R>;
+    type Item = rpc::Message<P, NP, R>;
     type Error = std::io::Error;
 
     fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
@@ -101,7 +101,7 @@ where
     NP: Atom,
     R: Atom,
 {
-    type Item = lavish_rpc::Message<P, NP, R>;
+    type Item = rpc::Message<P, NP, R>;
     type Error = std::io::Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
@@ -142,7 +142,7 @@ where
 
 struct PendingRequests {}
 
-impl lavish_rpc::PendingRequests for PendingRequests {
+impl rpc::PendingRequests for PendingRequests {
     fn get_pending<'a>(&self, _id: u32) -> Option<&'a str> {
         None
     }
