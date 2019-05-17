@@ -13,9 +13,7 @@ where
     NP: Atom,
     R: Atom,
 {
-    _p: PhantomData<P>,
-    _np: PhantomData<NP>,
-    _r: PhantomData<R>,
+    phantom: PhantomData<(P, NP, R)>,
     pr: PendingRequests,
 }
 
@@ -30,9 +28,7 @@ where
         T: AsyncRead + AsyncWrite + Sized,
     {
         let system = Self {
-            _p: PhantomData,
-            _np: PhantomData,
-            _r: PhantomData,
+            phantom: PhantomData,
             pr: PendingRequests {},
         };
         tokio_codec::Decoder::framed(system, io)
