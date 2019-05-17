@@ -20,6 +20,7 @@ where
     R: Atom,
     T: IO,
 {
+    pub id: u32,
     pub sink: SplitSink<Framed<T, Codec<P, NP, R>>, rpc::Message<P, NP, R>>,
     pub stream: SplitStream<Framed<T, Codec<P, NP, R>>>,
 }
@@ -41,7 +42,19 @@ where
         };
         let framed = Framed::new(io, codec);
         let (sink, stream) = framed.split();
-        Self { sink, stream }
+        Self {
+            sink,
+            stream,
+            id: 0,
+        }
+    }
+
+    pub async fn call(&mut self, params: P) -> Result<(), Box<dyn std::error::Error + 'static>> {
+        let id = self.id;
+        self.id += 1;
+        let m = rpc::Message::Request { id, params };
+        self.sink.send(m).await?;
+        Ok(())
     }
 }
 
@@ -124,7 +137,6 @@ where
 
         match res {
             Ok(m) => {
-                // TODO: set pending
                 src.split_to(pos as usize);
                 Ok(Some(m))
             }

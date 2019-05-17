@@ -42,16 +42,20 @@ async fn server() -> Result<(), Box<dyn std::error::Error + 'static>> {
 
         conn.set_nodelay(true)?;
 
-        let rpc_system = RpcSystem::new(conn);
-        let (mut sink, mut _stream) = (rpc_system.sink, rpc_system.stream);
+        let mut rpc_system = RpcSystem::new(conn);
 
         for line in &sample_lines() {
             sleep_ms(300).await;
-            let m = proto::Message::request(
-                0,
-                proto::Params::double_Print(proto::double::print::Params { s: line.clone() }),
-            );
-            sink.send(m).await?;
+            // let m = proto::Message::request(
+            //     0,
+            //     proto::Params::double_Print(proto::double::print::Params { s: line.clone() }),
+            // );
+            // sink.send(m).await?;
+            rpc_system
+                .call(proto::Params::double_Print(proto::double::print::Params {
+                    s: line.clone(),
+                }))
+                .await?;
         }
     }
 
@@ -74,9 +78,9 @@ async fn client() -> Result<(), Box<dyn std::error::Error + 'static>> {
 
     while let Some(m) = stream.next().await {
         match m? {
-            rpc::Message::Request { params, .. } => match params {
+            rpc::Message::Request { params, id } => match params {
                 proto::Params::double_Print(params) => {
-                    println!("[client] !! {:?}", params.s);
+                    println!("[client] !! ({}) {:?}", id, params.s);
                 }
                 _ => {
                     println!("[client] request: {:#?}", params);
