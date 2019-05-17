@@ -46,11 +46,12 @@ async fn server(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
         let mut rpc_system = RpcSystem::new(protocol(), conn, pool.clone())?;
 
         for line in &sample_lines() {
-            rpc_system
+            let res = rpc_system
                 .call(proto::Params::double_Print(proto::double::print::Params {
                     s: line.clone(),
                 }))
                 .await?;
+            println!("[server] res = {:#?}", res);
             sleep_ms(300).await;
         }
     }
@@ -71,25 +72,30 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     let mut rpc_system = RpcSystem::new(protocol(), conn, pool.clone())?;
 
-    while let Some(m) = rpc_system.stream.next().await {
-        match m? {
-            rpc::Message::Request { params, id } => match params {
-                proto::Params::double_Print(params) => {
-                    // rpc_system
-                    //     .call(proto::Params::double_Print(proto::double::print::Params {
-                    //         s: "got it!".into(),
-                    //     }))
-                    //     .await?;
-                    println!("[client] !! ({}) {:?}", id, params.s);
-                }
-                _ => {
-                    println!("[client] request: {:#?}", params);
-                }
-            },
-            m => {
-                println!("[client] message: {:#?}", m);
-            }
-        }
+    // while let Some(m) = rpc_system.stream.next().await {
+    //     match m? {
+    //         rpc::Message::Request { params, id } => match params {
+    //             proto::Params::double_Print(params) => {
+    //                 // rpc_system
+    //                 //     .call(proto::Params::double_Print(proto::double::print::Params {
+    //                 //         s: "got it!".into(),
+    //                 //     }))
+    //                 //     .await?;
+    //                 println!("[client] !! ({}) {:?}", id, params.s);
+    //             }
+    //             _ => {
+    //                 println!("[client] request: {:#?}", params);
+    //             }
+    //         },
+    //         m => {
+    //             println!("[client] message: {:#?}", m);
+    //         }
+    //     }
+    // }
+
+    loop {
+        sleep_ms(1000).await;
+        println!("[client] spinning...");
     }
 
     println!("[client] XX");

@@ -19,8 +19,8 @@ use futures::task::SpawnExt;
 
 use super::sleep::*;
 
-pub trait IO: AsyncRead + AsyncWrite + Sized + Unpin {}
-impl<T> IO for T where T: AsyncRead + AsyncWrite + Sized + Unpin {}
+pub trait IO: AsyncRead + AsyncWrite + Send + Sized + Unpin + 'static {}
+impl<T> IO for T where T: AsyncRead + AsyncWrite + Send + Sized + Unpin + 'static {}
 
 #[derive(Clone, Copy)]
 pub struct Protocol<P, NP, R>
@@ -54,8 +54,8 @@ where
     T: IO,
 {
     pub id: u32,
-    pub sink: SplitSink<Framed<T, Codec<P, NP, R>>, rpc::Message<P, NP, R>>,
-    pub stream: SplitStream<Framed<T, Codec<P, NP, R>>>,
+    pr: Arc<Mutex<PendingRequests<P, NP, R>>>,
+    pub sink: Arc<Mutex<SplitSink<Framed<T, Codec<P, NP, R>>, rpc::Message<P, NP, R>>>>,
 }
 
 impl<P, NP, R, T> RpcSystem<P, NP, R, T>
@@ -77,36 +77,88 @@ where
 
         let codec = Codec { pr: pr.clone() };
         let framed = Framed::new(io, codec);
-        let (sink, stream) = framed.split();
+        let (mut sink, mut stream) = framed.split();
+
+        let sink = Arc::new(Mutex::new(sink));
+
+        let loop_pr = pr.clone();
+        let loop_sink = sink.clone();
 
         pool.spawn(async move {
-            loop {
-                sleep_ms(125).await;
+            while let Some(m) = stream.next().await {
+                match m {
+                    Ok(m) => match m {
+                        rpc::Message::Request { id, params } => {
+                            println!("[rpc] it's a request: id {}, params {:#?}", id, params);
 
-                println!("[rpc] locking..");
-                {
-                    let _guard = pr.lock().await;
-                    println!("[rpc] holding mutex!..");
-                    sleep_ms(125).await;
-                    println!("[rpc] releasing mutex");
+                            {
+                                let mut sink = loop_sink.lock().await;
+                                sink.send(rpc::Message::Response::<P, NP, R> {
+                                    id,
+                                    error: Some("just testing".into()),
+                                    results: None,
+                                })
+                                .await
+                                .unwrap();
+                                println!("[rpc] sent response!");
+                            }
+                        }
+                        rpc::Message::Response { id, error, results } => {
+                            println!("[rpc] it's a response");
+
+                            let req = {
+                                let mut pr = loop_pr.lock().await;
+                                println!("[rpc] holding mutex!..");
+                                pr.reqs.remove(&id)
+                            };
+                            println!("[rpc] released mutex");
+                            println!("[rpc] found req? {}", req.is_some());
+                            if let Some(req) = req {
+                                req.tx
+                                    .send(rpc::Message::Response { id, error, results })
+                                    .unwrap();
+                            }
+                        }
+                        rpc::Message::Notification { params } => {
+                            println!("[rpc] it's a params");
+                        }
+                    },
+                    Err(e) => panic!(e),
                 }
             }
         })
         .map_err(|_| "spawn error")?;
 
-        Ok(Self {
-            sink,
-            stream,
-            id: 0,
-        })
+        Ok(Self { sink, pr, id: 0 })
     }
 
-    pub async fn call(&mut self, params: P) -> Result<(), Box<dyn std::error::Error + 'static>> {
+    pub async fn call(
+        &mut self,
+        params: P,
+    ) -> Result<rpc::Message<P, NP, R>, Box<dyn std::error::Error + 'static>> {
         let id = self.id;
         self.id += 1;
+
+        let method = params.method();
         let m = rpc::Message::Request { id, params };
-        self.sink.send(m).await?;
-        Ok(())
+
+        let (tx, rx) = oneshot::channel::<rpc::Message<P, NP, R>>();
+        let req = PendingRequest { method, tx };
+
+        {
+            println!("[rpc] inserting req in queue...");
+            let mut pr = self.pr.lock().await;
+            pr.reqs.insert(id, req);
+        }
+
+        {
+            println!("[rpc] sending message to sink...");
+            let mut sink = self.sink.lock().await;
+            sink.send(m).await?;
+        }
+
+        println!("[rpc] waiting for rx");
+        Ok(rx.await.unwrap())
     }
 }
 
