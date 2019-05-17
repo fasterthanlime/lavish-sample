@@ -2,6 +2,16 @@ use futures::future::Future;
 use tokio::io::{write_all, AsyncWrite};
 use tokio_io::io::Window;
 
+pub async fn print_after_wait(millis: u64, msg: String) {
+    use std::time::*;
+    use tokio::timer::Delay;
+
+    println!("sleeping...");
+    let when = Instant::now() + Duration::from_millis(20);
+    Delay::new(when).await;
+    println!("slept: {}", msg);
+}
+
 pub fn write_two_halves<A, T>(a: A, b: T) -> impl Future<Item = (A, T), Error = std::io::Error>
 where
     A: AsyncWrite,
