@@ -1,8 +1,8 @@
 #![feature(async_await)]
 
-
-use async_timer::oneshot::*;
+#[allow(unused_imports)]
 use futures::prelude::*;
+use async_timer::oneshot::*;
 use std::time::Duration;
 // mod badsock;
 // mod proto;
@@ -10,14 +10,13 @@ use std::time::Duration;
 
 // type RpcSystem<T> = support::RpcSystem<proto::Params, proto::NotificationParams, proto::Results, T>;
 
-// use Delay from the tokio::timer module to sleep the task:
 async fn sleep_ms(n: u64) {
     if n > 0 {
         Timer::new(Duration::from_millis(n)).await;
     }
 }
 
-#[runtime::main(runtime_tokio::Tokio)]
+#[runtime::main]
 async fn main() {
     let c_handle = runtime::spawn(peer("client", 250));
     let s_handle = runtime::spawn(peer("server", 0));
