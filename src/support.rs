@@ -4,8 +4,9 @@ use serde::Serialize;
 use std::io::Cursor;
 use std::marker::{PhantomData, Unpin};
 
+use futures::lock::Mutex;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use bytes::*;
 use futures::channel::oneshot;
@@ -72,18 +73,23 @@ where
     where
         T: AsyncRead + AsyncWrite + Sized,
     {
-        let codec = Codec {
-            pr: PendingRequests::new(protocol),
-        };
+        let pr = Arc::new(Mutex::new(PendingRequests::new(protocol)));
+
+        let codec = Codec { pr: pr.clone() };
         let framed = Framed::new(io, codec);
         let (sink, stream) = framed.split();
 
-        pool.spawn(async {
-            let mut i = 0;
+        pool.spawn(async move {
             loop {
-                println!("Henlo {} from rpc system", i);
-                sleep_ms(250).await;
-                i += 1;
+                sleep_ms(125).await;
+
+                println!("[rpc] locking..");
+                {
+                    let _guard = pr.lock().await;
+                    println!("[rpc] holding mutex!..");
+                    sleep_ms(125).await;
+                    println!("[rpc] releasing mutex");
+                }
             }
         })
         .map_err(|_| "spawn error")?;
@@ -110,7 +116,7 @@ where
     NP: Atom,
     R: Atom,
 {
-    pr: PendingRequests<P, NP, R>,
+    pr: Arc<Mutex<PendingRequests<P, NP, R>>>,
 }
 
 impl<P, NP, R> Encoder for Codec<P, NP, R>
@@ -170,7 +176,14 @@ where
         let (pos, res) = {
             let cursor = Cursor::new(&src[..]);
             let mut deser = rmp_serde::Deserializer::from_read(cursor);
-            let res = Self::Item::deserialize(&mut deser, &self.pr);
+            let res = {
+                if let Some(pr) = self.pr.try_lock() {
+                    Self::Item::deserialize(&mut deser, &*pr)
+                } else {
+                    // FIXME: futures_codec doesn't fit the bill
+                    panic!("could not acquire lock in decode");
+                }
+            };
             (deser.position(), res)
         };
 
@@ -224,6 +237,7 @@ where
         }
     }
 }
+
 impl<P, NP, R> rpc::PendingRequests for PendingRequests<P, NP, R>
 where
     P: Atom,

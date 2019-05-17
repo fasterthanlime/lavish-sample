@@ -46,12 +46,12 @@ async fn server(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
         let mut rpc_system = RpcSystem::new(protocol(), conn, pool.clone())?;
 
         for line in &sample_lines() {
-            sleep_ms(300).await;
             rpc_system
                 .call(proto::Params::double_Print(proto::double::print::Params {
                     s: line.clone(),
                 }))
                 .await?;
+            sleep_ms(300).await;
         }
     }
 
@@ -75,11 +75,11 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
         match m? {
             rpc::Message::Request { params, id } => match params {
                 proto::Params::double_Print(params) => {
-                    rpc_system
-                        .call(proto::Params::double_Print(proto::double::print::Params {
-                            s: "got it!".into(),
-                        }))
-                        .await?;
+                    // rpc_system
+                    //     .call(proto::Params::double_Print(proto::double::print::Params {
+                    //         s: "got it!".into(),
+                    //     }))
+                    //     .await?;
                     println!("[client] !! ({}) {:?}", id, params.s);
                 }
                 _ => {
