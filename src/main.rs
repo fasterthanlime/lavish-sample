@@ -12,18 +12,26 @@ use std::time::Duration;
 
 // use Delay from the tokio::timer module to sleep the task:
 async fn sleep_ms(n: u64) {
-    Timer::new(Duration::from_millis(n)).await;
+    if n > 0 {
+        Timer::new(Duration::from_millis(n)).await;
+    }
 }
 
 #[runtime::main(runtime_tokio::Tokio)]
 async fn main() {
-    println!("One");
+    let c_handle = runtime::spawn(peer("client", 250));
+    let s_handle = runtime::spawn(peer("server", 0));
+    futures::future::join(c_handle, s_handle).await;
+}
 
-    sleep_ms(1000).await;
-    println!("Two");
+async fn peer(name: &str, initial: u64) {
+    sleep_ms(initial).await;
 
-    sleep_ms(1000).await;
-    println!("Three");
+    println!("{}: One", name);
+    sleep_ms(500).await;
+    println!("{}: Two", name);
+    sleep_ms(500).await;
+    println!("{}: Three", name);
 }
 
 // fn oldmain () {
