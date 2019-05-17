@@ -33,12 +33,12 @@ async fn server() -> Result<(), Box<dyn std::error::Error + 'static>> {
     let addr = ADDR.parse()?;
     let mut listener = TcpListener::bind(&addr)?;
     let mut incoming = listener.incoming();
-    println!("[server] bound");
+    println!("[server] <> {}", addr);
 
     if let Some(conn) = incoming.next().await {
         let conn = conn?;
         let addr = conn.peer_addr()?;
-        println!("[server] accepted connection from {}", addr);
+        println!("[server] <- {}", addr);
 
         conn.set_nodelay(true)?;
 
@@ -55,19 +55,17 @@ async fn server() -> Result<(), Box<dyn std::error::Error + 'static>> {
         }
     }
 
-    println!("[server] exiting");
+    println!("[server] XX");
     Ok(())
 }
 
 async fn client() -> Result<(), Box<dyn std::error::Error + 'static>> {
     sleep_ms(100).await;
 
-    println!("[client] hello");
-
     let addr = ADDR.parse()?;
     let conn = TcpStream::connect(&addr).await?;
     let addr = conn.peer_addr()?;
-    println!("[client] connected to {}", addr);
+    println!("[client] -> {}", addr);
 
     conn.set_nodelay(true)?;
 
@@ -78,7 +76,7 @@ async fn client() -> Result<(), Box<dyn std::error::Error + 'static>> {
         match m? {
             rpc::Message::Request { params, .. } => match params {
                 proto::Params::double_Print(params) => {
-                    println!("[client] {}", params.s);
+                    println!("[client] !! {:?}", params.s);
                 }
                 _ => {
                     println!("[client] request: {:#?}", params);
@@ -90,26 +88,20 @@ async fn client() -> Result<(), Box<dyn std::error::Error + 'static>> {
         }
     }
 
-    println!("[client] is done receiving message, shutting down");
+    println!("[client] XX");
     Ok(())
 }
 
 fn sample_lines() -> Vec<String> {
-    let text = "Lorem ipsum. To most of us, it’s a passage of
-                    meaningless Latin that fills websites or brochure layouts
-                    with text while waiting on writers to fill it with real copy.
-                    This is bad news for publishers. But if one of those
-                    publishers decided to use it themselves, they'd be getting
-                    it. When in doubt, try to find a copy that's hard to find, a
-                    better copy is available, or an original copy of the text.";
-    let mut lines: Vec<String> = text
-        .split("\n")
-        .map(|x| x.trim())
-        .collect::<Vec<_>>()
-        .join(" ")
-        .split(".")
-        .map(|x| x.trim().into())
-        .collect();
-    lines.reverse();
-    lines
+    let text = "This is the first sentence. The second sentence is slighter longer. The third sentence is the longest of the three sentences.";
+    text.split(".")
+        .filter_map(|x| {
+            let x = x.trim();
+            if x == "" {
+                None
+            } else {
+                Some(x.into())
+            }
+        })
+        .collect()
 }

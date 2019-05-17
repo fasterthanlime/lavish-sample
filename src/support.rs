@@ -122,14 +122,10 @@ where
             Ok(None)
         };
 
-        println!("res = {:#?}", res);
-
         match res {
             Ok(m) => {
                 // TODO: set pending
-                let len = src.len();
                 src.split_to(pos as usize);
-                println!("[decoder] decoded messages from {}/{} bytes", pos, len);
                 Ok(Some(m))
             }
             Err(DecErr::InvalidDataRead(_)) => need_more(),
