@@ -9,13 +9,14 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::prelude::*;
 use tokio::runtime::Runtime;
 
-type RpcSystem = support::RpcSystem<proto::Params, proto::NotificationParams, proto::Results>;
+type RpcSystem<T> = support::RpcSystem<proto::Params, proto::NotificationParams, proto::Results, T>;
 
 fn main() {
     let addr = "127.0.0.1:9596";
 
     let client_thread = std::thread::spawn(move || {
         let mut rt = Runtime::new().unwrap();
+        let exec = rt.executor();
 
         println!("[client] waiting a bit...");
         std::thread::sleep(Duration::from_millis(200));
@@ -27,9 +28,26 @@ fn main() {
         println!("[client] connected");
         let rpc_system = RpcSystem::new(sock);
 
+        let sink = rpc_system.sink;
+        let stream = rpc_system.stream;
+
+        {
+            let m = proto::Message::request(
+                0,
+                proto::Params::double_Print(proto::double::print::Params { s: "ack".into() }),
+            );
+            exec.spawn(
+                sink.send(m)
+                    .map_err(|e| {
+                        eprintln!("error sending ack: {:#?}", e);
+                    })
+                    .map(|_| ()),
+            );
+        }
+
         rt.block_on(
-            rpc_system
-                .for_each(|m| {
+            stream
+                .for_each(move |m| {
                     println!(
                         "🦀 {}",
                         format!("{:#?}", m)
@@ -38,6 +56,7 @@ fn main() {
                             .collect::<Vec<_>>()
                             .join(" ")
                     );
+
                     Ok(())
                 })
                 .map_err(|err| {
@@ -97,9 +116,11 @@ fn main() {
         lines.reverse();
         let first_item = lines.pop();
 
-        let myloop = futures::future::loop_fn(
-            (rpc_system, lines, first_item),
-            move |(rpc_system, mut lines, item)| {
+        let sink = rpc_system.sink;
+        let stream = rpc_system.stream;
+
+        let myloop =
+            futures::future::loop_fn((sink, lines, first_item), move |(sink, mut lines, item)| {
                 Delay::new(Instant::now() + Duration::from_millis(80)).then(move |_| match item {
                     Some(line) => {
                         let m = proto::Message::request(
@@ -109,27 +130,26 @@ fn main() {
                             }),
                         );
                         Either::A(
-                            rpc_system
-                                .send(m)
+                            sink.send(m)
                                 .map_err(|e| println!("i/o error: {:#?}", e))
-                                .and_then(move |rpc_system| {
+                                .and_then(move |sink| {
                                     let next_item = lines.pop();
-                                    Ok(future::Loop::Continue((rpc_system, lines, next_item)))
+                                    Ok(future::Loop::Continue((sink, lines, next_item)))
                                 }),
                         )
                     }
-                    None => {
-                        println!("shutting down rpc system");
-                        rpc_system
-                            .into_inner()
-                            .shutdown(std::net::Shutdown::Both)
-                            .unwrap();
-                        Either::B(future::result(Ok(future::Loop::Break(()))))
-                    }
+                    None => Either::B(future::result(Ok(future::Loop::Break(sink)))),
                 })
-            },
-        );
-        rt.spawn(myloop);
+            });
+        rt.spawn(myloop.and_then(move |sink| {
+            println!("shutting down rpc system");
+            sink.reunite(stream)
+                .unwrap()
+                .into_inner()
+                .shutdown(std::net::Shutdown::Both)
+                .unwrap();
+            Ok(())
+        }));
 
         println!("[server] shutting down on idle...");
         rt.shutdown_on_idle().wait().unwrap();

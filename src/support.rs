@@ -3,11 +3,47 @@ use serde::Serialize;
 use std::marker::PhantomData;
 
 use bytes::*;
+use futures::stream::{SplitSink, SplitStream, Stream};
 use std::io::Cursor;
 use tokio_io::{AsyncRead, AsyncWrite};
 
+pub trait IO: AsyncRead + AsyncWrite + Sized {}
+impl<T> IO for T where T: AsyncRead + AsyncWrite + Sized {}
+
 #[must_use = "futures do nothing unless polled"]
-pub struct RpcSystem<P, NP, R>
+pub struct RpcSystem<P, NP, R, T>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+    T: IO,
+{
+    pub sink: SplitSink<tokio_codec::Framed<T, Codec<P, NP, R>>>,
+    pub stream: SplitStream<tokio_codec::Framed<T, Codec<P, NP, R>>>,
+}
+
+impl<P, NP, R, T> RpcSystem<P, NP, R, T>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+    T: IO,
+{
+    pub fn new(io: T) -> Self
+    where
+        T: AsyncRead + AsyncWrite + Sized,
+    {
+        let codec = Codec::<P, NP, R> {
+            phantom: PhantomData,
+            pr: PendingRequests {},
+        };
+        let framed = tokio_codec::Decoder::framed(codec, io);
+        let (sink, stream) = framed.split();
+        Self { sink, stream }
+    }
+}
+
+pub struct Codec<P, NP, R>
 where
     P: Atom,
     NP: Atom,
@@ -17,27 +53,9 @@ where
     pr: PendingRequests,
 }
 
-impl<P, NP, R> RpcSystem<P, NP, R>
-where
-    P: Atom,
-    NP: Atom,
-    R: Atom,
-{
-    pub fn new<T>(io: T) -> tokio_codec::Framed<T, Self>
-    where
-        T: AsyncRead + AsyncWrite + Sized,
-    {
-        let system = Self {
-            phantom: PhantomData,
-            pr: PendingRequests {},
-        };
-        tokio_codec::Decoder::framed(system, io)
-    }
-}
-
 use tokio_codec::{Decoder, Encoder};
 
-impl<P, NP, R> Encoder for RpcSystem<P, NP, R>
+impl<P, NP, R> Encoder for Codec<P, NP, R>
 where
     P: Atom,
     NP: Atom,
@@ -77,7 +95,7 @@ where
     }
 }
 
-impl<P, NP, R> Decoder for RpcSystem<P, NP, R>
+impl<P, NP, R> Decoder for Codec<P, NP, R>
 where
     P: Atom,
     NP: Atom,
