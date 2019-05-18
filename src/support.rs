@@ -88,11 +88,9 @@ where
         params: P,
     ) -> Result<rpc::Message<P, NP, R>, Box<dyn std::error::Error + 'static>> {
         let id = {
-            println!("[rpc] ..locking pr for genid");
             let mut pr = self.pr.lock().await;
             pr.genid()
         };
-        println!("[rpc] unlocking pr for genid");
 
         let method = params.method();
         let m = rpc::Message::Request { id, params };
@@ -101,17 +99,13 @@ where
         let req = PendingRequest { method, tx };
 
         {
-            println!("[rpc] ..locking pr for insert");
             let mut pr = self.pr.lock().await;
             pr.reqs.insert(id, req);
-            println!("[rpc] unlocking pr for insert");
         }
 
         {
-            println!("[rpc] ..locking sink for insert");
             let mut sink = self.sink.lock().await;
             sink.send(m).await?;
-            println!("[rpc] unlocking sink for insert");
         }
 
         Ok(rx.await.unwrap())
@@ -166,7 +160,6 @@ where
                     match m {
                         Ok(m) => match m {
                             rpc::Message::Request { id, params } => {
-                                println!("[rpc] received request");
                                 let m = match href.as_ref() {
                                     Some(handler) => match handler.handle(lh.clone(), params).await
                                     {
@@ -189,14 +182,11 @@ where
                                 };
 
                                 {
-                                    println!("[rpc] ..locking sink for handler response send");
                                     let mut sink = lh.sink.lock().await;
                                     sink.send(m).await.unwrap();
-                                    println!("[rpc] unlocking sink for handler response send");
                                 }
                             }
                             rpc::Message::Response { id, error, results } => {
-                                println!("[rpc] received response");
                                 let req = {
                                     let mut pr = lh.pr.lock().await;
                                     pr.reqs.remove(&id)
@@ -304,10 +294,7 @@ where
         };
 
         use rmp_serde::decode::Error as DecErr;
-        let need_more = || {
-            println!("[decoder] need more than {} bytes", src.len());
-            Ok(None)
-        };
+        let need_more = || Ok(None);
 
         match res {
             Ok(m) => {

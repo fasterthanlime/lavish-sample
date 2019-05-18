@@ -10,6 +10,8 @@ mod proto;
 pub mod sleep;
 mod support;
 
+use lavish_rpc::Atom;
+
 use support::{Handler, Protocol, RpcHandle, RpcSystem};
 
 static ADDR: &'static str = "127.0.0.1:9596";
@@ -47,15 +49,13 @@ impl Handler<proto::Params, proto::NotificationParams, proto::Results, TcpStream
                 )),
                 proto::Params::double_Print(params) => {
                     println!("[server] client says: {}", params.s);
-                    println!("[server] calling double.Print on client...");
-
                     match h
                         .call(proto::Params::double_Print(proto::double::print::Params {
-                            s: format!("received {}", params.s),
+                            s: params.s.chars().rev().collect(),
                         }))
                         .await
                     {
-                        Ok(r) => println!("[server] client replied: {:#?}", r),
+                        Ok(_) => {}
                         Err(e) => eprintln!("[server] client errored: {:#?}", e),
                     };
 
@@ -91,6 +91,30 @@ async fn server(
     Ok(())
 }
 
+struct ClientHandler {}
+
+impl Handler<proto::Params, proto::NotificationParams, proto::Results, TcpStream>
+    for ClientHandler
+{
+    fn handle(
+        &self,
+        mut _h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results, TcpStream>,
+        params: proto::Params,
+    ) -> Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + '_>> {
+        Box::pin(async move {
+            match params {
+                proto::Params::double_Print(params) => {
+                    println!("[client] server says: {}", params.s);
+                    Ok(proto::Results::double_Print(
+                        proto::double::print::Results {},
+                    ))
+                }
+                _ => Err(format!("method unimplemented {}", params.method())),
+            }
+        })
+    }
+}
+
 async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Error + 'static>> {
     let addr = ADDR.parse()?;
     let conn = TcpStream::connect(&addr).await?;
@@ -99,7 +123,12 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     conn.set_nodelay(true)?;
 
-    let rpc_system = RpcSystem::new(protocol(), None, conn, pool.clone())?;
+    let rpc_system = RpcSystem::new(
+        protocol(),
+        Some(Box::new(ClientHandler {})),
+        conn,
+        pool.clone(),
+    )?;
     let mut handle = rpc_system.handle();
 
     for line in &sample_lines() {
