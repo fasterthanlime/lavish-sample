@@ -6,8 +6,6 @@ use std::pin::Pin;
 
 use romio::tcp::{TcpListener, TcpStream};
 
-use lavish_rpc as rpc;
-
 mod proto;
 pub mod sleep;
 mod support;
@@ -23,7 +21,10 @@ fn main() {
     let pool = executor.clone();
 
     executor.run(async {
-        futures::future::join(client(pool.clone()), server(pool.clone())).await;
+        let addr = ADDR.parse().unwrap();
+        let listener = TcpListener::bind(&addr).unwrap();
+        println!("[server] <> {}", addr);
+        futures::future::join(client(pool.clone()), server(listener, pool.clone())).await;
     });
 }
 
@@ -39,7 +40,6 @@ impl Handler<proto::Params, proto::Results> for ServerHandler {
         params: proto::Params,
     ) -> Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + '_>> {
         Box::pin(async move {
-            sleep_ms(120).await;
             match params {
                 proto::Params::double_Double(params) => Ok(proto::Results::double_Double(
                     proto::double::double::Results { x: params.x * 2 },
@@ -55,11 +55,11 @@ impl Handler<proto::Params, proto::Results> for ServerHandler {
     }
 }
 
-async fn server(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let addr = ADDR.parse()?;
-    let mut listener = TcpListener::bind(&addr)?;
+async fn server(
+    mut listener: TcpListener,
+    pool: executor::ThreadPool,
+) -> Result<(), Box<dyn std::error::Error + 'static>> {
     let mut incoming = listener.incoming();
-    println!("[server] <> {}", addr);
 
     if let Some(conn) = incoming.next().await {
         let conn = conn?;
@@ -71,14 +71,10 @@ async fn server(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
         let handler = Box::new(ServerHandler {});
         RpcSystem::new(protocol(), Some(handler), conn, pool.clone())?;
     }
-
-    println!("[server] XX");
     Ok(())
 }
 
 async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    sleep_ms(100).await;
-
     let addr = ADDR.parse()?;
     let conn = TcpStream::connect(&addr).await?;
     let addr = conn.peer_addr()?;
@@ -89,16 +85,13 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
     let mut rpc_system = RpcSystem::new(protocol(), None, conn, pool.clone())?;
 
     for line in &sample_lines() {
-        let res = rpc_system
+        rpc_system
             .call(proto::Params::double_Print(proto::double::print::Params {
                 s: line.clone(),
             }))
             .await?;
-        println!("[server] res = {:#?}", res);
-        sleep_ms(300).await;
     }
 
-    println!("[client] XX");
     Ok(())
 }
 

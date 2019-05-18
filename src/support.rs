@@ -44,7 +44,6 @@ where
     }
 }
 
-#[must_use = "futures do nothing unless polled"]
 pub struct RpcSystem<P, NP, R, T>
 where
     P: Atom,
@@ -97,53 +96,40 @@ where
                 match m {
                     Ok(m) => match m {
                         rpc::Message::Request { id, params } => {
-                            println!("[rpc] it's a request: id {}, params {:#?}", id, params);
-
-                            {
-                                let mut sink = loop_sink.lock().await;
-                                let m = match handler.as_ref() {
-                                    Some(handler) => match handler.handle(params).await {
-                                        Ok(results) => rpc::Message::Response::<P, NP, R> {
-                                            id,
-                                            results: Some(results),
-                                            error: None,
-                                        },
-                                        Err(error) => rpc::Message::Response::<P, NP, R> {
-                                            id,
-                                            results: None,
-                                            error: Some(error),
-                                        },
+                            let mut sink = loop_sink.lock().await;
+                            let m = match handler.as_ref() {
+                                Some(handler) => match handler.handle(params).await {
+                                    Ok(results) => rpc::Message::Response::<P, NP, R> {
+                                        id,
+                                        results: Some(results),
+                                        error: None,
                                     },
-                                    _ => rpc::Message::Response {
+                                    Err(error) => rpc::Message::Response::<P, NP, R> {
                                         id,
                                         results: None,
-                                        error: Some(format!("no method handler")),
+                                        error: Some(error),
                                     },
-                                };
-                                sink.send(m).await.unwrap();
-
-                                println!("[rpc] sent response!");
-                            }
+                                },
+                                _ => rpc::Message::Response {
+                                    id,
+                                    results: None,
+                                    error: Some(format!("no method handler")),
+                                },
+                            };
+                            sink.send(m).await.unwrap();
                         }
                         rpc::Message::Response { id, error, results } => {
-                            println!("[rpc] it's a response");
-
                             let req = {
                                 let mut pr = loop_pr.lock().await;
-                                println!("[rpc] holding mutex!..");
                                 pr.reqs.remove(&id)
                             };
-                            println!("[rpc] released mutex");
-                            println!("[rpc] found req? {}", req.is_some());
                             if let Some(req) = req {
                                 req.tx
                                     .send(rpc::Message::Response { id, error, results })
                                     .unwrap();
                             }
                         }
-                        rpc::Message::Notification { params } => {
-                            println!("[rpc] it's a notification! params = {:#?}", params);
-                        }
+                        rpc::Message::Notification { .. } => unimplemented!(),
                     },
                     Err(e) => panic!(e),
                 }
@@ -168,18 +154,15 @@ where
         let req = PendingRequest { method, tx };
 
         {
-            println!("[rpc] inserting req in queue...");
             let mut pr = self.pr.lock().await;
             pr.reqs.insert(id, req);
         }
 
         {
-            println!("[rpc] sending message to sink...");
             let mut sink = self.sink.lock().await;
             sink.send(m).await?;
         }
 
-        println!("[rpc] waiting for rx");
         Ok(rx.await.unwrap())
     }
 }
