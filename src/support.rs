@@ -56,6 +56,28 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>>;
 }
 
+impl<P, NP, R, F> Handler<P, NP, R> for F
+where
+    P: Atom,
+    R: Atom,
+    NP: Atom,
+    F: (Fn(
+            RpcHandle<P, NP, R>,
+            P,
+        ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + 'static>>)
+        + Send
+        + Sync,
+{
+    fn handle(
+        &self,
+        h: RpcHandle<P, NP, R>,
+        params: P,
+    ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>> {
+        self(h, params)
+    }
+}
+
+
 pub struct RpcHandle<P, NP, R>
 where
     P: Atom,
