@@ -33,9 +33,43 @@ fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Resul
     Protocol::new()
 }
 
-struct ServerHandler {}
-
 type HandlerRet = Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>>;
+
+struct PluggableHandler {
+    on_double_Print: Option<
+        &'static (Fn(
+            RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
+            proto::double::print::Params,
+        ) -> Pin<
+            Box<
+                dyn Future<Output = Result<proto::double::print::Results, String>> + Send + 'static,
+            >,
+        > + Sync),
+    >,
+}
+
+impl Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
+    for PluggableHandler
+{
+    fn handle(
+        &self,
+        mut h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
+        params: proto::Params,
+    ) -> HandlerRet {
+        let method = params.method();
+        match params {
+            proto::Params::double_Print(params) => match self.on_double_Print {
+                Some(hm) => {
+                    Box::pin(async move { Ok(proto::Results::double_Print(hm(h, params).await?)) })
+                }
+                None => Box::pin(async move { Err(format!("no handler for {}", method)) }),
+            },
+            _ => Box::pin(async move { Err(format!("no handler for {}", method)) }),
+        }
+    }
+}
+
+struct ServerHandler {}
 
 impl Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
     for ServerHandler
