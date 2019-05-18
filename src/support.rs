@@ -56,24 +56,20 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>>;
 }
 
-impl<P, NP, R, F> Handler<P, NP, R> for F
+impl<P, NP, R, F, FT> Handler<P, NP, R> for F
 where
     P: Atom,
     R: Atom,
     NP: Atom,
-    F: (Fn(
-            RpcHandle<P, NP, R>,
-            P,
-        ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + 'static>>)
-        + Send
-        + Sync,
+    F: (Fn(RpcHandle<P, NP, R>, P) -> FT) + Send + Sync,
+    FT: Future<Output = Result<R, String>> + Send + 'static,
 {
     fn handle(
         &self,
         h: RpcHandle<P, NP, R>,
         params: P,
     ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>> {
-        self(h, params)
+        Box::pin(async move { self(h, params).await })
     }
 }
 

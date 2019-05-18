@@ -117,7 +117,25 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     conn.set_nodelay(true)?;
 
-    let rpc_system = RpcSystem::new(protocol(), Some(ClientHandler {}), conn, pool.clone())?;
+    let rpc_system = RpcSystem::new(
+        protocol(),
+        Some(|_h, params| {
+            Box::pin(async move {
+                match params {
+                    proto::Params::double_Print(params) => {
+                        println!("[client] server says: {}", params.s);
+                        sleep::sleep_ms(250).await;
+                        Ok(proto::Results::double_Print(
+                            proto::double::print::Results {},
+                        ))
+                    }
+                    _ => Err(format!("method unimplemented {}", params.method())),
+                }
+            })
+        }),
+        conn,
+        pool.clone(),
+    )?;
     let mut handle = rpc_system.handle();
 
     for line in &sample_lines() {
