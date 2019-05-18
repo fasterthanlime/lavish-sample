@@ -3,6 +3,7 @@ use rpc::Atom;
 use serde::Serialize;
 use std::io::Cursor;
 use std::marker::{PhantomData, Unpin};
+use std::pin::Pin;
 
 use futures::lock::Mutex;
 use std::collections::HashMap;
@@ -53,20 +54,15 @@ where
 {
     pub id: u32,
     pr: Arc<Mutex<PendingRequests<P, NP, R>>>,
-    handlers: Arc<
-        Mutex<
-            HashMap<
-                &'static str,
-                &'static (Fn(
-                    P,
-                )
-                    -> Box<dyn Future<Output = Result<R, String>> + Unpin + Sync + Send>
-                              + Sync
-                              + Send),
-            >,
-        >,
-    >,
     pub sink: Arc<Mutex<SplitSink<Framed<T, Codec<P, NP, R>>, rpc::Message<P, NP, R>>>>,
+}
+
+pub trait Handler<P, R>: Sync + Send
+where
+    P: Atom,
+    R: Atom,
+{
+    fn handle(&self, params: P) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>>;
 }
 
 impl<P, NP, R, T> RpcSystem<P, NP, R, T>
@@ -78,6 +74,7 @@ where
 {
     pub fn new(
         protocol: Protocol<P, NP, R>,
+        handler: Option<Box<Handler<P, R>>>,
         io: T,
         mut pool: executor::ThreadPool,
     ) -> Result<Self, Box<dyn std::error::Error + 'static>>
@@ -92,17 +89,8 @@ where
 
         let sink = Arc::new(Mutex::new(sink));
 
-        let handlers: HashMap<
-            &'static str,
-            &'static (Fn(P) -> Box<dyn Future<Output = Result<R, String>> + Unpin + Sync + Send>
-                          + Sync
-                          + Send),
-        > = HashMap::new();
-        let handlers = Arc::new(Mutex::new(handlers));
-
         let loop_pr = pr.clone();
         let loop_sink = sink.clone();
-        let loop_handlers = handlers.clone();
 
         pool.spawn(async move {
             while let Some(m) = stream.next().await {
@@ -113,33 +101,26 @@ where
 
                             {
                                 let mut sink = loop_sink.lock().await;
-                                let handlers = loop_handlers.lock().await;
-                                match handlers.get(params.method()) {
-                                    Some(handler) => {
-                                        let m = match handler(params).await {
-                                            Ok(results) => rpc::Message::Response::<P, NP, R> {
-                                                id,
-                                                results: Some(results),
-                                                error: None,
-                                            },
-                                            Err(error) => rpc::Message::Response::<P, NP, R> {
-                                                id,
-                                                results: None,
-                                                error: Some(error),
-                                            },
-                                        };
-                                        sink.send(m).await.unwrap();
-                                    }
-                                    None => {
-                                        sink.send(rpc::Message::Response::<P, NP, R> {
+                                let m = match handler.as_ref() {
+                                    Some(handler) => match handler.handle(params).await {
+                                        Ok(results) => rpc::Message::Response::<P, NP, R> {
                                             id,
-                                            error: Some(format!("")),
+                                            results: Some(results),
+                                            error: None,
+                                        },
+                                        Err(error) => rpc::Message::Response::<P, NP, R> {
+                                            id,
                                             results: None,
-                                        })
-                                        .await
-                                        .unwrap();
-                                    }
-                                }
+                                            error: Some(error),
+                                        },
+                                    },
+                                    _ => rpc::Message::Response {
+                                        id,
+                                        results: None,
+                                        error: Some(format!("no method handler")),
+                                    },
+                                };
+                                sink.send(m).await.unwrap();
 
                                 println!("[rpc] sent response!");
                             }
@@ -170,12 +151,7 @@ where
         })
         .map_err(|_| "spawn error")?;
 
-        Ok(Self {
-            sink,
-            pr,
-            id: 0,
-            handlers,
-        })
+        Ok(Self { sink, pr, id: 0 })
     }
 
     pub async fn call(
