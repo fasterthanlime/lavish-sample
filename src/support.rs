@@ -141,12 +141,16 @@ where
     NP: Atom,
     R: Atom,
 {
-    pub fn new<T: IO>(
+    pub fn new<T, H>(
         protocol: Protocol<P, NP, R>,
-        handler: Option<Box<Handler<P, NP, R>>>,
+        handler: Option<H>,
         io: T,
         mut pool: executor::ThreadPool,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error>
+    where
+        T: IO,
+        H: Handler<P, NP, R> + 'static,
+    {
         let pr = Arc::new(Mutex::new(PendingRequests::new(protocol)));
 
         let codec = Codec { pr: pr.clone() };
@@ -195,14 +199,15 @@ where
     }
 }
 
-async fn handle_message<P, NP, R>(
+async fn handle_message<P, NP, R, H>(
     m: rpc::Message<P, NP, R>,
-    handler: Arc<Option<Box<Handler<P, NP, R>>>>,
+    handler: Arc<Option<H>>,
     mut handle: RpcHandle<P, NP, R>,
 ) where
     P: Atom,
     NP: Atom,
     R: Atom,
+    H: Handler<P, NP, R>,
 {
     match m {
         rpc::Message::Request { id, params } => {

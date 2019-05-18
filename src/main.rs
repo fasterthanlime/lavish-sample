@@ -81,12 +81,7 @@ async fn server(
 
         conn.set_nodelay(true)?;
 
-        RpcSystem::new(
-            protocol(),
-            Some(Box::new(ServerHandler {})),
-            conn,
-            pool.clone(),
-        )?;
+        RpcSystem::new(protocol(), Some(ServerHandler {}), conn, pool.clone())?;
     }
     Ok(())
 }
@@ -122,12 +117,7 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     conn.set_nodelay(true)?;
 
-    let rpc_system = RpcSystem::new(
-        protocol(),
-        Some(Box::new(ClientHandler {})),
-        conn,
-        pool.clone(),
-    )?;
+    let rpc_system = RpcSystem::new(protocol(), Some(ClientHandler {}), conn, pool.clone())?;
     let mut handle = rpc_system.handle();
 
     for line in &sample_lines() {
