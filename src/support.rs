@@ -108,7 +108,7 @@ where
             sink.send(m).await?;
         }
 
-        Ok(rx.await.unwrap())
+        Ok(rx.await?)
     }
 }
 
@@ -145,75 +145,89 @@ where
             pr: pr.clone(),
             sink: Arc::new(Mutex::new(sink)),
         };
-        let lh = handle.clone();
-        let lpool = pool.clone();
 
-        pool.spawn(async move {
-            let href = Arc::new(handler);
+        let system = Self {
+            handle: handle.clone(),
+        };
 
-            while let Some(m) = stream.next().await {
-                let lh = lh.clone();
-                let mut pool = lpool.clone();
-                let href = href.clone();
+        pool.clone()
+            .spawn(async move {
+                let handler = Arc::new(handler);
 
-                pool.spawn(async move {
+                while let Some(m) = stream.next().await {
                     match m {
-                        Ok(m) => match m {
-                            rpc::Message::Request { id, params } => {
-                                let m = match href.as_ref() {
-                                    Some(handler) => match handler.handle(lh.clone(), params).await
-                                    {
-                                        Ok(results) => rpc::Message::Response::<P, NP, R> {
-                                            id,
-                                            results: Some(results),
-                                            error: None,
-                                        },
-                                        Err(error) => rpc::Message::Response::<P, NP, R> {
-                                            id,
-                                            results: None,
-                                            error: Some(error),
-                                        },
-                                    },
-                                    _ => rpc::Message::Response {
-                                        id,
-                                        results: None,
-                                        error: Some(format!("no method handler")),
-                                    },
-                                };
-
-                                {
-                                    let mut sink = lh.sink.lock().await;
-                                    sink.send(m).await.unwrap();
-                                }
-                            }
-                            rpc::Message::Response { id, error, results } => {
-                                let req = {
-                                    let mut pr = lh.pr.lock().await;
-                                    pr.reqs.remove(&id)
-                                };
-                                if let Some(req) = req {
-                                    req.tx
-                                        .send(rpc::Message::Response { id, error, results })
-                                        .unwrap();
-                                }
-                            }
-                            rpc::Message::Notification { .. } => unimplemented!(),
-                        },
-                        Err(e) => panic!(e),
+                        Ok(m) => {
+                            pool.spawn(handle_message(m, handler.clone(), handle.clone()))
+                                .err()
+                                .map(|e| eprintln!("RPC error: {:#?}", e));
+                        }
+                        Err(e) => {
+                            eprintln!("message handling error: {:#?}", e);
+                        }
                     }
-                })
-                .err()
-                .map(|e| eprintln!("RPC error: {:#?}", e));
-            }
-        })
-        .map_err(|_| "spawn error")?;
 
-        Ok(Self { handle })
+                }
+            })
+            .map_err(|_| "spawn error")?;
+
+        Ok(system)
     }
 
     pub fn handle(&self) -> RpcHandle<P, NP, R, T> {
         self.handle.clone()
     }
+}
+
+async fn handle_message<P, NP, R, T>(
+    m: rpc::Message<P, NP, R>,
+    handler: Arc<Option<Box<Handler<P, NP, R, T>>>>,
+    handle: RpcHandle<P, NP, R, T>,
+) where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+    T: IO,
+{
+    match m {
+        rpc::Message::Request { id, params } => {
+            let m = match handler.as_ref() {
+                Some(handler) => match handler.handle(handle.clone(), params).await {
+                    Ok(results) => rpc::Message::Response::<P, NP, R> {
+                        id,
+                        results: Some(results),
+                        error: None,
+                    },
+                    Err(error) => rpc::Message::Response::<P, NP, R> {
+                        id,
+                        results: None,
+                        error: Some(error),
+                    },
+                },
+                _ => rpc::Message::Response {
+                    id,
+                    results: None,
+                    error: Some(format!("no method handler")),
+                },
+            };
+
+            {
+                let mut sink = handle.sink.lock().await;
+                sink.send(m).await.unwrap();
+            }
+        }
+        rpc::Message::Response { id, error, results } => {
+            let req = {
+                let mut pr = handle.pr.lock().await;
+                pr.reqs.remove(&id)
+            };
+            if let Some(req) = req {
+                req.tx
+                    .send(rpc::Message::Response { id, error, results })
+                    .unwrap();
+            }
+        }
+        rpc::Message::Notification { .. } => unimplemented!(),
+    };
 }
 
 pub struct Codec<P, NP, R>
@@ -359,3 +373,4 @@ where
         self.reqs.get(&id).map(|req| req.method)
     }
 }
+

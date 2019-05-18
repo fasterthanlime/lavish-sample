@@ -25,6 +25,7 @@ fn main() {
         let listener = TcpListener::bind(&addr).unwrap();
         println!("[server] <> {}", addr);
         futures::future::join(client(pool.clone()), server(listener, pool.clone())).await;
+        println!("both futures completed");
     });
 }
 
@@ -49,6 +50,7 @@ impl Handler<proto::Params, proto::NotificationParams, proto::Results, TcpStream
                 )),
                 proto::Params::double_Print(params) => {
                     println!("[server] client says: {}", params.s);
+                    sleep::sleep_ms(250).await;
                     match h
                         .call(proto::Params::double_Print(proto::double::print::Params {
                             s: params.s.chars().rev().collect(),
@@ -105,6 +107,7 @@ impl Handler<proto::Params, proto::NotificationParams, proto::Results, TcpStream
             match params {
                 proto::Params::double_Print(params) => {
                     println!("[client] server says: {}", params.s);
+                    sleep::sleep_ms(250).await;
                     Ok(proto::Results::double_Print(
                         proto::double::print::Results {},
                     ))
