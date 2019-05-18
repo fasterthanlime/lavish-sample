@@ -10,10 +10,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use bytes::*;
-use futures::channel::oneshot;
+use futures::channel::{mpsc, oneshot};
 use futures::executor;
 use futures::prelude::*;
-use futures::stream::SplitSink;
 use futures_codec::{Decoder, Encoder, Framed};
 
 use futures::task::SpawnExt;
@@ -44,37 +43,34 @@ where
     }
 }
 
-pub trait Handler<P, NP, R, T>: Sync + Send
+pub trait Handler<P, NP, R>: Sync + Send
 where
     P: Atom,
     NP: Atom,
     R: Atom,
-    T: IO,
 {
     fn handle(
         &self,
-        h: RpcHandle<P, NP, R, T>,
+        h: RpcHandle<P, NP, R>,
         params: P,
     ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>>;
 }
 
-pub struct RpcHandle<P, NP, R, T>
+pub struct RpcHandle<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
-    T: IO,
 {
     pr: Arc<Mutex<PendingRequests<P, NP, R>>>,
-    sink: Arc<Mutex<SplitSink<Framed<T, Codec<P, NP, R>>, rpc::Message<P, NP, R>>>>,
+    sink: mpsc::Sender<rpc::Message<P, NP, R>>,
 }
 
-impl<P, NP, R, T> RpcHandle<P, NP, R, T>
+impl<P, NP, R> RpcHandle<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
-    T: IO,
 {
     fn clone(&self) -> Self {
         Self {
@@ -103,90 +99,88 @@ where
             pr.reqs.insert(id, req);
         }
 
-        {
-            let mut sink = self.sink.lock().await;
-            sink.send(m).await?;
-        }
-
+        self.sink.send(m).await?;
         Ok(rx.await?)
     }
 }
 
-pub struct RpcSystem<P, NP, R, T>
+pub struct RpcSystem<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
-    T: IO,
 {
-    handle: RpcHandle<P, NP, R, T>,
+    handle: RpcHandle<P, NP, R>,
 }
 
-impl<P, NP, R, T> RpcSystem<P, NP, R, T>
+impl<P, NP, R> RpcSystem<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
-    T: IO,
 {
-    pub fn new(
+    pub fn new<T: IO>(
         protocol: Protocol<P, NP, R>,
-        handler: Option<Box<Handler<P, NP, R, T>>>,
+        handler: Option<Box<Handler<P, NP, R>>>,
         io: T,
         mut pool: executor::ThreadPool,
-    ) -> Result<Self, Box<dyn std::error::Error + 'static>> {
+    ) -> Result<Self, Error> {
         let pr = Arc::new(Mutex::new(PendingRequests::new(protocol)));
 
         let codec = Codec { pr: pr.clone() };
         let framed = Framed::new(io, codec);
-        let (sink, mut stream) = framed.split();
+        let (mut sink, mut stream) = framed.split();
+        let (tx, mut rx) = mpsc::channel(128);
 
-        let handle = RpcHandle::<P, NP, R, T> {
+        let handle = RpcHandle::<P, NP, R> {
             pr: pr.clone(),
-            sink: Arc::new(Mutex::new(sink)),
+            sink: tx,
         };
 
         let system = Self {
             handle: handle.clone(),
         };
 
+        pool.clone().spawn(async move {
+            while let Some(m) = rx.next().await {
+                sink.send(m).await.unwrap();
+            }
+        })?;
+
         pool.clone()
             .spawn(async move {
                 let handler = Arc::new(handler);
 
                 while let Some(m) = stream.next().await {
-                    match m {
-                        Ok(m) => {
-                            pool.spawn(handle_message(m, handler.clone(), handle.clone()))
-                                .err()
-                                .map(|e| eprintln!("RPC error: {:#?}", e));
-                        }
+                    let res =
+                        m.map(|m| pool.spawn(handle_message(m, handler.clone(), handle.clone())));
+                    match res {
                         Err(e) => {
-                            eprintln!("message handling error: {:#?}", e);
+                            eprintln!("message stream error: {:#?}", e);
                         }
+                        _ => {}
                     }
 
                 }
             })
-            .map_err(|_| "spawn error")?;
+            .map_err(|e| Error::SpawnError(e))?;
 
         Ok(system)
     }
 
-    pub fn handle(&self) -> RpcHandle<P, NP, R, T> {
+    pub fn handle(&self) -> RpcHandle<P, NP, R> {
         self.handle.clone()
     }
 }
 
-async fn handle_message<P, NP, R, T>(
+async fn handle_message<P, NP, R>(
     m: rpc::Message<P, NP, R>,
-    handler: Arc<Option<Box<Handler<P, NP, R, T>>>>,
-    handle: RpcHandle<P, NP, R, T>,
+    handler: Arc<Option<Box<Handler<P, NP, R>>>>,
+    mut handle: RpcHandle<P, NP, R>,
 ) where
     P: Atom,
     NP: Atom,
     R: Atom,
-    T: IO,
 {
     match m {
         rpc::Message::Request { id, params } => {
@@ -210,17 +204,13 @@ async fn handle_message<P, NP, R, T>(
                 },
             };
 
-            {
-                let mut sink = handle.sink.lock().await;
-                sink.send(m).await.unwrap();
-            }
+            handle.sink.send(m).await.unwrap();
         }
         rpc::Message::Response { id, error, results } => {
-            let req = {
+            if let Some(req) = {
                 let mut pr = handle.pr.lock().await;
                 pr.reqs.remove(&id)
-            };
-            if let Some(req) = req {
+            } {
                 req.tx
                     .send(rpc::Message::Response { id, error, results })
                     .unwrap();
@@ -374,3 +364,22 @@ where
     }
 }
 
+#[derive(Debug)]
+pub enum Error {
+    SpawnError(futures::task::SpawnError),
+}
+
+use std::fmt;
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:#?}", self)
+    }
+}
+
+impl std::error::Error for Error {}
+
+impl From<futures::task::SpawnError> for Error {
+    fn from(e: futures::task::SpawnError) -> Self {
+        Error::SpawnError(e)
+    }
+}

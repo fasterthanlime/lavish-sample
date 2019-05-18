@@ -35,12 +35,10 @@ fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Resul
 
 struct ServerHandler {}
 
-impl Handler<proto::Params, proto::NotificationParams, proto::Results, TcpStream>
-    for ServerHandler
-{
+impl Handler<proto::Params, proto::NotificationParams, proto::Results> for ServerHandler {
     fn handle(
         &self,
-        mut h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results, TcpStream>,
+        mut h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
         params: proto::Params,
     ) -> Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + '_>> {
         Box::pin(async move {
@@ -95,12 +93,10 @@ async fn server(
 
 struct ClientHandler {}
 
-impl Handler<proto::Params, proto::NotificationParams, proto::Results, TcpStream>
-    for ClientHandler
-{
+impl Handler<proto::Params, proto::NotificationParams, proto::Results> for ClientHandler {
     fn handle(
         &self,
-        mut _h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results, TcpStream>,
+        mut _h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
         params: proto::Params,
     ) -> Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + '_>> {
         Box::pin(async move {
