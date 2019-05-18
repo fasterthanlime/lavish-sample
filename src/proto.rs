@@ -8,6 +8,7 @@
 use lavish_rpc::erased_serde;
 use lavish_rpc::serde_derive::*;
 
+#[allow(unused)]
 pub type Message = lavish_rpc::Message<Params, NotificationParams, Results>;
 
 #[derive(Serialize, Debug)]

@@ -44,6 +44,80 @@ where
     }
 }
 
+pub trait Handler<P, NP, R, T>: Sync + Send
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+    T: IO,
+{
+    fn handle(
+        &self,
+        h: RpcHandle<P, NP, R, T>,
+        params: P,
+    ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>>;
+}
+
+pub struct RpcHandle<P, NP, R, T>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+    T: IO,
+{
+    pr: Arc<Mutex<PendingRequests<P, NP, R>>>,
+    sink: Arc<Mutex<SplitSink<Framed<T, Codec<P, NP, R>>, rpc::Message<P, NP, R>>>>,
+}
+
+impl<P, NP, R, T> RpcHandle<P, NP, R, T>
+where
+    P: Atom,
+    NP: Atom,
+    R: Atom,
+    T: IO,
+{
+    fn clone(&self) -> Self {
+        Self {
+            pr: self.pr.clone(),
+            sink: self.sink.clone(),
+        }
+    }
+
+    pub async fn call(
+        &mut self,
+        params: P,
+    ) -> Result<rpc::Message<P, NP, R>, Box<dyn std::error::Error + 'static>> {
+        let id = {
+            println!("[rpc] ..locking pr for genid");
+            let mut pr = self.pr.lock().await;
+            pr.genid()
+        };
+        println!("[rpc] unlocking pr for genid");
+
+        let method = params.method();
+        let m = rpc::Message::Request { id, params };
+
+        let (tx, rx) = oneshot::channel::<rpc::Message<P, NP, R>>();
+        let req = PendingRequest { method, tx };
+
+        {
+            println!("[rpc] ..locking pr for insert");
+            let mut pr = self.pr.lock().await;
+            pr.reqs.insert(id, req);
+            println!("[rpc] unlocking pr for insert");
+        }
+
+        {
+            println!("[rpc] ..locking sink for insert");
+            let mut sink = self.sink.lock().await;
+            sink.send(m).await?;
+            println!("[rpc] unlocking sink for insert");
+        }
+
+        Ok(rx.await.unwrap())
+    }
+}
+
 pub struct RpcSystem<P, NP, R, T>
 where
     P: Atom,
@@ -51,17 +125,7 @@ where
     R: Atom,
     T: IO,
 {
-    pub id: u32,
-    pr: Arc<Mutex<PendingRequests<P, NP, R>>>,
-    pub sink: Arc<Mutex<SplitSink<Framed<T, Codec<P, NP, R>>, rpc::Message<P, NP, R>>>>,
-}
-
-pub trait Handler<P, R>: Sync + Send
-where
-    P: Atom,
-    R: Atom,
-{
-    fn handle(&self, params: P) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>>;
+    handle: RpcHandle<P, NP, R, T>,
 }
 
 impl<P, NP, R, T> RpcSystem<P, NP, R, T>
@@ -73,97 +137,92 @@ where
 {
     pub fn new(
         protocol: Protocol<P, NP, R>,
-        handler: Option<Box<Handler<P, R>>>,
+        handler: Option<Box<Handler<P, NP, R, T>>>,
         io: T,
         mut pool: executor::ThreadPool,
-    ) -> Result<Self, Box<dyn std::error::Error + 'static>>
-    where
-        T: AsyncRead + AsyncWrite + Sized,
-    {
+    ) -> Result<Self, Box<dyn std::error::Error + 'static>> {
         let pr = Arc::new(Mutex::new(PendingRequests::new(protocol)));
 
         let codec = Codec { pr: pr.clone() };
         let framed = Framed::new(io, codec);
         let (sink, mut stream) = framed.split();
 
-        let sink = Arc::new(Mutex::new(sink));
-
-        let loop_pr = pr.clone();
-        let loop_sink = sink.clone();
+        let handle = RpcHandle::<P, NP, R, T> {
+            pr: pr.clone(),
+            sink: Arc::new(Mutex::new(sink)),
+        };
+        let lh = handle.clone();
+        let lpool = pool.clone();
 
         pool.spawn(async move {
+            let href = Arc::new(handler);
+
             while let Some(m) = stream.next().await {
-                match m {
-                    Ok(m) => match m {
-                        rpc::Message::Request { id, params } => {
-                            let mut sink = loop_sink.lock().await;
-                            let m = match handler.as_ref() {
-                                Some(handler) => match handler.handle(params).await {
-                                    Ok(results) => rpc::Message::Response::<P, NP, R> {
-                                        id,
-                                        results: Some(results),
-                                        error: None,
+                let lh = lh.clone();
+                let mut pool = lpool.clone();
+                let href = href.clone();
+
+                pool.spawn(async move {
+                    match m {
+                        Ok(m) => match m {
+                            rpc::Message::Request { id, params } => {
+                                println!("[rpc] received request");
+                                let m = match href.as_ref() {
+                                    Some(handler) => match handler.handle(lh.clone(), params).await
+                                    {
+                                        Ok(results) => rpc::Message::Response::<P, NP, R> {
+                                            id,
+                                            results: Some(results),
+                                            error: None,
+                                        },
+                                        Err(error) => rpc::Message::Response::<P, NP, R> {
+                                            id,
+                                            results: None,
+                                            error: Some(error),
+                                        },
                                     },
-                                    Err(error) => rpc::Message::Response::<P, NP, R> {
+                                    _ => rpc::Message::Response {
                                         id,
                                         results: None,
-                                        error: Some(error),
+                                        error: Some(format!("no method handler")),
                                     },
-                                },
-                                _ => rpc::Message::Response {
-                                    id,
-                                    results: None,
-                                    error: Some(format!("no method handler")),
-                                },
-                            };
-                            sink.send(m).await.unwrap();
-                        }
-                        rpc::Message::Response { id, error, results } => {
-                            let req = {
-                                let mut pr = loop_pr.lock().await;
-                                pr.reqs.remove(&id)
-                            };
-                            if let Some(req) = req {
-                                req.tx
-                                    .send(rpc::Message::Response { id, error, results })
-                                    .unwrap();
+                                };
+
+                                {
+                                    println!("[rpc] ..locking sink for handler response send");
+                                    let mut sink = lh.sink.lock().await;
+                                    sink.send(m).await.unwrap();
+                                    println!("[rpc] unlocking sink for handler response send");
+                                }
                             }
-                        }
-                        rpc::Message::Notification { .. } => unimplemented!(),
-                    },
-                    Err(e) => panic!(e),
-                }
+                            rpc::Message::Response { id, error, results } => {
+                                println!("[rpc] received response");
+                                let req = {
+                                    let mut pr = lh.pr.lock().await;
+                                    pr.reqs.remove(&id)
+                                };
+                                if let Some(req) = req {
+                                    req.tx
+                                        .send(rpc::Message::Response { id, error, results })
+                                        .unwrap();
+                                }
+                            }
+                            rpc::Message::Notification { .. } => unimplemented!(),
+                        },
+                        Err(e) => panic!(e),
+                    }
+                })
+                .err()
+                .map(|e| eprintln!("RPC error: {:#?}", e));
             }
         })
         .map_err(|_| "spawn error")?;
 
-        Ok(Self { sink, pr, id: 0 })
+        Ok(Self { handle })
     }
 
-    pub async fn call(
-        &mut self,
-        params: P,
-    ) -> Result<rpc::Message<P, NP, R>, Box<dyn std::error::Error + 'static>> {
-        let id = self.id;
-        self.id += 1;
-
-        let method = params.method();
-        let m = rpc::Message::Request { id, params };
-
-        let (tx, rx) = oneshot::channel::<rpc::Message<P, NP, R>>();
-        let req = PendingRequest { method, tx };
-
-        {
-            let mut pr = self.pr.lock().await;
-            pr.reqs.insert(id, req);
-        }
-
-        {
-            let mut sink = self.sink.lock().await;
-            sink.send(m).await?;
-        }
-
-        Ok(rx.await.unwrap())
+    pub fn handle(&self) -> RpcHandle<P, NP, R, T> {
+        self.handle.clone()
     }
 }
 
@@ -279,6 +338,7 @@ where
     NP: Atom,
     R: Atom,
 {
+    id: u32,
     reqs: HashMap<u32, PendingRequest<P, NP, R>>,
 }
 
@@ -290,8 +350,15 @@ where
 {
     fn new(_protocol: Protocol<P, NP, R>) -> Self {
         Self {
+            id: 0,
             reqs: HashMap::new(),
         }
+    }
+
+    fn genid(&mut self) -> u32 {
+        let res = self.id;
+        self.id += 1;
+        res
     }
 }
 

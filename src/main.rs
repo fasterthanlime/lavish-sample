@@ -10,9 +10,7 @@ mod proto;
 pub mod sleep;
 mod support;
 
-use support::{Handler, Protocol, RpcSystem};
-
-use sleep::*;
+use support::{Handler, Protocol, RpcHandle, RpcSystem};
 
 static ADDR: &'static str = "127.0.0.1:9596";
 
@@ -34,9 +32,12 @@ fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Resul
 
 struct ServerHandler {}
 
-impl Handler<proto::Params, proto::Results> for ServerHandler {
+impl Handler<proto::Params, proto::NotificationParams, proto::Results, TcpStream>
+    for ServerHandler
+{
     fn handle(
         &self,
+        mut h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results, TcpStream>,
         params: proto::Params,
     ) -> Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + '_>> {
         Box::pin(async move {
@@ -46,6 +47,18 @@ impl Handler<proto::Params, proto::Results> for ServerHandler {
                 )),
                 proto::Params::double_Print(params) => {
                     println!("[server] client says: {}", params.s);
+                    println!("[server] calling double.Print on client...");
+
+                    match h
+                        .call(proto::Params::double_Print(proto::double::print::Params {
+                            s: format!("received {}", params.s),
+                        }))
+                        .await
+                    {
+                        Ok(r) => println!("[server] client replied: {:#?}", r),
+                        Err(e) => eprintln!("[server] client errored: {:#?}", e),
+                    };
+
                     Ok(proto::Results::double_Print(
                         proto::double::print::Results {},
                     ))
@@ -68,8 +81,12 @@ async fn server(
 
         conn.set_nodelay(true)?;
 
-        let handler = Box::new(ServerHandler {});
-        RpcSystem::new(protocol(), Some(handler), conn, pool.clone())?;
+        RpcSystem::new(
+            protocol(),
+            Some(Box::new(ServerHandler {})),
+            conn,
+            pool.clone(),
+        )?;
     }
     Ok(())
 }
@@ -82,10 +99,11 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     conn.set_nodelay(true)?;
 
-    let mut rpc_system = RpcSystem::new(protocol(), None, conn, pool.clone())?;
+    let rpc_system = RpcSystem::new(protocol(), None, conn, pool.clone())?;
+    let mut handle = rpc_system.handle();
 
     for line in &sample_lines() {
-        rpc_system
+        handle
             .call(proto::Params::double_Print(proto::double::print::Params {
                 s: line.clone(),
             }))
