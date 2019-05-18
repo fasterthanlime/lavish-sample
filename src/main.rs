@@ -35,12 +35,19 @@ fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Resul
 
 struct ServerHandler {}
 
-impl Handler<proto::Params, proto::NotificationParams, proto::Results> for ServerHandler {
+impl
+    Handler<
+        proto::Params,
+        proto::NotificationParams,
+        proto::Results,
+        Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>>,
+    > for ServerHandler
+{
     fn handle(
         &self,
         mut h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
         params: proto::Params,
-    ) -> Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + '_>> {
+    ) -> Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>> {
         Box::pin(async move {
             match params {
                 proto::Params::double_Double(params) => Ok(proto::Results::double_Double(
@@ -84,29 +91,6 @@ async fn server(
         RpcSystem::new(protocol(), Some(ServerHandler {}), conn, pool.clone())?;
     }
     Ok(())
-}
-
-struct ClientHandler {}
-
-impl Handler<proto::Params, proto::NotificationParams, proto::Results> for ClientHandler {
-    fn handle(
-        &self,
-        mut _h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
-        params: proto::Params,
-    ) -> Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + '_>> {
-        Box::pin(async move {
-            match params {
-                proto::Params::double_Print(params) => {
-                    println!("[client] server says: {}", params.s);
-                    sleep::sleep_ms(250).await;
-                    Ok(proto::Results::double_Print(
-                        proto::double::print::Results {},
-                    ))
-                }
-                _ => Err(format!("method unimplemented {}", params.method())),
-            }
-        })
-    }
 }
 
 async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Error + 'static>> {

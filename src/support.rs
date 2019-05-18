@@ -3,7 +3,6 @@ use rpc::Atom;
 use serde::Serialize;
 use std::io::Cursor;
 use std::marker::{PhantomData, Unpin};
-use std::pin::Pin;
 
 use futures::lock::Mutex;
 use std::collections::HashMap;
@@ -43,20 +42,17 @@ where
     }
 }
 
-pub trait Handler<P, NP, R>: Sync + Send
+pub trait Handler<P, NP, R, FT>: Sync + Send
 where
     P: Atom,
     NP: Atom,
     R: Atom,
+    FT: Future<Output = Result<R, String>> + Send + 'static,
 {
-    fn handle(
-        &self,
-        h: RpcHandle<P, NP, R>,
-        params: P,
-    ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>>;
+    fn handle(&self, h: RpcHandle<P, NP, R>, params: P) -> FT;
 }
 
-impl<P, NP, R, F, FT> Handler<P, NP, R> for F
+impl<P, NP, R, F, FT> Handler<P, NP, R, FT> for F
 where
     P: Atom,
     R: Atom,
@@ -64,12 +60,8 @@ where
     F: (Fn(RpcHandle<P, NP, R>, P) -> FT) + Send + Sync,
     FT: Future<Output = Result<R, String>> + Send + 'static,
 {
-    fn handle(
-        &self,
-        h: RpcHandle<P, NP, R>,
-        params: P,
-    ) -> Pin<Box<dyn Future<Output = Result<R, String>> + Send + '_>> {
-        Box::pin(async move { self(h, params).await })
+    fn handle(&self, h: RpcHandle<P, NP, R>, params: P) -> FT {
+        self(h, params)
     }
 }
 
@@ -137,7 +129,7 @@ where
     NP: Atom,
     R: Atom,
 {
-    pub fn new<T, H>(
+    pub fn new<T, H, FT>(
         protocol: Protocol<P, NP, R>,
         handler: Option<H>,
         io: T,
@@ -145,7 +137,8 @@ where
     ) -> Result<Self, Error>
     where
         T: IO,
-        H: Handler<P, NP, R> + 'static,
+        H: Handler<P, NP, R, FT> + 'static,
+        FT: Future<Output = Result<R, String>> + Send + 'static,
     {
         let pr = Arc::new(Mutex::new(PendingRequests::new(protocol)));
 
@@ -195,7 +188,7 @@ where
     }
 }
 
-async fn handle_message<P, NP, R, H>(
+async fn handle_message<P, NP, R, H, FT>(
     m: rpc::Message<P, NP, R>,
     handler: Arc<Option<H>>,
     mut handle: RpcHandle<P, NP, R>,
@@ -203,7 +196,8 @@ async fn handle_message<P, NP, R, H>(
     P: Atom,
     NP: Atom,
     R: Atom,
-    H: Handler<P, NP, R>,
+    H: Handler<P, NP, R, FT>,
+    FT: Future<Output = Result<R, String>> + Send + 'static,
 {
     match m {
         rpc::Message::Request { id, params } => {
