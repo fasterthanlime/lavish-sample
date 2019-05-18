@@ -53,6 +53,19 @@ where
 {
     pub id: u32,
     pr: Arc<Mutex<PendingRequests<P, NP, R>>>,
+    handlers: Arc<
+        Mutex<
+            HashMap<
+                &'static str,
+                &'static (Fn(
+                    P,
+                )
+                    -> Box<dyn Future<Output = Result<R, String>> + Unpin + Sync + Send>
+                              + Sync
+                              + Send),
+            >,
+        >,
+    >,
     pub sink: Arc<Mutex<SplitSink<Framed<T, Codec<P, NP, R>>, rpc::Message<P, NP, R>>>>,
 }
 
@@ -79,8 +92,17 @@ where
 
         let sink = Arc::new(Mutex::new(sink));
 
+        let handlers: HashMap<
+            &'static str,
+            &'static (Fn(P) -> Box<dyn Future<Output = Result<R, String>> + Unpin + Sync + Send>
+                          + Sync
+                          + Send),
+        > = HashMap::new();
+        let handlers = Arc::new(Mutex::new(handlers));
+
         let loop_pr = pr.clone();
         let loop_sink = sink.clone();
+        let loop_handlers = handlers.clone();
 
         pool.spawn(async move {
             while let Some(m) = stream.next().await {
@@ -91,13 +113,34 @@ where
 
                             {
                                 let mut sink = loop_sink.lock().await;
-                                sink.send(rpc::Message::Response::<P, NP, R> {
-                                    id,
-                                    error: Some("just testing".into()),
-                                    results: None,
-                                })
-                                .await
-                                .unwrap();
+                                let handlers = loop_handlers.lock().await;
+                                match handlers.get(params.method()) {
+                                    Some(handler) => {
+                                        let m = match handler(params).await {
+                                            Ok(results) => rpc::Message::Response::<P, NP, R> {
+                                                id,
+                                                results: Some(results),
+                                                error: None,
+                                            },
+                                            Err(error) => rpc::Message::Response::<P, NP, R> {
+                                                id,
+                                                results: None,
+                                                error: Some(error),
+                                            },
+                                        };
+                                        sink.send(m).await.unwrap();
+                                    }
+                                    None => {
+                                        sink.send(rpc::Message::Response::<P, NP, R> {
+                                            id,
+                                            error: Some(format!("")),
+                                            results: None,
+                                        })
+                                        .await
+                                        .unwrap();
+                                    }
+                                }
+
                                 println!("[rpc] sent response!");
                             }
                         }
@@ -127,7 +170,12 @@ where
         })
         .map_err(|_| "spawn error")?;
 
-        Ok(Self { sink, pr, id: 0 })
+        Ok(Self {
+            sink,
+            pr,
+            id: 0,
+            handlers,
+        })
     }
 
     pub async fn call(
