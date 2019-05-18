@@ -35,19 +35,16 @@ fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Resul
 
 struct ServerHandler {}
 
-impl
-    Handler<
-        proto::Params,
-        proto::NotificationParams,
-        proto::Results,
-        Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>>,
-    > for ServerHandler
+type HandlerRet = Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>>;
+
+impl Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
+    for ServerHandler
 {
     fn handle(
         &self,
         mut h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
         params: proto::Params,
-    ) -> Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>> {
+    ) -> HandlerRet {
         Box::pin(async move {
             match params {
                 proto::Params::double_Double(params) => Ok(proto::Results::double_Double(
