@@ -36,7 +36,7 @@ fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Resul
 type HandlerRet = Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>>;
 
 struct PluggableHandler {
-    on_double_Print: Option<
+    double_print: Option<
         &'static (Fn(
             RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
             proto::double::print::Params,
@@ -48,17 +48,23 @@ struct PluggableHandler {
     >,
 }
 
+impl PluggableHandler {
+    fn new() -> Self {
+        Self { double_print: None }
+    }
+}
+
 impl Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
     for PluggableHandler
 {
     fn handle(
         &self,
-        mut h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
+        h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
         params: proto::Params,
     ) -> HandlerRet {
         let method = params.method();
         match params {
-            proto::Params::double_Print(params) => match self.on_double_Print {
+            proto::Params::double_Print(params) => match self.double_print {
                 Some(hm) => {
                     Box::pin(async move { Ok(proto::Results::double_Print(hm(h, params).await?)) })
                 }
@@ -132,25 +138,35 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     conn.set_nodelay(true)?;
 
-    let rpc_system = RpcSystem::new(
-        protocol(),
-        Some(|_h, params| {
-            Box::pin(async move {
-                match params {
-                    proto::Params::double_Print(params) => {
-                        println!("[client] server says: {}", params.s);
-                        sleep::sleep_ms(250).await;
-                        Ok(proto::Results::double_Print(
-                            proto::double::print::Results {},
-                        ))
-                    }
-                    _ => Err(format!("method unimplemented {}", params.method())),
-                }
-            })
-        }),
-        conn,
-        pool.clone(),
-    )?;
+    // let rpc_system = RpcSystem::new(
+    //     protocol(),
+    //     Some(|_h, params| {
+    //         Box::pin(async move {
+    //             match params {
+    //                 proto::Params::double_Print(params) => {
+    //                     println!("[client] server says: {}", params.s);
+    //                     sleep::sleep_ms(250).await;
+    //                     Ok(proto::Results::double_Print(
+    //                         proto::double::print::Results {},
+    //                     ))
+    //                 }
+    //                 _ => Err(format!("method unimplemented {}", params.method())),
+    //             }
+    //         })
+    //     }),
+    //     conn,
+    //     pool.clone(),
+    // )?;
+
+    let mut ph = PluggableHandler::new();
+    ph.double_print = Some(&|_h, params| {
+        Box::pin(async move {
+            println!("[client] server says: {}", params.s);
+            Ok(proto::double::print::Results {})
+        })
+    });
+
+    let rpc_system = RpcSystem::new(protocol(), Some(ph), conn, pool.clone())?;
     let mut handle = rpc_system.handle();
 
     for line in &sample_lines() {
