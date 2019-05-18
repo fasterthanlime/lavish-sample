@@ -12,12 +12,10 @@ use bytes::*;
 use futures::channel::oneshot;
 use futures::executor;
 use futures::prelude::*;
-use futures::stream::{SplitSink, SplitStream};
+use futures::stream::SplitSink;
 use futures_codec::{Decoder, Encoder, Framed};
 
 use futures::task::SpawnExt;
-
-use super::sleep::*;
 
 pub trait IO: AsyncRead + AsyncWrite + Send + Sized + Unpin + 'static {}
 impl<T> IO for T where T: AsyncRead + AsyncWrite + Send + Sized + Unpin + 'static {}
@@ -77,7 +75,7 @@ where
 
         let codec = Codec { pr: pr.clone() };
         let framed = Framed::new(io, codec);
-        let (mut sink, mut stream) = framed.split();
+        let (sink, mut stream) = framed.split();
 
         let sink = Arc::new(Mutex::new(sink));
 
@@ -120,7 +118,7 @@ where
                             }
                         }
                         rpc::Message::Notification { params } => {
-                            println!("[rpc] it's a params");
+                            println!("[rpc] it's a notification! params = {:#?}", params);
                         }
                     },
                     Err(e) => panic!(e),
