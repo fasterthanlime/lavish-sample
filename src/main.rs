@@ -111,7 +111,9 @@ async fn server(
 
         conn.set_nodelay(true)?;
 
-        // let val = std::sync::Mutex::new(0u8);
+        use std::sync::Mutex;
+        let rval = Box::leak(Box::new(Mutex::new(0u8)));
+        let rval = &*rval;
 
         let mut ph = PluggableHandler::new();
         ph.on_double_print(async move |mut h, params| {
@@ -126,11 +128,11 @@ async fn server(
                 Err(e) => eprintln!("[server] client errored: {:#?}", e),
             };
 
-            // {
-            //     let mut val = val.lock().unwrap();
-            //     *val += 1;
-            //     println!("val = {}", *val);
-            // }
+            {
+                let mut val = rval.lock().unwrap();
+                *val += 1;
+                println!("val = {}", *val);
+            }
 
             Ok(proto::double::print::Results {})
         });
