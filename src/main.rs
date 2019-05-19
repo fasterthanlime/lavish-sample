@@ -113,8 +113,6 @@ where
     }
 }
 
-use std::sync::Mutex;
-
 async fn server(
     mut listener: TcpListener,
     pool: executor::ThreadPool,
@@ -135,7 +133,7 @@ async fn server(
         let ss = ServerState {
             total_characters: 0,
         };
-        let mut ph = PluggableHandler::new(Mutex::new(ss));
+        let mut ph = PluggableHandler::new(futures::lock::Mutex::new(ss));
         ph.on_double_print(async move |ss, mut h, params| {
             println!("[server] client says: {}", params.s);
             match h
@@ -149,7 +147,7 @@ async fn server(
             };
 
             {
-                let mut ss = ss.lock().unwrap();
+                let mut ss = ss.lock().await;
                 ss.total_characters += params.s.len();
                 println!("[server] total characters = {}", ss.total_characters);
             }
