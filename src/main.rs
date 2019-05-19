@@ -4,6 +4,8 @@ use futures::executor;
 use futures::prelude::*;
 use std::pin::Pin;
 
+use std::sync::Arc;
+
 use romio::tcp::{TcpListener, TcpStream};
 
 mod proto;
@@ -35,10 +37,12 @@ fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Resul
 
 type HandlerRet = Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>>;
 
-struct PluggableHandler<'a> {
+struct PluggableHandler<'a, T> {
+    state: Arc<T>,
     double_print: Option<
         Box<
             (Fn(
+                    Arc<T>,
                     RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
                     proto::double::print::Params,
                 ) -> (Pin<
@@ -54,10 +58,14 @@ struct PluggableHandler<'a> {
     >,
 }
 
-impl<'a> PluggableHandler<'a> {
+impl<'a, T> PluggableHandler<'a, T>
+where
+    T: Send + Sync,
+{
     fn on_double_print<F, FT>(&mut self, f: F)
     where
         F: Fn(
+                Arc<T>,
                 RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
                 proto::double::print::Params,
             ) -> FT
@@ -66,18 +74,25 @@ impl<'a> PluggableHandler<'a> {
             + 'a,
         FT: Future<Output = Result<proto::double::print::Results, String>> + Send + 'static,
     {
-        self.double_print = Some(Box::new(move |h, params| Box::pin(f(h, params))))
+        self.double_print = Some(Box::new(move |state, h, params| {
+            Box::pin(f(state, h, params))
+        }))
     }
 }
 
-impl<'a> PluggableHandler<'a> {
-    fn new() -> Self {
-        Self { double_print: None }
+impl<'a, T> PluggableHandler<'a, T> {
+    fn new(state: T) -> Self {
+        Self {
+            state: Arc::new(state),
+            double_print: None,
+        }
     }
 }
 
-impl<'a> Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
-    for PluggableHandler<'a>
+impl<'a, T> Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
+    for PluggableHandler<'a, T>
+where
+    T: Send + Sync,
 {
     fn handle(
         &self,
@@ -88,7 +103,7 @@ impl<'a> Handler<proto::Params, proto::NotificationParams, proto::Results, Handl
         match params {
             proto::Params::double_Print(params) => match self.double_print.as_ref() {
                 Some(hm) => {
-                    let res = hm(h, params);
+                    let res = hm(self.state.clone(), h, params);
                     Box::pin(async move { Ok(proto::Results::double_Print(res.await?)) })
                 }
                 None => Box::pin(async move { Err(format!("no handler for {}", method)) }),
@@ -99,19 +114,6 @@ impl<'a> Handler<proto::Params, proto::NotificationParams, proto::Results, Handl
 }
 
 use std::sync::Mutex;
-
-struct ServerState {
-    val: Mutex<u8>,
-}
-
-use lazy_static::*;
-lazy_static! {
-    static ref SERVER_STATE: ServerState = {
-        ServerState {
-            val: Mutex::new(0u8),
-        }
-    };
-}
 
 async fn server(
     mut listener: TcpListener,
@@ -126,8 +128,15 @@ async fn server(
 
         conn.set_nodelay(true)?;
 
-        let mut ph = PluggableHandler::new();
-        ph.on_double_print(async move |mut h, params| {
+        struct ServerState {
+            total_characters: usize,
+        }
+
+        let ss = ServerState {
+            total_characters: 0,
+        };
+        let mut ph = PluggableHandler::new(Mutex::new(ss));
+        ph.on_double_print(async move |ss, mut h, params| {
             println!("[server] client says: {}", params.s);
             match h
                 .call(proto::Params::double_Print(proto::double::print::Params {
@@ -140,9 +149,9 @@ async fn server(
             };
 
             {
-                let mut val = SERVER_STATE.val.lock().unwrap();
-                *val += 1;
-                println!("val = {}", *val);
+                let mut ss = ss.lock().unwrap();
+                ss.total_characters += params.s.len();
+                println!("[server] total characters = {}", ss.total_characters);
             }
 
             Ok(proto::double::print::Results {})
@@ -161,8 +170,8 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     conn.set_nodelay(true)?;
 
-    let mut ph = PluggableHandler::new();
-    ph.on_double_print(async move |_h, params| {
+    let mut ph = PluggableHandler::new(());
+    ph.on_double_print(async move |_state, _h, params| {
         println!("[client] server says: {}", params.s);
         Ok(proto::double::print::Results {})
     });
