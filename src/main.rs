@@ -100,43 +100,6 @@ where
     }
 }
 
-struct ServerHandler {}
-
-impl Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
-    for ServerHandler
-{
-    fn handle(
-        &self,
-        mut h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
-        params: proto::Params,
-    ) -> HandlerRet {
-        Box::pin(async move {
-            match params {
-                proto::Params::double_Double(params) => Ok(proto::Results::double_Double(
-                    proto::double::double::Results { x: params.x * 2 },
-                )),
-                proto::Params::double_Print(params) => {
-                    println!("[server] client says: {}", params.s);
-                    sleep::sleep_ms(250).await;
-                    match h
-                        .call(proto::Params::double_Print(proto::double::print::Params {
-                            s: params.s.chars().rev().collect(),
-                        }))
-                        .await
-                    {
-                        Ok(_) => {}
-                        Err(e) => eprintln!("[server] client errored: {:#?}", e),
-                    };
-
-                    Ok(proto::Results::double_Print(
-                        proto::double::print::Results {},
-                    ))
-                }
-            }
-        })
-    }
-}
-
 async fn server(
     mut listener: TcpListener,
     pool: executor::ThreadPool,
@@ -150,7 +113,24 @@ async fn server(
 
         conn.set_nodelay(true)?;
 
-        RpcSystem::new(protocol(), Some(ServerHandler {}), conn, pool.clone())?;
+        let mut ph = PluggableHandler::new();
+        ph.on_double_print(async move |mut h, params| {
+            println!("[server] client says: {}", params.s);
+            sleep::sleep_ms(250).await;
+            match h
+                .call(proto::Params::double_Print(proto::double::print::Params {
+                    s: params.s.chars().rev().collect(),
+                }))
+                .await
+            {
+                Ok(_) => {}
+                Err(e) => eprintln!("[server] client errored: {:#?}", e),
+            };
+
+            Ok(proto::double::print::Results {})
+        });
+
+        RpcSystem::new(protocol(), Some(ph), conn, pool.clone())?;
     }
     Ok(())
 }
