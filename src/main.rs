@@ -78,8 +78,6 @@ impl<'a> PluggableHandler<'a> {
 
 impl<'a> Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
     for PluggableHandler<'a>
-where
-    'a: 'static,
 {
     fn handle(
         &self,
@@ -116,7 +114,6 @@ async fn server(
         let mut ph = PluggableHandler::new();
         ph.on_double_print(async move |mut h, params| {
             println!("[server] client says: {}", params.s);
-            sleep::sleep_ms(250).await;
             match h
                 .call(proto::Params::double_Print(proto::double::print::Params {
                     s: params.s.chars().rev().collect(),
