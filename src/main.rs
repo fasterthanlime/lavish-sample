@@ -98,6 +98,21 @@ impl<'a> Handler<proto::Params, proto::NotificationParams, proto::Results, Handl
     }
 }
 
+use std::sync::Mutex;
+
+struct ServerState {
+    val: Mutex<u8>,
+}
+
+use lazy_static::*;
+lazy_static! {
+    static ref SERVER_STATE: ServerState = {
+        ServerState {
+            val: Mutex::new(0u8),
+        }
+    };
+}
+
 async fn server(
     mut listener: TcpListener,
     pool: executor::ThreadPool,
@@ -110,10 +125,6 @@ async fn server(
         println!("[server] <- {}", addr);
 
         conn.set_nodelay(true)?;
-
-        use std::sync::Mutex;
-        let rval = Box::leak(Box::new(Mutex::new(0u8)));
-        let rval = &*rval;
 
         let mut ph = PluggableHandler::new();
         ph.on_double_print(async move |mut h, params| {
@@ -129,7 +140,7 @@ async fn server(
             };
 
             {
-                let mut val = rval.lock().unwrap();
+                let mut val = SERVER_STATE.val.lock().unwrap();
                 *val += 1;
                 println!("val = {}", *val);
             }

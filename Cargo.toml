@@ -13,3 +13,4 @@ futures_codec = "0.2.2"
 romio = "0.3.0-alpha.8"
 async-timer = { version = "0.2.3", features = ["romio_on"] }
 bytes = "0.4.12"
+lazy_static = "1.3.0"
