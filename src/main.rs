@@ -35,27 +35,51 @@ fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Resul
 
 type HandlerRet = Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>>;
 
-struct PluggableHandler {
+struct PluggableHandler<'a> {
     double_print: Option<
-        &'static (Fn(
-            RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
-            proto::double::print::Params,
-        ) -> Pin<
-            Box<
-                dyn Future<Output = Result<proto::double::print::Results, String>> + Send + 'static,
-            >,
-        > + Sync),
+        Box<
+            (Fn(
+                    RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
+                    proto::double::print::Params,
+                ) -> (Pin<
+                    Box<
+                        Future<Output = Result<proto::double::print::Results, String>>
+                            + Send
+                            + 'static,
+                    >,
+                >)) + Sync
+                + Send
+                + 'a,
+        >,
     >,
 }
 
-impl PluggableHandler {
+impl<'a> PluggableHandler<'a> {
+    fn on_double_print<F, FT>(&mut self, f: F)
+    where
+        F: Fn(
+                RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
+                proto::double::print::Params,
+            ) -> FT
+            + Sync
+            + Send
+            + 'a,
+        FT: Future<Output = Result<proto::double::print::Results, String>> + Send + 'static,
+    {
+        self.double_print = Some(Box::new(move |h, params| Box::pin(f(h, params))))
+    }
+}
+
+impl<'a> PluggableHandler<'a> {
     fn new() -> Self {
         Self { double_print: None }
     }
 }
 
-impl Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
-    for PluggableHandler
+impl<'a> Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
+    for PluggableHandler<'a>
+where
+    'a: 'static,
 {
     fn handle(
         &self,
@@ -64,9 +88,10 @@ impl Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRe
     ) -> HandlerRet {
         let method = params.method();
         match params {
-            proto::Params::double_Print(params) => match self.double_print {
+            proto::Params::double_Print(params) => match self.double_print.as_ref() {
                 Some(hm) => {
-                    Box::pin(async move { Ok(proto::Results::double_Print(hm(h, params).await?)) })
+                    let res = hm(h, params);
+                    Box::pin(async move { Ok(proto::Results::double_Print(res.await?)) })
                 }
                 None => Box::pin(async move { Err(format!("no handler for {}", method)) }),
             },
@@ -138,32 +163,10 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     conn.set_nodelay(true)?;
 
-    // let rpc_system = RpcSystem::new(
-    //     protocol(),
-    //     Some(|_h, params| {
-    //         Box::pin(async move {
-    //             match params {
-    //                 proto::Params::double_Print(params) => {
-    //                     println!("[client] server says: {}", params.s);
-    //                     sleep::sleep_ms(250).await;
-    //                     Ok(proto::Results::double_Print(
-    //                         proto::double::print::Results {},
-    //                     ))
-    //                 }
-    //                 _ => Err(format!("method unimplemented {}", params.method())),
-    //             }
-    //         })
-    //     }),
-    //     conn,
-    //     pool.clone(),
-    // )?;
-
     let mut ph = PluggableHandler::new();
-    ph.double_print = Some(&|_h, params| {
-        Box::pin(async move {
-            println!("[client] server says: {}", params.s);
-            Ok(proto::double::print::Results {})
-        })
+    ph.on_double_print(async move |_h, params| {
+        println!("[client] server says: {}", params.s);
+        Ok(proto::double::print::Results {})
     });
 
     let rpc_system = RpcSystem::new(protocol(), Some(ph), conn, pool.clone())?;
