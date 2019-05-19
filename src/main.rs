@@ -111,6 +111,8 @@ async fn server(
 
         conn.set_nodelay(true)?;
 
+        // let val = std::sync::Mutex::new(0u8);
+
         let mut ph = PluggableHandler::new();
         ph.on_double_print(async move |mut h, params| {
             println!("[server] client says: {}", params.s);
@@ -123,6 +125,12 @@ async fn server(
                 Ok(_) => {}
                 Err(e) => eprintln!("[server] client errored: {:#?}", e),
             };
+
+            // {
+            //     let mut val = val.lock().unwrap();
+            //     *val += 1;
+            //     println!("val = {}", *val);
+            // }
 
             Ok(proto::double::print::Results {})
         });
