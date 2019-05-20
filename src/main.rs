@@ -10,11 +10,8 @@ use romio::tcp::{TcpListener, TcpStream};
 
 mod proto;
 pub mod sleep;
-mod support;
 
-use lavish_rpc::Atom;
-
-use support::{Handle, Handler, Protocol, System};
+use lavish_rpc::{Atom, Handle, Handler, Protocol, System};
 
 static ADDR: &'static str = "127.0.0.1:9596";
 
