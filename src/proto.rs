@@ -118,24 +118,6 @@ impl lavish_rpc::Atom for NotificationParams {
 
 pub mod __proto {
     pub use super::{Handle, Message, NotificationParams, Params, Results};
-
-    #[derive(Debug)]
-    pub enum ProtocolError {
-        WrongResults,
-        MissingResults,
-        WrongMessageType,
-        RemoteError(String),
-        TransportError(String),
-    }
-
-    use std::fmt;
-    impl fmt::Display for ProtocolError {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "{:#?}", self)
-        }
-    }
-
-    impl std::error::Error for ProtocolError {}
 }
 
 pub mod double {
@@ -143,31 +125,12 @@ pub mod double {
         use super::super::__proto as proto;
         use lavish_rpc::serde_derive::*;
 
-        pub async fn call(
-            h: &mut proto::Handle,
-            s: String,
-        ) -> Result<Results, proto::ProtocolError> {
-            use proto::ProtocolError;
-
-            let res = h.call(proto::Params::double_Print(Params { s })).await;
-            match res {
-                Ok(m) => match m {
-                    lavish_rpc::Message::Response { results, error, .. } => {
-                        if let Some(error) = error {
-                            Err(ProtocolError::RemoteError(error))
-                        } else if let Some(results) = results {
-                            match results {
-                                proto::Results::double_Print(results) => Ok(results),
-                                _ => Err(ProtocolError::WrongResults),
-                            }
-                        } else {
-                            Err(ProtocolError::MissingResults)
-                        }
-                    }
-                    _ => Err(ProtocolError::WrongMessageType),
-                },
-                Err(msg) => Err(ProtocolError::TransportError(format!("{:#?}", msg))),
-            }
+        pub async fn call(h: &mut proto::Handle, s: String) -> Result<Results, lavish_rpc::Error> {
+            h.call(
+                proto::Params::double_Print(Params { s }),
+                Results::downgrade,
+            )
+            .await
         }
 
         #[derive(Serialize, Deserialize, Debug)]
@@ -177,6 +140,15 @@ pub mod double {
 
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Results {}
+
+        impl Results {
+            pub fn downgrade(p: proto::Results) -> Option<Self> {
+                match p {
+                    proto::Results::double_Print(p) => Some(p),
+                    _ => None,
+                }
+            }
+        }
     }
 
     pub mod double {
