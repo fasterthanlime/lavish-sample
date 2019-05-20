@@ -49,7 +49,7 @@ where
     R: Atom,
     FT: Future<Output = Result<R, String>> + Send + 'static,
 {
-    fn handle(&self, h: RpcHandle<P, NP, R>, params: P) -> FT;
+    fn handle(&self, h: Handle<P, NP, R>, params: P) -> FT;
 }
 
 impl<P, NP, R, F, FT> Handler<P, NP, R, FT> for F
@@ -57,34 +57,34 @@ where
     P: Atom,
     R: Atom,
     NP: Atom,
-    F: (Fn(RpcHandle<P, NP, R>, P) -> FT) + Send + Sync,
+    F: (Fn(Handle<P, NP, R>, P) -> FT) + Send + Sync,
     FT: Future<Output = Result<R, String>> + Send + 'static,
 {
-    fn handle(&self, h: RpcHandle<P, NP, R>, params: P) -> FT {
+    fn handle(&self, h: Handle<P, NP, R>, params: P) -> FT {
         self(h, params)
     }
 }
 
 
-pub struct RpcHandle<P, NP, R>
+pub struct Handle<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
 {
-    pr: Arc<Mutex<PendingRequests<P, NP, R>>>,
+    queue: Arc<Mutex<Queue<P, NP, R>>>,
     sink: mpsc::Sender<rpc::Message<P, NP, R>>,
 }
 
-impl<P, NP, R> RpcHandle<P, NP, R>
+impl<P, NP, R> Handle<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
 {
     fn clone(&self) -> Self {
-        Self {
-            pr: self.pr.clone(),
+        Handle {
+            queue: self.queue.clone(),
             sink: self.sink.clone(),
         }
     }
@@ -94,7 +94,7 @@ where
         params: P,
     ) -> Result<rpc::Message<P, NP, R>, Box<dyn std::error::Error + 'static>> {
         let id = {
-            let mut pr = self.pr.lock().await;
+            let mut pr = self.queue.lock().await;
             pr.genid()
         };
 
@@ -102,11 +102,11 @@ where
         let m = rpc::Message::Request { id, params };
 
         let (tx, rx) = oneshot::channel::<rpc::Message<P, NP, R>>();
-        let req = PendingRequest { method, tx };
+        let req = InFlightRequest { method, tx };
 
         {
-            let mut pr = self.pr.lock().await;
-            pr.reqs.insert(id, req);
+            let mut pr = self.queue.lock().await;
+            pr.in_flight_requests.insert(id, req);
         }
 
         self.sink.send(m).await?;
@@ -114,16 +114,16 @@ where
     }
 }
 
-pub struct RpcSystem<P, NP, R>
+pub struct System<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
 {
-    handle: RpcHandle<P, NP, R>,
+    handle: Handle<P, NP, R>,
 }
 
-impl<P, NP, R> RpcSystem<P, NP, R>
+impl<P, NP, R> System<P, NP, R>
 where
     P: Atom,
     NP: Atom,
@@ -140,19 +140,19 @@ where
         H: Handler<P, NP, R, FT> + 'static,
         FT: Future<Output = Result<R, String>> + Send + 'static,
     {
-        let pr = Arc::new(Mutex::new(PendingRequests::new(protocol)));
+        let queue = Arc::new(Mutex::new(Queue::new(protocol)));
 
-        let codec = Codec { pr: pr.clone() };
+        let codec = Codec { pr: queue.clone() };
         let framed = Framed::new(io, codec);
         let (mut sink, mut stream) = framed.split();
         let (tx, mut rx) = mpsc::channel(128);
 
-        let handle = RpcHandle::<P, NP, R> {
-            pr: pr.clone(),
+        let handle = Handle::<P, NP, R> {
+            queue: queue.clone(),
             sink: tx,
         };
 
-        let system = Self {
+        let system = System {
             handle: handle.clone(),
         };
 
@@ -183,15 +183,15 @@ where
         Ok(system)
     }
 
-    pub fn handle(&self) -> RpcHandle<P, NP, R> {
+    pub fn handle(&self) -> Handle<P, NP, R> {
         self.handle.clone()
     }
 }
 
 async fn handle_message<P, NP, R, H, FT>(
-    m: rpc::Message<P, NP, R>,
+    inbound: rpc::Message<P, NP, R>,
     handler: Arc<Option<H>>,
-    mut handle: RpcHandle<P, NP, R>,
+    mut handle: Handle<P, NP, R>,
 ) where
     P: Atom,
     NP: Atom,
@@ -199,7 +199,7 @@ async fn handle_message<P, NP, R, H, FT>(
     H: Handler<P, NP, R, FT>,
     FT: Future<Output = Result<R, String>> + Send + 'static,
 {
-    match m {
+    match inbound {
         rpc::Message::Request { id, params } => {
             let m = match handler.as_ref() {
                 Some(handler) => match handler.handle(handle.clone(), params).await {
@@ -220,15 +220,15 @@ async fn handle_message<P, NP, R, H, FT>(
                     error: Some(format!("no method handler")),
                 },
             };
-
             handle.sink.send(m).await.unwrap();
         }
         rpc::Message::Response { id, error, results } => {
-            if let Some(req) = {
-                let mut pr = handle.pr.lock().await;
-                pr.reqs.remove(&id)
+            if let Some(in_flight) = {
+                let mut queue = handle.queue.lock().await;
+                queue.in_flight_requests.remove(&id)
             } {
-                req.tx
+                in_flight
+                    .tx
                     .send(rpc::Message::Response { id, error, results })
                     .unwrap();
             }
@@ -243,7 +243,7 @@ where
     NP: Atom,
     R: Atom,
 {
-    pr: Arc<Mutex<PendingRequests<P, NP, R>>>,
+    pr: Arc<Mutex<Queue<P, NP, R>>>,
 }
 
 impl<P, NP, R> Encoder for Codec<P, NP, R>
@@ -330,7 +330,7 @@ where
     }
 }
 
-struct PendingRequest<P, NP, R>
+struct InFlightRequest<P, NP, R>
 where
     P: Atom,
     NP: Atom,
@@ -340,26 +340,26 @@ where
     tx: oneshot::Sender<rpc::Message<P, NP, R>>,
 }
 
-struct PendingRequests<P, NP, R>
+struct Queue<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
 {
     id: u32,
-    reqs: HashMap<u32, PendingRequest<P, NP, R>>,
+    in_flight_requests: HashMap<u32, InFlightRequest<P, NP, R>>,
 }
 
-impl<P, NP, R> PendingRequests<P, NP, R>
+impl<P, NP, R> Queue<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
 {
     fn new(_protocol: Protocol<P, NP, R>) -> Self {
-        Self {
+        Queue {
             id: 0,
-            reqs: HashMap::new(),
+            in_flight_requests: HashMap::new(),
         }
     }
 
@@ -370,14 +370,14 @@ where
     }
 }
 
-impl<P, NP, R> rpc::PendingRequests for PendingRequests<P, NP, R>
+impl<P, NP, R> rpc::PendingRequests for Queue<P, NP, R>
 where
     P: Atom,
     NP: Atom,
     R: Atom,
 {
     fn get_pending(&self, id: u32) -> Option<&'static str> {
-        self.reqs.get(&id).map(|req| req.method)
+        self.in_flight_requests.get(&id).map(|req| req.method)
     }
 }
 

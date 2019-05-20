@@ -14,7 +14,7 @@ mod support;
 
 use lavish_rpc::Atom;
 
-use support::{Handler, Protocol, RpcHandle, RpcSystem};
+use support::{Handle, Handler, Protocol, System};
 
 static ADDR: &'static str = "127.0.0.1:9596";
 
@@ -43,7 +43,7 @@ struct PluggableHandler<'a, T> {
         Box<
             (Fn(
                     Arc<T>,
-                    RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
+                    Handle<proto::Params, proto::NotificationParams, proto::Results>,
                     proto::double::print::Params,
                 ) -> (Pin<
                     Box<
@@ -66,7 +66,7 @@ where
     where
         F: Fn(
                 Arc<T>,
-                RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
+                Handle<proto::Params, proto::NotificationParams, proto::Results>,
                 proto::double::print::Params,
             ) -> FT
             + Sync
@@ -96,7 +96,7 @@ where
 {
     fn handle(
         &self,
-        h: RpcHandle<proto::Params, proto::NotificationParams, proto::Results>,
+        h: Handle<proto::Params, proto::NotificationParams, proto::Results>,
         params: proto::Params,
     ) -> HandlerRet {
         let method = params.method();
@@ -130,32 +130,30 @@ async fn server(
             total_characters: usize,
         }
 
-        let ss = ServerState {
+        let state = ServerState {
             total_characters: 0,
         };
-        let mut ph = PluggableHandler::new(futures::lock::Mutex::new(ss));
-        ph.on_double_print(async move |ss, mut h, params| {
+        let mut ph = PluggableHandler::new(futures::lock::Mutex::new(state));
+
+        ph.on_double_print(async move |state, mut handle, params| {
             println!("[server] client says: {}", params.s);
-            match h
+            handle
                 .call(proto::Params::double_Print(proto::double::print::Params {
                     s: params.s.chars().rev().collect(),
                 }))
-                .await
-            {
-                Ok(_) => {}
-                Err(e) => eprintln!("[server] client errored: {:#?}", e),
-            };
+                .map_err(|e| format!("{:#?}", e))
+                .await?;
 
             {
-                let mut ss = ss.lock().await;
-                ss.total_characters += params.s.len();
-                println!("[server] total characters = {}", ss.total_characters);
+                let mut state = state.lock().await;
+                state.total_characters += params.s.len();
+                println!("[server] total characters = {}", state.total_characters);
             }
 
             Ok(proto::double::print::Results {})
         });
 
-        RpcSystem::new(protocol(), Some(ph), conn, pool.clone())?;
+        System::new(protocol(), Some(ph), conn, pool.clone())?;
     }
     Ok(())
 }
@@ -174,7 +172,7 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
         Ok(proto::double::print::Results {})
     });
 
-    let rpc_system = RpcSystem::new(protocol(), Some(ph), conn, pool.clone())?;
+    let rpc_system = System::new(protocol(), Some(ph), conn, pool.clone())?;
     let mut handle = rpc_system.handle();
 
     for line in &sample_lines() {
