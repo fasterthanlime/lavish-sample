@@ -125,7 +125,7 @@ pub mod double {
         use super::super::__proto as proto;
         use lavish_rpc::serde_derive::*;
 
-        pub async fn call(h: &mut proto::Handle, s: String) -> Result<Results, lavish_rpc::Error> {
+        pub async fn call(h: &proto::Handle, s: String) -> Result<Results, lavish_rpc::Error> {
             h.call(
                 proto::Params::double_Print(Params { s }),
                 Results::downgrade,
