@@ -116,31 +116,40 @@ impl lavish_rpc::Atom for NotificationParams {
     }
 }
 
-#[derive(Debug)]
-pub enum ProtocolError {
-    WrongResults,
-    MissingResults,
-    WrongMessageType,
-    RemoteError(String),
-    TransportError(String),
-}
+pub mod __proto {
+    pub use super::{Handle, Message, NotificationParams, Params, Results};
 
-use std::fmt;
-impl fmt::Display for ProtocolError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:#?}", self)
+    #[derive(Debug)]
+    pub enum ProtocolError {
+        WrongResults,
+        MissingResults,
+        WrongMessageType,
+        RemoteError(String),
+        TransportError(String),
     }
-}
 
-impl std::error::Error for ProtocolError {}
+    use std::fmt;
+    impl fmt::Display for ProtocolError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{:#?}", self)
+        }
+    }
+
+    impl std::error::Error for ProtocolError {}
+}
 
 pub mod double {
     pub mod print {
-        use super::super::{Handle, Params as RootParams, ProtocolError, Results as RootResults};
+        use super::super::__proto as proto;
         use lavish_rpc::serde_derive::*;
 
-        pub async fn call(h: &mut Handle, s: String) -> Result<Results, ProtocolError> {
-            let res = h.call(RootParams::double_Print(Params { s })).await;
+        pub async fn call(
+            h: &mut proto::Handle,
+            s: String,
+        ) -> Result<Results, proto::ProtocolError> {
+            use proto::ProtocolError;
+
+            let res = h.call(proto::Params::double_Print(Params { s })).await;
             match res {
                 Ok(m) => match m {
                     lavish_rpc::Message::Response { results, error, .. } => {
@@ -148,7 +157,7 @@ pub mod double {
                             Err(ProtocolError::RemoteError(error))
                         } else if let Some(results) = results {
                             match results {
-                                RootResults::double_Print(results) => Ok(results),
+                                proto::Results::double_Print(results) => Ok(results),
                                 _ => Err(ProtocolError::WrongResults),
                             }
                         } else {
