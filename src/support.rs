@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use futures::prelude::*;
 
-use lavish_rpc::{Atom, Handle, Handler, Protocol};
+use lavish_rpc::{Atom, Handler, Protocol};
 
 use super::proto;
 
@@ -11,21 +11,17 @@ pub fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::R
     Protocol::new()
 }
 
-type ProtoHandle = Handle<proto::Params, proto::NotificationParams, proto::Results>;
-
-pub struct Call<T, P> {
-    pub state: Arc<T>,
-    pub handle: ProtoHandle,
-    pub params: P,
-}
-
-type MethodHandler<'a, T, P, R> = Option<
-    Box<
-        (Fn(Call<T, P>) -> (Pin<Box<Future<Output = Result<R, String>> + Send + 'static>>))
-            + Sync
-            + Send
-            + 'a,
-    >,
+type Handle = lavish_rpc::Handle<proto::Params, proto::NotificationParams, proto::Results>;
+type Call<T, PP> =
+    lavish_rpc::Call<T, proto::Params, proto::NotificationParams, proto::Results, PP>;
+type MethodHandler<'a, T, PP, RR> = lavish_rpc::MethodHandler<
+    'a,
+    T,
+    proto::Params,
+    proto::NotificationParams,
+    proto::Results,
+    PP,
+    RR,
 >;
 
 pub struct PluggableHandler<'a, T> {
@@ -47,24 +43,23 @@ where
     pub fn on_double_print<F, FT>(&mut self, f: F)
     where
         F: Fn(Call<T, proto::double::print::Params>) -> FT + Sync + Send + 'a,
-        FT: Future<Output = Result<proto::double::print::Results, String>> + Send + 'static,
+        FT: Future<Output = Result<proto::double::print::Results, lavish_rpc::Error>>
+            + Send
+            + 'static,
     {
         self.double_print = Some(Box::new(move |call| Box::pin(f(call))))
     }
 }
 
-type HandlerRet = Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>>;
+type HandlerRet =
+    Pin<Box<dyn Future<Output = Result<proto::Results, lavish_rpc::Error>> + Send + 'static>>;
 
 impl<'a, T> Handler<proto::Params, proto::NotificationParams, proto::Results, HandlerRet>
     for PluggableHandler<'a, T>
 where
     T: Send + Sync,
 {
-    fn handle(
-        &self,
-        handle: Handle<proto::Params, proto::NotificationParams, proto::Results>,
-        params: proto::Params,
-    ) -> HandlerRet {
+    fn handle(&self, handle: Handle, params: proto::Params) -> HandlerRet {
         let method = params.method();
         match params {
             proto::Params::double_Print(params) => match self.double_print.as_ref() {
@@ -77,9 +72,11 @@ where
                     let res = hm(call);
                     Box::pin(async move { Ok(proto::Results::double_Print(res.await?)) })
                 }
-                None => Box::pin(async move { Err(format!("no handler for {}", method)) }),
+                None => {
+                    Box::pin(async move { Err(lavish_rpc::Error::MethodUnimplemented(method)) })
+                }
             },
-            _ => Box::pin(async move { Err(format!("no handler for {}", method)) }),
+            _ => Box::pin(async move { Err(lavish_rpc::Error::MethodUnimplemented(method)) }),
         }
     }
 }

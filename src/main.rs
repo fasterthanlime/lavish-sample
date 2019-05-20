@@ -57,9 +57,7 @@ async fn server(
 
             println!("[server] client says: {}", call.params.s);
 
-            print::call(&call.handle, call.params.s.chars().rev().collect())
-                .map_err(|e| format!("{:#?}", e))
-                .await?;
+            print::call(&call.handle, call.params.s.chars().rev().collect()).await?;
 
             {
                 let mut state = call.state.lock().await;
