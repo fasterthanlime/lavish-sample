@@ -52,18 +52,18 @@ async fn server(
         };
         let mut ph = PluggableHandler::new(futures::lock::Mutex::new(state));
 
-        ph.on_double_print(async move |state, mut handle, params| {
-            println!("[server] client says: {}", params.s);
-            handle
+        ph.on_double_print(async move |mut call| {
+            println!("[server] client says: {}", call.params.s);
+            call.handle
                 .call(proto::Params::double_Print(proto::double::print::Params {
-                    s: params.s.chars().rev().collect(),
+                    s: call.params.s.chars().rev().collect(),
                 }))
                 .map_err(|e| format!("{:#?}", e))
                 .await?;
 
             {
-                let mut state = state.lock().await;
-                state.total_characters += params.s.len();
+                let mut state = call.state.lock().await;
+                state.total_characters += call.params.s.len();
                 println!("[server] total characters = {}", state.total_characters);
             }
 
@@ -84,8 +84,8 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
     conn.set_nodelay(true)?;
 
     let mut ph = PluggableHandler::new(());
-    ph.on_double_print(async move |_state, _h, params| {
-        println!("[client] server says: {}", params.s);
+    ph.on_double_print(async move |call| {
+        println!("[client] server says: {}", call.params.s);
         Ok(proto::double::print::Results {})
     });
 
