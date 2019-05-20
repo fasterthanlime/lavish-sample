@@ -53,11 +53,11 @@ async fn server(
         let mut ph = PluggableHandler::new(futures::lock::Mutex::new(state));
 
         ph.on_double_print(async move |mut call| {
+            use proto::double::print;
+
             println!("[server] client says: {}", call.params.s);
-            call.handle
-                .call(proto::Params::double_Print(proto::double::print::Params {
-                    s: call.params.s.chars().rev().collect(),
-                }))
+
+            print::call(&mut call.handle, call.params.s.chars().rev().collect())
                 .map_err(|e| format!("{:#?}", e))
                 .await?;
 
@@ -93,11 +93,8 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
     let mut handle = rpc_system.handle();
 
     for line in &sample_lines() {
-        handle
-            .call(proto::Params::double_Print(proto::double::print::Params {
-                s: line.clone(),
-            }))
-            .await?;
+        use proto::double::print;
+        print::call(&mut handle, line.clone()).await?;
     }
 
     Ok(())

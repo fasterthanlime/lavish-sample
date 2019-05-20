@@ -8,6 +8,8 @@
 use lavish_rpc::erased_serde;
 use lavish_rpc::serde_derive::*;
 
+pub type Handle = lavish_rpc::Handle<Params, NotificationParams, Results>;
+
 #[allow(unused)]
 pub type Message = lavish_rpc::Message<Params, NotificationParams, Results>;
 
@@ -116,7 +118,15 @@ impl lavish_rpc::Atom for NotificationParams {
 
 pub mod double {
     pub mod print {
+        use super::super::{Handle, Message, Params as RootParams};
         use lavish_rpc::serde_derive::*;
+
+        pub async fn call(
+            h: &mut Handle,
+            s: String,
+        ) -> Result<Message, Box<dyn std::error::Error>> {
+            h.call(RootParams::double_Print(Params { s })).await
+        }
 
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Params {
