@@ -1,4 +1,5 @@
 #![feature(async_await)]
+#![warn(clippy::all)]
 
 use futures::executor;
 use futures::prelude::*;
@@ -34,25 +35,24 @@ fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Resul
 
 type HandlerRet = Pin<Box<dyn Future<Output = Result<proto::Results, String>> + Send + 'static>>;
 
+type ProtoHandle = Handle<proto::Params, proto::NotificationParams, proto::Results>;
+
+type MethodHandler<'a, T, P, R> = Option<
+    Box<
+        (Fn(
+                Arc<T>,
+                ProtoHandle,
+                P,
+            ) -> (Pin<Box<Future<Output = Result<R, String>> + Send + 'static>>))
+            + Sync
+            + Send
+            + 'a,
+    >,
+>;
+
 struct PluggableHandler<'a, T> {
     state: Arc<T>,
-    double_print: Option<
-        Box<
-            (Fn(
-                    Arc<T>,
-                    Handle<proto::Params, proto::NotificationParams, proto::Results>,
-                    proto::double::print::Params,
-                ) -> (Pin<
-                    Box<
-                        Future<Output = Result<proto::double::print::Results, String>>
-                            + Send
-                            + 'static,
-                    >,
-                >)) + Sync
-                + Send
-                + 'a,
-        >,
-    >,
+    double_print: MethodHandler<'a, T, proto::double::print::Params, proto::double::print::Results>,
 }
 
 impl<'a, T> PluggableHandler<'a, T>
@@ -185,7 +185,7 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
 fn sample_lines() -> Vec<String> {
     let text = "This is the first sentence. The second sentence is slighter longer. The third sentence is the longest of the three sentences.";
-    text.split(".")
+    text.split('.')
         .filter_map(|x| {
             let x = x.trim();
             if x == "" {
