@@ -94,19 +94,18 @@ where
         params: P,
     ) -> Result<rpc::Message<P, NP, R>, Box<dyn std::error::Error + 'static>> {
         let id = {
-            let mut pr = self.queue.lock().await;
-            pr.genid()
+            let mut queue = self.queue.lock().await;
+            queue.next_id()
         };
 
         let method = params.method();
         let m = rpc::Message::Request { id, params };
 
         let (tx, rx) = oneshot::channel::<rpc::Message<P, NP, R>>();
-        let req = InFlightRequest { method, tx };
-
+        let in_flight = InFlightRequest { method, tx };
         {
-            let mut pr = self.queue.lock().await;
-            pr.in_flight_requests.insert(id, req);
+            let mut queue = self.queue.lock().await;
+            queue.in_flight_requests.insert(id, in_flight);
         }
 
         self.sink.send(m).await?;
@@ -142,7 +141,9 @@ where
     {
         let queue = Arc::new(Mutex::new(Queue::new(protocol)));
 
-        let codec = Codec { pr: queue.clone() };
+        let codec = Codec {
+            queue: queue.clone(),
+        };
         let framed = Framed::new(io, codec);
         let (mut sink, mut stream) = framed.split();
         let (tx, mut rx) = mpsc::channel(128);
@@ -243,7 +244,7 @@ where
     NP: Atom,
     R: Atom,
 {
-    pr: Arc<Mutex<Queue<P, NP, R>>>,
+    queue: Arc<Mutex<Queue<P, NP, R>>>,
 }
 
 impl<P, NP, R> Encoder for Codec<P, NP, R>
@@ -304,7 +305,7 @@ where
             let cursor = Cursor::new(&src[..]);
             let mut deser = rmp_serde::Deserializer::from_read(cursor);
             let res = {
-                if let Some(pr) = self.pr.try_lock() {
+                if let Some(pr) = self.queue.try_lock() {
                     Self::Item::deserialize(&mut deser, &*pr)
                 } else {
                     // FIXME: futures_codec doesn't fit the bill
@@ -363,7 +364,7 @@ where
         }
     }
 
-    fn genid(&mut self) -> u32 {
+    fn next_id(&mut self) -> u32 {
         let res = self.id;
         self.id += 1;
         res
