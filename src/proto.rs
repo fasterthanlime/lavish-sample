@@ -15,6 +15,7 @@ mod __ {
     // Notes: as of 2019-05-21, futures-preview is required
     use futures::prelude::*;
     use std::pin::Pin;
+    use std::sync::Arc;
     
     use lavish_rpc as rpc;
     use lavish_rpc::serde_derive::*;
@@ -24,23 +25,23 @@ mod __ {
     #[serde(untagged)]
     #[allow(non_camel_case_types, unused)]
     pub enum Params {
-        double_util_Print(double::util::print::Params),
-        double_Double(double::double::Params),
+        double_util_print(double::util::print::Params),
+        double_double(double::double::Params),
     }
     
     #[derive(Serialize, Debug)]
     #[serde(untagged)]
     #[allow(non_camel_case_types, unused)]
     pub enum Results {
-        double_util_Print(double::util::print::Results),
-        double_Double(double::double::Results),
+        double_util_print(double::util::print::Results),
+        double_double(double::double::Results),
     }
     
     #[derive(Serialize, Debug)]
     #[serde(untagged)]
     #[allow(non_camel_case_types, unused)]
     pub enum NotificationParams {
-        double_util_Log(double::util::log::Params),
+        double_util_log(double::util::log::Params),
     }
     
     pub type Message = rpc::Message<Params, NotificationParams, Results>;
@@ -58,8 +59,8 @@ mod __ {
     impl rpc::Atom for Params {
         fn method(&self) -> &'static str {
             match self {
-                Params::double_util_Print(_) => "double.util.Print",
-                Params::double_Double(_) => "double.Double",
+                Params::double_util_print(_) => "double.util.Print",
+                Params::double_double(_) => "double.Double",
             }
         }
         
@@ -72,9 +73,9 @@ mod __ {
             
             match method {
                 "double.util.Print" =>
-                    Ok(Params::double_util_Print(deser::<double::util::print::Params>(de)?)),
+                    Ok(Params::double_util_print(deser::<double::util::print::Params>(de)?)),
                 "double.Double" =>
-                    Ok(Params::double_Double(deser::<double::double::Params>(de)?)),
+                    Ok(Params::double_double(deser::<double::double::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -86,8 +87,8 @@ mod __ {
     impl rpc::Atom for Results {
         fn method(&self) -> &'static str {
             match self {
-                Results::double_util_Print(_) => "double.util.Print",
-                Results::double_Double(_) => "double.Double",
+                Results::double_util_print(_) => "double.util.Print",
+                Results::double_double(_) => "double.Double",
             }
         }
         
@@ -100,9 +101,9 @@ mod __ {
             
             match method {
                 "double.util.Print" =>
-                    Ok(Results::double_util_Print(deser::<double::util::print::Results>(de)?)),
+                    Ok(Results::double_util_print(deser::<double::util::print::Results>(de)?)),
                 "double.Double" =>
-                    Ok(Results::double_Double(deser::<double::double::Results>(de)?)),
+                    Ok(Results::double_double(deser::<double::double::Results>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -114,7 +115,7 @@ mod __ {
     impl rpc::Atom for NotificationParams {
         fn method(&self) -> &'static str {
             match self {
-                NotificationParams::double_util_Log(_) => "double.util.Log",
+                NotificationParams::double_util_log(_) => "double.util.Log",
             }
         }
         
@@ -127,13 +128,23 @@ mod __ {
             
             match method {
                 "double.util.Log" =>
-                    Ok(NotificationParams::double_util_Log(deser::<double::util::log::Params>(de)?)),
+                    Ok(NotificationParams::double_util_log(deser::<double::util::log::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
                 ))),
             }
         }
+    }
+    
+    pub struct Handler<'a, T> {
+        state: Arc<T>,
+        double_util_print: MethodHandler<'a, T,
+            double::util::print::Params, double::util::print::Results,
+        >,
+        double_double: MethodHandler<'a, T,
+            double::double::Params, double::double::Results,
+        >,
     }
     
     pub mod double {
@@ -154,7 +165,7 @@ mod __ {
                 impl Results {
                     pub fn downgrade(p: __::Results) -> Option<Self> {
                         match p {
-                            __::Results::double_util_Print(p) => Some(p),
+                            __::Results::double_util_print(p) => Some(p),
                             _ => None,
                         }
                     }
@@ -162,7 +173,7 @@ mod __ {
                 
                 pub async fn call(h: &__::Handle, p: Params) -> Result<Results, lavish_rpc::Error> {
                     h.call(
-                        __::Params::double_util_Print(p),
+                        __::Params::double_util_print(p),
                         Results::downgrade,
                     ).await
                 }
@@ -197,7 +208,7 @@ mod __ {
             impl Results {
                 pub fn downgrade(p: __::Results) -> Option<Self> {
                     match p {
-                        __::Results::double_Double(p) => Some(p),
+                        __::Results::double_double(p) => Some(p),
                         _ => None,
                     }
                 }
@@ -205,7 +216,7 @@ mod __ {
             
             pub async fn call(h: &__::Handle, p: Params) -> Result<Results, lavish_rpc::Error> {
                 h.call(
-                    __::Params::double_Double(p),
+                    __::Params::double_double(p),
                     Results::downgrade,
                 ).await
             }

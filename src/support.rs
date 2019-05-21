@@ -9,7 +9,7 @@ use super::proto::{self, Call, Handle, MethodHandler};
 
 pub struct PluggableHandler<'a, T> {
     state: Arc<T>,
-    double_util_Print: MethodHandler<
+    double_util_print: MethodHandler<
         'a,
         T,
         proto::double::util::print::Params,
@@ -24,18 +24,18 @@ where
     pub fn new(state: T) -> Self {
         Self {
             state: Arc::new(state),
-            double_util_Print: None,
+            double_util_print: None,
         }
     }
 
-    pub fn on_double_util_Print<F, FT>(&mut self, f: F)
+    pub fn on_double_util_print<F, FT>(&mut self, f: F)
     where
         F: Fn(Call<T, proto::double::util::print::Params>) -> FT + Sync + Send + 'a,
         FT: Future<Output = Result<proto::double::util::print::Results, lavish_rpc::Error>>
             + Send
             + 'static,
     {
-        self.double_util_Print = Some(Box::new(move |call| Box::pin(f(call))))
+        self.double_util_print = Some(Box::new(move |call| Box::pin(f(call))))
     }
 }
 
@@ -50,7 +50,7 @@ where
     fn handle(&self, handle: Handle, params: proto::Params) -> HandlerRet {
         let method = params.method();
         match params {
-            proto::Params::double_util_Print(params) => match self.double_util_Print.as_ref() {
+            proto::Params::double_util_print(params) => match self.double_util_print.as_ref() {
                 Some(hm) => {
                     let call = Call {
                         state: self.state.clone(),
@@ -58,7 +58,7 @@ where
                         params,
                     };
                     let res = hm(call);
-                    Box::pin(async move { Ok(proto::Results::double_util_Print(res.await?)) })
+                    Box::pin(async move { Ok(proto::Results::double_util_print(res.await?)) })
                 }
                 None => {
                     Box::pin(async move { Err(lavish_rpc::Error::MethodUnimplemented(method)) })

@@ -52,7 +52,7 @@ async fn server(
         };
         let mut ph = PluggableHandler::new(futures::lock::Mutex::new(state));
 
-        ph.on_double_util_Print(async move |call| {
+        ph.on_double_util_print(async move |call| {
             use proto::double::util::print;
 
             println!("[server] client says: {}", call.params.s);
@@ -89,7 +89,7 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     let mut ph = PluggableHandler::new(());
     use proto::double::util::print;
-    ph.on_double_util_Print(async move |call| {
+    ph.on_double_util_print(async move |call| {
         println!("[client] server says: {}", call.params.s);
         Ok(print::Results {})
     });
