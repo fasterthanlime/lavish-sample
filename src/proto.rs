@@ -187,8 +187,16 @@ mod __ {
                         + Send
                         + 'static,
                 {
-                    unimplemented!()
-                    // ph.double_util_print = Some(Box::new(move |call| Box::pin(f(call))))
+                    ph.double_util_print = Some(Box::new(move |state, handle, params| {
+                        Box::pin(
+                            f(Call {
+                                state,
+                                handle,
+                                params: Params::downgrade(params).unwrap(),
+                            })
+                            .map_ok(__::Results::double_util_print),
+                        )
+                    }));
                 }
             }
             
