@@ -7,7 +7,6 @@ use futures::prelude::*;
 use romio::tcp::{TcpListener, TcpStream};
 
 mod proto;
-mod support;
 
 pub mod sleep;
 
