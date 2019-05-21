@@ -47,8 +47,8 @@ mod __ {
     pub type Message = rpc::Message<Params, NotificationParams, Results>;
     pub type Handle = rpc::Handle<Params, NotificationParams, Results>;
     pub type System = rpc::System<Params, NotificationParams, Results>;
-    pub type Call<T, PP> = rpc::Call<T, Params, NotificationParams, Results, PP>;
-    pub type MethodHandler<'a, T, PP, RR> = rpc::MethodHandler<'a, T, Params, NotificationParams, Results, PP, RR>;
+    // pub type Call<T, PP> = rpc::Call<T, Params, NotificationParams, Results, PP>;
+    // pub type MethodHandler<'a, T, PP, RR> = rpc::MethodHandler<'a, T, Params, NotificationParams, Results, PP, RR>;
     pub type Protocol = rpc::Protocol<Params, NotificationParams, Results>;
     pub type HandlerRet = Pin<Box<dyn Future<Output = Result<Results, rpc::Error>> + Send + 'static>>;
     
@@ -137,16 +137,6 @@ mod __ {
         }
     }
     
-    pub struct Handler<'a, T> {
-        state: Arc<T>,
-        double_util_print: MethodHandler<'a, T,
-            double::util::print::Params, double::util::print::Results,
-        >,
-        double_double: MethodHandler<'a, T,
-            double::double::Params, double::double::Results,
-        >,
-    }
-    
     pub mod double {
         pub mod util {
             pub mod print {
@@ -156,6 +146,15 @@ mod __ {
                 #[derive(Serialize, Deserialize, Debug)]
                 pub struct Params {
                     pub s: String,
+                }
+
+                impl Params {
+                    pub fn downgrade(p: __::Params) -> Option<Self> {
+                        match p {
+                            __::Params::double_util_print(p) => Some(p),
+                            _ => None,
+                        }
+                    }
                 }
                 
                 #[derive(Serialize, Deserialize, Debug)]
@@ -178,8 +177,7 @@ mod __ {
                     ).await
                 }
 
-                use super::super::super::super::super::support::PluggableHandler;
-                use super::super::super::super::Call;
+                use super::super::super::super::super::support::{PluggableHandler, Call};
                 use futures::prelude::*;
 
                 pub fn register<'a, T, F, FT>(ph: &mut PluggableHandler<'a, T>, f: F)
@@ -189,7 +187,8 @@ mod __ {
                         + Send
                         + 'static,
                 {
-                    ph.double_util_print = Some(Box::new(move |call| Box::pin(f(call))))
+                    unimplemented!()
+                    // ph.double_util_print = Some(Box::new(move |call| Box::pin(f(call))))
                 }
             }
             
