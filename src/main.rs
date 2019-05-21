@@ -12,7 +12,8 @@ mod support;
 pub mod sleep;
 
 use lavish_rpc::System;
-use support::{protocol, PluggableHandler};
+use proto::protocol;
+use support::PluggableHandler;
 
 static ADDR: &'static str = "127.0.0.1:9596";
 

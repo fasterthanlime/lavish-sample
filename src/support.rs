@@ -3,26 +3,9 @@ use std::sync::Arc;
 
 use futures::prelude::*;
 
-use lavish_rpc::{Atom, Handler, Protocol};
+use lavish_rpc::{Atom, Handler};
 
-use super::proto;
-
-pub fn protocol() -> Protocol<proto::Params, proto::NotificationParams, proto::Results> {
-    Protocol::new()
-}
-
-type Handle = lavish_rpc::Handle<proto::Params, proto::NotificationParams, proto::Results>;
-type Call<T, PP> =
-    lavish_rpc::Call<T, proto::Params, proto::NotificationParams, proto::Results, PP>;
-type MethodHandler<'a, T, PP, RR> = lavish_rpc::MethodHandler<
-    'a,
-    T,
-    proto::Params,
-    proto::NotificationParams,
-    proto::Results,
-    PP,
-    RR,
->;
+use super::proto::{self, Call, Handle, MethodHandler};
 
 pub struct PluggableHandler<'a, T> {
     state: Arc<T>,
