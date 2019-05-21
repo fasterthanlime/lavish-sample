@@ -47,8 +47,6 @@ mod __ {
     pub type Message = rpc::Message<Params, NotificationParams, Results>;
     pub type Handle = rpc::Handle<Params, NotificationParams, Results>;
     pub type System = rpc::System<Params, NotificationParams, Results>;
-    // pub type Call<T, PP> = rpc::Call<T, Params, NotificationParams, Results, PP>;
-    // pub type MethodHandler<'a, T, PP, RR> = rpc::MethodHandler<'a, T, Params, NotificationParams, Results, PP, RR>;
     pub type Protocol = rpc::Protocol<Params, NotificationParams, Results>;
     pub type HandlerRet = Pin<Box<dyn Future<Output = Result<Results, rpc::Error>> + Send + 'static>>;
     
@@ -137,9 +135,32 @@ mod __ {
         }
     }
     
+    pub struct Call<T, PP> {
+        pub state: Arc<T>,
+        pub handle: Handle,
+        pub params: PP,
+    }
+    
+    pub type SlotFuture = 
+        Future<Output = Result<Results, rpc::Error>> + Send + 'static;
+    
+    pub type SlotReturn = Pin<Box<SlotFuture>>;
+    
+    pub type SlotFn<'a, T> = 
+        Fn(Arc<T>, Handle, Params) -> SlotReturn + 'a + Send + Sync;
+    
+    pub type Slot<'a, T> = Option<Box<SlotFn<'a, T>>>;
+    
+    pub struct Handler<'a, T> {
+        state: Arc<T>,
+        double_util_print: Slot<'a, T>,
+        double_double: Slot<'a, T>,
+    }
+    
     pub mod double {
         pub mod util {
             pub mod print {
+                use futures::prelude::*;
                 use lavish_rpc::serde_derive::*;
                 use super::super::super::super::__;
                 
@@ -147,7 +168,7 @@ mod __ {
                 pub struct Params {
                     pub s: String,
                 }
-
+                
                 impl Params {
                     pub fn downgrade(p: __::Params) -> Option<Self> {
                         match p {
@@ -176,31 +197,25 @@ mod __ {
                         Results::downgrade,
                     ).await
                 }
-
-                use super::super::super::super::super::support::{PluggableHandler, Call};
-                use futures::prelude::*;
-
-                pub fn register<'a, T, F, FT>(ph: &mut PluggableHandler<'a, T>, f: F)
+                
+                pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
                 where
-                    F: Fn(Call<T, Params>) -> FT + Sync + Send + 'a,
-                    FT: Future<Output = Result<Results, lavish_rpc::Error>>
-                        + Send
-                        + 'static,
+                    F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+                    FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
                 {
-                    ph.double_util_print = Some(Box::new(move |state, handle, params| {
+                    h.double_util_print = Some(Box::new(move |state, handle, params| {
                         Box::pin(
-                            f(Call {
-                                state,
-                                handle,
+                            f(__::Call {
+                                state, handle,
                                 params: Params::downgrade(params).unwrap(),
-                            })
-                            .map_ok(__::Results::double_util_print),
+                            }).map_ok(__::Results::double_util_print)
                         )
                     }));
                 }
             }
             
             pub mod log {
+                use futures::prelude::*;
                 use lavish_rpc::serde_derive::*;
                 use super::super::super::super::__;
                 
@@ -208,17 +223,36 @@ mod __ {
                 pub struct Params {
                     pub msg: String,
                 }
+                
+                impl Params {
+                    pub fn downgrade(p: __::NotificationParams) -> Option<Self> {
+                        match p {
+                            __::NotificationParams::double_util_log(p) => Some(p),
+                            _ => None,
+                        }
+                    }
+                }
             }
             
         }
         
         pub mod double {
+            use futures::prelude::*;
             use lavish_rpc::serde_derive::*;
             use super::super::super::__;
             
             #[derive(Serialize, Deserialize, Debug)]
             pub struct Params {
                 pub x: i64,
+            }
+            
+            impl Params {
+                pub fn downgrade(p: __::Params) -> Option<Self> {
+                    match p {
+                        __::Params::double_double(p) => Some(p),
+                        _ => None,
+                    }
+                }
             }
             
             #[derive(Serialize, Deserialize, Debug)]
@@ -240,6 +274,21 @@ mod __ {
                     __::Params::double_double(p),
                     Results::downgrade,
                 ).await
+            }
+            
+            pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+            where
+                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+                FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
+            {
+                h.double_double = Some(Box::new(move |state, handle, params| {
+                    Box::pin(
+                        f(__::Call {
+                            state, handle,
+                            params: Params::downgrade(params).unwrap(),
+                        }).map_ok(__::Results::double_double)
+                    )
+                }));
             }
         }
         

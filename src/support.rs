@@ -8,7 +8,11 @@ use lavish_rpc::{Atom, Handler};
 
 use super::proto::{self, Handle};
 
-pub type Call<T, PP> = rpc::Call<T, proto::Params, proto::NotificationParams, proto::Results, PP>;
+pub struct Call<T, PP> {
+    pub state: Arc<T>,
+    pub handle: Handle,
+    pub params: PP,
+}
 
 pub type MethodHandler<'a, T> = Option<
     Box<
