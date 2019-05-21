@@ -13,7 +13,6 @@ pub mod sleep;
 
 use lavish_rpc::System;
 use proto::protocol;
-use support::PluggableHandler;
 
 static ADDR: &'static str = "127.0.0.1:9596";
 
@@ -50,10 +49,10 @@ async fn server(
         let state = ServerState {
             total_characters: 0,
         };
-        let mut ph = PluggableHandler::new(futures::lock::Mutex::new(state));
 
+        let mut h = proto::Handler::new(futures::lock::Mutex::new(state));
         use proto::double::util::print;
-        print::register(&mut ph, async move |call| {
+        print::register(&mut h, async move |call| {
             println!("[server] client says: {}", call.params.s);
 
             print::call(
@@ -73,7 +72,7 @@ async fn server(
             Ok(print::Results {})
         });
 
-        System::new(protocol(), Some(ph), conn, pool.clone())?;
+        System::new(protocol(), Some(h), conn, pool.clone())?;
     }
     Ok(())
 }
@@ -86,14 +85,14 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
 
     conn.set_nodelay(true)?;
 
-    let mut ph = PluggableHandler::new(());
+    let mut h = proto::Handler::new(());
     use proto::double::util::print;
-    print::register(&mut ph, async move |call| {
+    print::register(&mut h, async move |call| {
         println!("[client] server says: {}", call.params.s);
         Ok(print::Results {})
     });
 
-    let rpc_system = System::new(protocol(), Some(ph), conn, pool.clone())?;
+    let rpc_system = System::new(protocol(), Some(h), conn, pool.clone())?;
     let handle = rpc_system.handle();
 
     for line in &sample_lines() {

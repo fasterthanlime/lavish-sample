@@ -18,8 +18,7 @@ mod __ {
     use std::sync::Arc;
     
     use lavish_rpc as rpc;
-    use lavish_rpc::serde_derive::*;
-    use lavish_rpc::erased_serde;
+    use rpc::{Atom, erased_serde, serde_derive::*};
     
     #[derive(Serialize, Debug)]
     #[serde(untagged)]
@@ -48,7 +47,6 @@ mod __ {
     pub type Handle = rpc::Handle<Params, NotificationParams, Results>;
     pub type System = rpc::System<Params, NotificationParams, Results>;
     pub type Protocol = rpc::Protocol<Params, NotificationParams, Results>;
-    pub type HandlerRet = Pin<Box<dyn Future<Output = Result<Results, rpc::Error>> + Send + 'static>>;
     
     pub fn protocol() -> Protocol {
         Protocol::new()
@@ -155,6 +153,39 @@ mod __ {
         state: Arc<T>,
         double_util_print: Slot<'a, T>,
         double_double: Slot<'a, T>,
+    }
+    
+    impl<'a, T> Handler<'a, T> {
+        pub fn new(state: T) -> Self {
+            Self {
+                state: Arc::new(state),
+                double_util_print: None,
+                double_double: None,
+            }
+        }
+    }
+    
+    type HandlerRet = Pin<Box<dyn Future<Output = Result<Results, rpc::Error>> + Send + 'static>>;
+    
+    impl<'a, T> rpc::Handler<Params, NotificationParams, Results, HandlerRet> for Handler<'a, T>
+    where
+        T: Send + Sync,
+    {
+        fn handle(&self, handle: Handle, params: Params) -> HandlerRet {
+            let method = params.method();
+            let slot = match params {
+                Params::double_util_print(_) => self.double_util_print.as_ref(),
+                Params::double_double(_) => self.double_double.as_ref(),
+                _ => None,
+            };
+            match slot {
+                Some(slot_fn) => {
+                    let res = slot_fn(self.state.clone(), handle, params);
+                    Box::pin(async move { Ok(res.await?) })
+                }
+                None => Box::pin(async move { Err(rpc::Error::MethodUnimplemented(method)) }),
+            }
+        }
     }
     
     pub mod double {
