@@ -177,6 +177,20 @@ mod __ {
                         Results::downgrade,
                     ).await
                 }
+
+                use super::super::super::super::super::support::PluggableHandler;
+                use super::super::super::super::Call;
+                use futures::prelude::*;
+
+                pub fn register<'a, T, F, FT>(ph: &mut PluggableHandler<'a, T>, f: F)
+                where
+                    F: Fn(Call<T, Params>) -> FT + Sync + Send + 'a,
+                    FT: Future<Output = Result<Results, lavish_rpc::Error>>
+                        + Send
+                        + 'static,
+                {
+                    ph.double_util_print = Some(Box::new(move |call| Box::pin(f(call))))
+                }
             }
             
             pub mod log {

@@ -9,7 +9,7 @@ use super::proto::{self, Call, Handle, MethodHandler};
 
 pub struct PluggableHandler<'a, T> {
     state: Arc<T>,
-    double_util_print: MethodHandler<
+    pub double_util_print: MethodHandler<
         'a,
         T,
         proto::double::util::print::Params,
