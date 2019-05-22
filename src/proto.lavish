@@ -1,9 +1,5 @@
 
-namespace double {
-    server fn double(x: i64) -> (x: i64)
-
-    namespace util {
-        server fn print(s: String)
-        server nf log(msg: String)
-    }
+namespace sample {
+    client fn reverse(s: string) -> (s: string)
+    server fn print(s: string)
 }

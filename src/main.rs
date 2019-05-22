@@ -50,21 +50,16 @@ async fn server(
         };
 
         let mut h = proto::Handler::new(futures::lock::Mutex::new(state));
-        use proto::double::util::print;
+        use proto::sample::{print, reverse};
         print::register(&mut h, async move |call| {
-            println!("[server] client says: {}", call.params.s);
-
-            print::call(
-                &call.handle,
-                print::Params {
-                    s: call.params.s.chars().rev().collect(),
-                },
-            )
-            .await?;
+            let s = reverse::call(&call.handle, reverse::Params { s: call.params.s })
+                .await?
+                .s;
+            println!("[server] {}", s);
 
             {
                 let mut state = call.state.lock().await;
-                state.total_characters += call.params.s.len();
+                state.total_characters += s.len();
                 println!("[server] total characters = {}", state.total_characters);
             }
 
@@ -85,17 +80,21 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
     conn.set_nodelay(true)?;
 
     let mut h = proto::Handler::new(());
-    use proto::double::util::print;
-    print::register(&mut h, async move |call| {
-        println!("[client] server says: {}", call.params.s);
-        Ok(print::Results {})
-    });
 
-    let rpc_system = System::new(protocol(), Some(h), conn, pool.clone())?;
-    let handle = rpc_system.handle();
+    {
+        use proto::sample::{print, reverse};
+        reverse::register(&mut h, async move |call| {
+            Ok(reverse::Results {
+                s: call.params.s.chars().rev().collect(),
+            })
+        });
 
-    for line in &sample_lines() {
-        print::call(&handle, print::Params { s: line.clone() }).await?;
+        let rpc_system = System::new(protocol(), Some(h), conn, pool.clone())?;
+        let handle = rpc_system.handle();
+
+        for line in &sample_lines() {
+            print::call(&handle, print::Params { s: line.clone() }).await?;
+        }
     }
 
     Ok(())

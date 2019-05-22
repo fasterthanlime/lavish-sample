@@ -24,23 +24,22 @@ mod __ {
     #[serde(untagged)]
     #[allow(non_camel_case_types, unused)]
     pub enum Params {
-        double_util_print(double::util::print::Params),
-        double_double(double::double::Params),
+        sample_reverse(sample::reverse::Params),
+        sample_print(sample::print::Params),
     }
     
     #[derive(Serialize, Debug)]
     #[serde(untagged)]
     #[allow(non_camel_case_types, unused)]
     pub enum Results {
-        double_util_print(double::util::print::Results),
-        double_double(double::double::Results),
+        sample_reverse(sample::reverse::Results),
+        sample_print(sample::print::Results),
     }
     
     #[derive(Serialize, Debug)]
     #[serde(untagged)]
     #[allow(non_camel_case_types, unused)]
     pub enum NotificationParams {
-        double_util_log(double::util::log::Params),
     }
     
     pub type Message = rpc::Message<Params, NotificationParams, Results>;
@@ -55,8 +54,8 @@ mod __ {
     impl rpc::Atom for Params {
         fn method(&self) -> &'static str {
             match self {
-                Params::double_util_print(_) => "double.util.Print",
-                Params::double_double(_) => "double.Double",
+                Params::sample_reverse(_) => "sample.Reverse",
+                Params::sample_print(_) => "sample.Print",
             }
         }
         
@@ -68,10 +67,10 @@ mod __ {
             use serde::de::Error;
             
             match method {
-                "double.util.Print" =>
-                    Ok(Params::double_util_print(deser::<double::util::print::Params>(de)?)),
-                "double.Double" =>
-                    Ok(Params::double_double(deser::<double::double::Params>(de)?)),
+                "sample.Reverse" =>
+                    Ok(Params::sample_reverse(deser::<sample::reverse::Params>(de)?)),
+                "sample.Print" =>
+                    Ok(Params::sample_print(deser::<sample::print::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -83,8 +82,8 @@ mod __ {
     impl rpc::Atom for Results {
         fn method(&self) -> &'static str {
             match self {
-                Results::double_util_print(_) => "double.util.Print",
-                Results::double_double(_) => "double.Double",
+                Results::sample_reverse(_) => "sample.Reverse",
+                Results::sample_print(_) => "sample.Print",
             }
         }
         
@@ -96,10 +95,10 @@ mod __ {
             use serde::de::Error;
             
             match method {
-                "double.util.Print" =>
-                    Ok(Results::double_util_print(deser::<double::util::print::Results>(de)?)),
-                "double.Double" =>
-                    Ok(Results::double_double(deser::<double::double::Results>(de)?)),
+                "sample.Reverse" =>
+                    Ok(Results::sample_reverse(deser::<sample::reverse::Results>(de)?)),
+                "sample.Print" =>
+                    Ok(Results::sample_print(deser::<sample::print::Results>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -111,7 +110,7 @@ mod __ {
     impl rpc::Atom for NotificationParams {
         fn method(&self) -> &'static str {
             match self {
-                NotificationParams::double_util_log(_) => "double.util.Log",
+                _ => unimplemented!()
             }
         }
         
@@ -123,8 +122,6 @@ mod __ {
             use serde::de::Error;
             
             match method {
-                "double.util.Log" =>
-                    Ok(NotificationParams::double_util_log(deser::<double::util::log::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -151,16 +148,16 @@ mod __ {
     
     pub struct Handler<'a, T> {
         state: Arc<T>,
-        double_util_print: Slot<'a, T>,
-        double_double: Slot<'a, T>,
+        sample_reverse: Slot<'a, T>,
+        sample_print: Slot<'a, T>,
     }
     
     impl<'a, T> Handler<'a, T> {
         pub fn new(state: T) -> Self {
             Self {
                 state: Arc::new(state),
-                double_util_print: None,
-                double_double: None,
+                sample_reverse: None,
+                sample_print: None,
             }
         }
     }
@@ -174,8 +171,8 @@ mod __ {
         fn handle(&self, handle: Handle, params: Params) -> HandlerRet {
             let method = params.method();
             let slot = match params {
-                Params::double_util_print(_) => self.double_util_print.as_ref(),
-                Params::double_double(_) => self.double_double.as_ref(),
+                Params::sample_reverse(_) => self.sample_reverse.as_ref(),
+                Params::sample_print(_) => self.sample_print.as_ref(),
                 _ => None,
             };
             match slot {
@@ -188,99 +185,21 @@ mod __ {
         }
     }
     
-    pub mod double {
-        pub mod util {
-            pub mod print {
-                use futures::prelude::*;
-                use lavish_rpc::serde_derive::*;
-                use super::super::super::super::__;
-                
-                #[derive(Serialize, Deserialize, Debug)]
-                pub struct Params {
-                    pub s: String,
-                }
-                
-                impl Params {
-                    pub fn downgrade(p: __::Params) -> Option<Self> {
-                        match p {
-                            __::Params::double_util_print(p) => Some(p),
-                            _ => None,
-                        }
-                    }
-                }
-                
-                #[derive(Serialize, Deserialize, Debug)]
-                pub struct Results {
-                }
-                
-                impl Results {
-                    pub fn downgrade(p: __::Results) -> Option<Self> {
-                        match p {
-                            __::Results::double_util_print(p) => Some(p),
-                            _ => None,
-                        }
-                    }
-                }
-                
-                pub async fn call(h: &__::Handle, p: Params) -> Result<Results, lavish_rpc::Error> {
-                    h.call(
-                        __::Params::double_util_print(p),
-                        Results::downgrade,
-                    ).await
-                }
-                
-                pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
-                where
-                    F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
-                    FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
-                {
-                    h.double_util_print = Some(Box::new(move |state, handle, params| {
-                        Box::pin(
-                            f(__::Call {
-                                state, handle,
-                                params: Params::downgrade(params).unwrap(),
-                            }).map_ok(__::Results::double_util_print)
-                        )
-                    }));
-                }
-            }
-            
-            pub mod log {
-                use futures::prelude::*;
-                use lavish_rpc::serde_derive::*;
-                use super::super::super::super::__;
-                
-                #[derive(Serialize, Deserialize, Debug)]
-                pub struct Params {
-                    pub msg: String,
-                }
-                
-                impl Params {
-                    pub fn downgrade(p: __::NotificationParams) -> Option<Self> {
-                        match p {
-                            __::NotificationParams::double_util_log(p) => Some(p),
-                            _ => None,
-                        }
-                    }
-                }
-            }
-            
-        }
-        
-        pub mod double {
+    pub mod sample {
+        pub mod reverse {
             use futures::prelude::*;
             use lavish_rpc::serde_derive::*;
             use super::super::super::__;
             
             #[derive(Serialize, Deserialize, Debug)]
             pub struct Params {
-                pub x: i64,
+                pub s: String,
             }
             
             impl Params {
                 pub fn downgrade(p: __::Params) -> Option<Self> {
                     match p {
-                        __::Params::double_double(p) => Some(p),
+                        __::Params::sample_reverse(p) => Some(p),
                         _ => None,
                     }
                 }
@@ -288,13 +207,13 @@ mod __ {
             
             #[derive(Serialize, Deserialize, Debug)]
             pub struct Results {
-                pub x: i64,
+                pub s: String,
             }
             
             impl Results {
                 pub fn downgrade(p: __::Results) -> Option<Self> {
                     match p {
-                        __::Results::double_double(p) => Some(p),
+                        __::Results::sample_reverse(p) => Some(p),
                         _ => None,
                     }
                 }
@@ -302,7 +221,7 @@ mod __ {
             
             pub async fn call(h: &__::Handle, p: Params) -> Result<Results, lavish_rpc::Error> {
                 h.call(
-                    __::Params::double_double(p),
+                    __::Params::sample_reverse(p),
                     Results::downgrade,
                 ).await
             }
@@ -312,12 +231,67 @@ mod __ {
                 F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
                 FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
             {
-                h.double_double = Some(Box::new(move |state, handle, params| {
+                h.sample_reverse = Some(Box::new(move |state, handle, params| {
                     Box::pin(
                         f(__::Call {
                             state, handle,
                             params: Params::downgrade(params).unwrap(),
-                        }).map_ok(__::Results::double_double)
+                        }).map_ok(__::Results::sample_reverse)
+                    )
+                }));
+            }
+        }
+        
+        pub mod print {
+            use futures::prelude::*;
+            use lavish_rpc::serde_derive::*;
+            use super::super::super::__;
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Params {
+                pub s: String,
+            }
+            
+            impl Params {
+                pub fn downgrade(p: __::Params) -> Option<Self> {
+                    match p {
+                        __::Params::sample_print(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Results {
+            }
+            
+            impl Results {
+                pub fn downgrade(p: __::Results) -> Option<Self> {
+                    match p {
+                        __::Results::sample_print(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            pub async fn call(h: &__::Handle, p: Params) -> Result<Results, lavish_rpc::Error> {
+                h.call(
+                    __::Params::sample_print(p),
+                    Results::downgrade,
+                ).await
+            }
+            
+            pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+            where
+                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+                FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
+            {
+                h.sample_print = Some(Box::new(move |state, handle, params| {
+                    Box::pin(
+                        f(__::Call {
+                            state, handle,
+                            params: Params::downgrade(params).unwrap(),
+                        }).map_ok(__::Results::sample_print)
                     )
                 }));
             }
