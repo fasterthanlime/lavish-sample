@@ -26,6 +26,7 @@ mod __ {
     pub enum Params {
         sample_reverse(sample::reverse::Params),
         sample_print(sample::print::Params),
+        sample_showstats(sample::show_stats::Params),
     }
     
     #[derive(Serialize, Debug)]
@@ -34,6 +35,7 @@ mod __ {
     pub enum Results {
         sample_reverse(sample::reverse::Results),
         sample_print(sample::print::Results),
+        sample_showstats(sample::show_stats::Results),
     }
     
     #[derive(Serialize, Debug)]
@@ -56,6 +58,7 @@ mod __ {
             match self {
                 Params::sample_reverse(_) => "sample.Reverse",
                 Params::sample_print(_) => "sample.Print",
+                Params::sample_showstats(_) => "sample.ShowStats",
             }
         }
         
@@ -71,6 +74,8 @@ mod __ {
                     Ok(Params::sample_reverse(deser::<sample::reverse::Params>(de)?)),
                 "sample.Print" =>
                     Ok(Params::sample_print(deser::<sample::print::Params>(de)?)),
+                "sample.ShowStats" =>
+                    Ok(Params::sample_showstats(deser::<sample::show_stats::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -84,6 +89,7 @@ mod __ {
             match self {
                 Results::sample_reverse(_) => "sample.Reverse",
                 Results::sample_print(_) => "sample.Print",
+                Results::sample_showstats(_) => "sample.ShowStats",
             }
         }
         
@@ -99,6 +105,8 @@ mod __ {
                     Ok(Results::sample_reverse(deser::<sample::reverse::Results>(de)?)),
                 "sample.Print" =>
                     Ok(Results::sample_print(deser::<sample::print::Results>(de)?)),
+                "sample.ShowStats" =>
+                    Ok(Results::sample_showstats(deser::<sample::show_stats::Results>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -150,6 +158,7 @@ mod __ {
         state: Arc<T>,
         sample_reverse: Slot<'a, T>,
         sample_print: Slot<'a, T>,
+        sample_showstats: Slot<'a, T>,
     }
     
     impl<'a, T> Handler<'a, T> {
@@ -158,6 +167,7 @@ mod __ {
                 state: Arc::new(state),
                 sample_reverse: None,
                 sample_print: None,
+                sample_showstats: None,
             }
         }
     }
@@ -173,6 +183,7 @@ mod __ {
             let slot = match params {
                 Params::sample_reverse(_) => self.sample_reverse.as_ref(),
                 Params::sample_print(_) => self.sample_print.as_ref(),
+                Params::sample_showstats(_) => self.sample_showstats.as_ref(),
                 _ => None,
             };
             match slot {
@@ -250,6 +261,7 @@ mod __ {
             #[derive(Serialize, Deserialize, Debug)]
             pub struct Params {
                 pub s: String,
+                pub reversed: bool,
             }
             
             impl Params {
@@ -292,6 +304,60 @@ mod __ {
                             state, handle,
                             params: Params::downgrade(params).unwrap(),
                         }).map_ok(__::Results::sample_print)
+                    )
+                }));
+            }
+        }
+        
+        pub mod show_stats {
+            use futures::prelude::*;
+            use lavish_rpc::serde_derive::*;
+            use super::super::super::__;
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Params {
+            }
+            
+            impl Params {
+                pub fn downgrade(p: __::Params) -> Option<Self> {
+                    match p {
+                        __::Params::sample_showstats(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Results {
+            }
+            
+            impl Results {
+                pub fn downgrade(p: __::Results) -> Option<Self> {
+                    match p {
+                        __::Results::sample_showstats(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            pub async fn call(h: &__::Handle, p: Params) -> Result<Results, lavish_rpc::Error> {
+                h.call(
+                    __::Params::sample_showstats(p),
+                    Results::downgrade,
+                ).await
+            }
+            
+            pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+            where
+                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+                FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
+            {
+                h.sample_showstats = Some(Box::new(move |state, handle, params| {
+                    Box::pin(
+                        f(__::Call {
+                            state, handle,
+                            params: Params::downgrade(params).unwrap(),
+                        }).map_ok(__::Results::sample_showstats)
                     )
                 }));
             }

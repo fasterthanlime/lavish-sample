@@ -1,5 +1,7 @@
 
 namespace sample {
     client fn reverse(s: string) -> (s: string)
-    server fn print(s: string)
+
+    server fn print(s: string, reversed: bool)
+    server fn show_stats()
 }

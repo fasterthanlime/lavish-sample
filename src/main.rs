@@ -23,8 +23,11 @@ fn main() {
         let addr = ADDR.parse().unwrap();
         let listener = TcpListener::bind(&addr).unwrap();
         println!("[server] <> {}", addr);
-        futures::future::join(client(pool.clone()), server(listener, pool.clone())).await;
-        println!("both futures completed");
+
+        let client = client(pool.clone()).map_err(|e| eprintln!("client error: {:#?}", e));
+        let server =
+            server(listener, pool.clone()).map_err(|e| eprintln!("server error: {:#?}", e));
+        futures::future::join(client, server).await;
     });
 }
 
@@ -50,7 +53,7 @@ async fn server(
         };
 
         let mut h = proto::Handler::new(futures::lock::Mutex::new(state));
-        use proto::sample::{print, reverse};
+        use proto::sample::{print, reverse, show_stats};
         print::register(&mut h, async move |call| {
             let s = reverse::call(&call.handle, reverse::Params { s: call.params.s })
                 .await?
@@ -60,10 +63,17 @@ async fn server(
             {
                 let mut state = call.state.lock().await;
                 state.total_characters += s.len();
-                println!("[server] total characters = {}", state.total_characters);
             }
 
             Ok(print::Results {})
+        });
+
+        show_stats::register(&mut h, async move |call| {
+            println!(
+                "[server] Total characters printed: {}",
+                call.state.lock().await.total_characters
+            );
+            Ok(show_stats::Results {})
         });
 
         System::new(protocol(), Some(h), conn, pool.clone())?;
@@ -82,7 +92,7 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
     let mut h = proto::Handler::new(());
 
     {
-        use proto::sample::{print, reverse};
+        use proto::sample::{print, reverse, show_stats};
         reverse::register(&mut h, async move |call| {
             Ok(reverse::Results {
                 s: call.params.s.chars().rev().collect(),
@@ -92,9 +102,20 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
         let rpc_system = System::new(protocol(), Some(h), conn, pool.clone())?;
         let handle = rpc_system.handle();
 
+        let mut reversed = true;
         for line in &sample_lines() {
-            print::call(&handle, print::Params { s: line.clone() }).await?;
+            print::call(
+                &handle,
+                print::Params {
+                    s: line.clone(),
+                    reversed,
+                },
+            )
+            .await?;
+            reversed = !reversed;
         }
+
+        show_stats::call(&handle, show_stats::Params {}).await?;
     }
 
     Ok(())
