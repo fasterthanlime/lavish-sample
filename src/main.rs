@@ -73,7 +73,7 @@ async fn server(
                 "[server] Total characters printed: {}",
                 call.state.lock().await.total_characters
             );
-            Ok(show_stats::Results {})
+            Ok(())
         });
 
         System::new(protocol(), Some(h), conn, pool.clone())?;
