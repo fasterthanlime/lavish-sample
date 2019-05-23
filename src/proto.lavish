@@ -6,6 +6,6 @@ namespace sample {
     server fn show_stats()
 
     server fn greet(name: string, title: Option<string>)
-    server fn get_cookies() -> (cookies: Map<string, string>)
+    server fn get_cookies() -> (cookies: Map<string, Option<string>>)
     server fn reverse_list(input: Array<string>) -> (output: Array<string>)
 }

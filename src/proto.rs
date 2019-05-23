@@ -472,7 +472,7 @@ mod __ {
             
             #[derive(Serialize, Deserialize, Debug)]
             pub struct Results {
-                pub cookies: ::std::collections::HashMap<String, String>,
+                pub cookies: ::std::collections::HashMap<String, Option<String>>,
             }
             
             impl Results {

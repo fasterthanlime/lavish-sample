@@ -54,8 +54,8 @@ pub async fn run(
             use std::collections::HashMap;
             register(&mut h, async move |_call| {
                 let mut cookies = HashMap::new();
-                cookies.insert("ads".to_string(), "no".to_string());
-                cookies.insert("user_id".to_string(), "1235".to_string());
+                cookies.insert("ads".to_string(), None);
+                cookies.insert("user_id".to_string(), Some("1235".to_string()));
 
                 Ok(Results { cookies })
             })
