@@ -27,6 +27,8 @@ mod __ {
         sample_reverse(sample::reverse::Params),
         sample_print(sample::print::Params),
         sample_showstats(sample::show_stats::Params),
+        sample_greet(sample::greet::Params),
+        sample_getcookies(sample::get_cookies::Params),
     }
     
     #[derive(Serialize, Debug)]
@@ -36,6 +38,8 @@ mod __ {
         sample_reverse(sample::reverse::Results),
         sample_print(sample::print::Results),
         sample_showstats(sample::show_stats::Results),
+        sample_greet(sample::greet::Results),
+        sample_getcookies(sample::get_cookies::Results),
     }
     
     #[derive(Serialize, Debug)]
@@ -59,6 +63,8 @@ mod __ {
                 Params::sample_reverse(_) => "sample.Reverse",
                 Params::sample_print(_) => "sample.Print",
                 Params::sample_showstats(_) => "sample.ShowStats",
+                Params::sample_greet(_) => "sample.Greet",
+                Params::sample_getcookies(_) => "sample.GetCookies",
             }
         }
         
@@ -76,6 +82,10 @@ mod __ {
                     Ok(Params::sample_print(deser::<sample::print::Params>(de)?)),
                 "sample.ShowStats" =>
                     Ok(Params::sample_showstats(deser::<sample::show_stats::Params>(de)?)),
+                "sample.Greet" =>
+                    Ok(Params::sample_greet(deser::<sample::greet::Params>(de)?)),
+                "sample.GetCookies" =>
+                    Ok(Params::sample_getcookies(deser::<sample::get_cookies::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -90,6 +100,8 @@ mod __ {
                 Results::sample_reverse(_) => "sample.Reverse",
                 Results::sample_print(_) => "sample.Print",
                 Results::sample_showstats(_) => "sample.ShowStats",
+                Results::sample_greet(_) => "sample.Greet",
+                Results::sample_getcookies(_) => "sample.GetCookies",
             }
         }
         
@@ -107,6 +119,10 @@ mod __ {
                     Ok(Results::sample_print(deser::<sample::print::Results>(de)?)),
                 "sample.ShowStats" =>
                     Ok(Results::sample_showstats(deser::<sample::show_stats::Results>(de)?)),
+                "sample.Greet" =>
+                    Ok(Results::sample_greet(deser::<sample::greet::Results>(de)?)),
+                "sample.GetCookies" =>
+                    Ok(Results::sample_getcookies(deser::<sample::get_cookies::Results>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -159,6 +175,8 @@ mod __ {
         sample_reverse: Slot<'a, T>,
         sample_print: Slot<'a, T>,
         sample_showstats: Slot<'a, T>,
+        sample_greet: Slot<'a, T>,
+        sample_getcookies: Slot<'a, T>,
     }
     
     impl<'a, T> Handler<'a, T> {
@@ -168,6 +186,8 @@ mod __ {
                 sample_reverse: None,
                 sample_print: None,
                 sample_showstats: None,
+                sample_greet: None,
+                sample_getcookies: None,
             }
         }
     }
@@ -184,6 +204,8 @@ mod __ {
                 Params::sample_reverse(_) => self.sample_reverse.as_ref(),
                 Params::sample_print(_) => self.sample_print.as_ref(),
                 Params::sample_showstats(_) => self.sample_showstats.as_ref(),
+                Params::sample_greet(_) => self.sample_greet.as_ref(),
+                Params::sample_getcookies(_) => self.sample_getcookies.as_ref(),
                 _ => None,
             };
             match slot {
@@ -358,6 +380,117 @@ mod __ {
                             state, handle,
                             params: Params::downgrade(params).unwrap(),
                         }).map_ok(|_| __::Results::sample_showstats(Results {}))
+                    )
+                }));
+            }
+        }
+        
+        pub mod greet {
+            use futures::prelude::*;
+            use lavish_rpc::serde_derive::*;
+            use super::super::super::__;
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Params {
+                pub name: String,
+                pub title: Option<String>,
+            }
+            
+            impl Params {
+                pub fn downgrade(p: __::Params) -> Option<Self> {
+                    match p {
+                        __::Params::sample_greet(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Results {
+            }
+            
+            impl Results {
+                pub fn downgrade(p: __::Results) -> Option<Self> {
+                    match p {
+                        __::Results::sample_greet(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            pub async fn call(h: &__::Handle, p: Params) -> Result<Results, lavish_rpc::Error> {
+                h.call(
+                    __::Params::sample_greet(p),
+                    Results::downgrade,
+                ).await
+            }
+            
+            pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+            where
+                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+                FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
+            {
+                h.sample_greet = Some(Box::new(move |state, handle, params| {
+                    Box::pin(
+                        f(__::Call {
+                            state, handle,
+                            params: Params::downgrade(params).unwrap(),
+                        }).map_ok(|_| __::Results::sample_greet(Results {}))
+                    )
+                }));
+            }
+        }
+        
+        pub mod get_cookies {
+            use futures::prelude::*;
+            use lavish_rpc::serde_derive::*;
+            use super::super::super::__;
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Params {
+            }
+            
+            impl Params {
+                pub fn downgrade(p: __::Params) -> Option<Self> {
+                    match p {
+                        __::Params::sample_getcookies(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Results {
+                pub cookies: ::std::collections::HashMap<String, String>,
+            }
+            
+            impl Results {
+                pub fn downgrade(p: __::Results) -> Option<Self> {
+                    match p {
+                        __::Results::sample_getcookies(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
+                h.call(
+                    __::Params::sample_getcookies(Params {}),
+                    Results::downgrade,
+                ).await
+            }
+            
+            pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+            where
+                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+                FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
+            {
+                h.sample_getcookies = Some(Box::new(move |state, handle, params| {
+                    Box::pin(
+                        f(__::Call {
+                            state, handle,
+                            params: Params::downgrade(params).unwrap(),
+                        }).map_ok(__::Results::sample_getcookies)
                     )
                 }));
             }

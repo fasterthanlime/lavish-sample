@@ -4,4 +4,7 @@ namespace sample {
 
     server fn print(s: string, reversed: bool)
     server fn show_stats()
+
+    server fn greet(name: string, title: Option<string>)
+    server fn get_cookies() -> (cookies: Map<string, string>)
 }
