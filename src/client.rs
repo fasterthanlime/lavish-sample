@@ -55,6 +55,18 @@ pub async fn run(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::E
             .await?
             .output;
         println!("[client] Reversed list: {:?}", list);
+
+        {
+            let mut list: Vec<String> = Vec::new();
+            for _ in 0..2048 {
+                list.push("some long string".into());
+            }
+            println!("[client] Sending a long list of {} elems", list.len());
+            let list = reverse_list::call(&handle, reverse_list::Params { input: list })
+                .await?
+                .output;
+            println!("[client] Result list has {} elems", list.len());
+        }
     }
 
     Ok(())
