@@ -296,14 +296,14 @@ mod __ {
             pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
             where
                 F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
-                FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
+                FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
             {
                 h.sample_print = Some(Box::new(move |state, handle, params| {
                     Box::pin(
                         f(__::Call {
                             state, handle,
                             params: Params::downgrade(params).unwrap(),
-                        }).map_ok(__::Results::sample_print)
+                        }).map_ok(|_| __::Results::sample_print(Results {}))
                     )
                 }));
             }
@@ -327,26 +327,37 @@ mod __ {
                 }
             }
             
-            pub type Results = ();
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Results {
+            }
             
-            pub async fn call(h: &__::Handle, p: Params) -> Result<Results, lavish_rpc::Error> {
+            impl Results {
+                pub fn downgrade(p: __::Results) -> Option<Self> {
+                    match p {
+                        __::Results::sample_showstats(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
                 h.call(
-                    __::Params::sample_showstats(p),
-                    |x| Some(()),
+                    __::Params::sample_showstats(Params {}),
+                    Results::downgrade,
                 ).await
             }
             
             pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
             where
                 F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
-                FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
+                FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
             {
                 h.sample_showstats = Some(Box::new(move |state, handle, params| {
                     Box::pin(
                         f(__::Call {
                             state, handle,
                             params: Params::downgrade(params).unwrap(),
-                        }).map_ok(__::Results::sample_showstats)
+                        }).map_ok(|_| __::Results::sample_showstats(Results {}))
                     )
                 }));
             }

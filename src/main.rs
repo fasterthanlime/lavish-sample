@@ -65,7 +65,7 @@ async fn server(
                 state.total_characters += s.len();
             }
 
-            Ok(print::Results {})
+            Ok(())
         });
 
         show_stats::register(&mut h, async move |call| {
@@ -115,7 +115,7 @@ async fn client(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Er
             reversed = !reversed;
         }
 
-        show_stats::call(&handle, show_stats::Params {}).await?;
+        show_stats::call(&handle, ()).await?;
     }
 
     Ok(())
