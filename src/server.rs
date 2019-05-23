@@ -30,9 +30,15 @@ pub async fn run(
         let mut h = proto::Handler::new(futures::lock::Mutex::new(state));
         use proto::sample::{print, reverse, show_stats};
         print::register(&mut h, async move |call| {
-            let s = reverse::call(&call.handle, reverse::Params { s: call.params.s })
-                .await?
-                .s;
+            let s = {
+                if call.params.reversed {
+                    reverse::call(&call.handle, reverse::Params { s: call.params.s })
+                        .await?
+                        .s
+                } else {
+                    call.params.s
+                }
+            };
             println!("[server] {}", s);
 
             {
@@ -42,6 +48,27 @@ pub async fn run(
 
             Ok(())
         });
+
+        {
+            use proto::sample::get_cookies::*;
+            use std::collections::HashMap;
+            register(&mut h, async move |_call| {
+                let mut cookies = HashMap::new();
+                cookies.insert("ads".to_string(), "no".to_string());
+                cookies.insert("user_id".to_string(), "1235".to_string());
+
+                Ok(Results { cookies })
+            })
+        }
+
+        {
+            use proto::sample::reverse_list::*;
+            register(&mut h, async move |call| {
+                let mut output = call.params.input;
+                output.reverse();
+                Ok(Results { output })
+            })
+        }
 
         show_stats::register(&mut h, async move |call| {
             println!(

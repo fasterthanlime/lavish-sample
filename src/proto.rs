@@ -29,6 +29,7 @@ mod __ {
         sample_showstats(sample::show_stats::Params),
         sample_greet(sample::greet::Params),
         sample_getcookies(sample::get_cookies::Params),
+        sample_reverselist(sample::reverse_list::Params),
     }
     
     #[derive(Serialize, Debug)]
@@ -40,6 +41,7 @@ mod __ {
         sample_showstats(sample::show_stats::Results),
         sample_greet(sample::greet::Results),
         sample_getcookies(sample::get_cookies::Results),
+        sample_reverselist(sample::reverse_list::Results),
     }
     
     #[derive(Serialize, Debug)]
@@ -65,6 +67,7 @@ mod __ {
                 Params::sample_showstats(_) => "sample.ShowStats",
                 Params::sample_greet(_) => "sample.Greet",
                 Params::sample_getcookies(_) => "sample.GetCookies",
+                Params::sample_reverselist(_) => "sample.ReverseList",
             }
         }
         
@@ -86,6 +89,8 @@ mod __ {
                     Ok(Params::sample_greet(deser::<sample::greet::Params>(de)?)),
                 "sample.GetCookies" =>
                     Ok(Params::sample_getcookies(deser::<sample::get_cookies::Params>(de)?)),
+                "sample.ReverseList" =>
+                    Ok(Params::sample_reverselist(deser::<sample::reverse_list::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -102,6 +107,7 @@ mod __ {
                 Results::sample_showstats(_) => "sample.ShowStats",
                 Results::sample_greet(_) => "sample.Greet",
                 Results::sample_getcookies(_) => "sample.GetCookies",
+                Results::sample_reverselist(_) => "sample.ReverseList",
             }
         }
         
@@ -123,6 +129,8 @@ mod __ {
                     Ok(Results::sample_greet(deser::<sample::greet::Results>(de)?)),
                 "sample.GetCookies" =>
                     Ok(Results::sample_getcookies(deser::<sample::get_cookies::Results>(de)?)),
+                "sample.ReverseList" =>
+                    Ok(Results::sample_reverselist(deser::<sample::reverse_list::Results>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -177,6 +185,7 @@ mod __ {
         sample_showstats: Slot<'a, T>,
         sample_greet: Slot<'a, T>,
         sample_getcookies: Slot<'a, T>,
+        sample_reverselist: Slot<'a, T>,
     }
     
     impl<'a, T> Handler<'a, T> {
@@ -188,6 +197,7 @@ mod __ {
                 sample_showstats: None,
                 sample_greet: None,
                 sample_getcookies: None,
+                sample_reverselist: None,
             }
         }
     }
@@ -206,6 +216,7 @@ mod __ {
                 Params::sample_showstats(_) => self.sample_showstats.as_ref(),
                 Params::sample_greet(_) => self.sample_greet.as_ref(),
                 Params::sample_getcookies(_) => self.sample_getcookies.as_ref(),
+                Params::sample_reverselist(_) => self.sample_reverselist.as_ref(),
                 _ => None,
             };
             match slot {
@@ -491,6 +502,62 @@ mod __ {
                             state, handle,
                             params: Params::downgrade(params).unwrap(),
                         }).map_ok(__::Results::sample_getcookies)
+                    )
+                }));
+            }
+        }
+        
+        pub mod reverse_list {
+            use futures::prelude::*;
+            use lavish_rpc::serde_derive::*;
+            use super::super::super::__;
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Params {
+                pub input: Vec<String>,
+            }
+            
+            impl Params {
+                pub fn downgrade(p: __::Params) -> Option<Self> {
+                    match p {
+                        __::Params::sample_reverselist(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Results {
+                pub output: Vec<String>,
+            }
+            
+            impl Results {
+                pub fn downgrade(p: __::Results) -> Option<Self> {
+                    match p {
+                        __::Results::sample_reverselist(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            pub async fn call(h: &__::Handle, p: Params) -> Result<Results, lavish_rpc::Error> {
+                h.call(
+                    __::Params::sample_reverselist(p),
+                    Results::downgrade,
+                ).await
+            }
+            
+            pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+            where
+                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+                FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
+            {
+                h.sample_reverselist = Some(Box::new(move |state, handle, params| {
+                    Box::pin(
+                        f(__::Call {
+                            state, handle,
+                            params: Params::downgrade(params).unwrap(),
+                        }).map_ok(__::Results::sample_reverselist)
                     )
                 }));
             }

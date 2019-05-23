@@ -40,6 +40,21 @@ pub async fn run(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::E
         }
 
         show_stats::call(&handle, ()).await?;
+
+        use proto::sample::get_cookies;
+        let cookies = get_cookies::call(&handle, ()).await?.cookies;
+        println!("[client] Our cookies are: {:#?}", cookies);
+
+        let list = vec!["one", "two", "three"]
+            .iter()
+            .map(|&x| x.to_string())
+            .collect();
+        println!("[client] Initial list: {:?}", list);
+        use proto::sample::reverse_list;
+        let list = reverse_list::call(&handle, reverse_list::Params { input: list })
+            .await?
+            .output;
+        println!("[client] Reversed list: {:?}", list);
     }
 
     Ok(())
