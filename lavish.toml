@@ -1,0 +1,21 @@
+
+output = "rust"
+main = "sample"
+
+[modules.sample]
+source = "file"
+file = "src/proto/sample.lavish"
+
+[modules.itchio]
+source = "go"
+path = "github.com/itchio/go-itchio"
+
+[modules.ox]
+source = "go"
+path = "github.com/itchio/ox"
+
+[modules.butler]
+source = "git"
+repo = "https://github.com/itchio/butler"
+revision = "v15.12.0"
+file = "src/butlerd/butlerd.lavish"

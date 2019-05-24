@@ -1,0 +1,11 @@
+
+target rust
+
+build butlerd from git {
+    repo "github.com/itchio/butler"
+    path "butlerd.lavish"
+}
+
+build sample from file {
+    path "sample.lavish"
+}

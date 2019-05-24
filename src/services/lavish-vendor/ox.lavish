@@ -1,0 +1,12 @@
+
+enum Platform via string {
+    OSX = "osx",
+    Windows = "windows",
+    Linux = "linux",
+    Unknown = "unknown",
+}
+
+struct Runtime {
+    platform: Platform,
+    is_64: bool,
+}

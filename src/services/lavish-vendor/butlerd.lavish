@@ -1,0 +1,61 @@
+
+import ox from "github.com/itchio/ox"
+import itchio from "github.com/itchio/go-itchio"
+
+// Represents a user for which we have profile information,
+// ie. that we can connect as, etc.
+struct Profile {
+    // itch.io user ID, doubling as profile ID
+    id: int64,
+
+	// Timestamp the user last connected at (to the client)
+    last_connected: timestamp,
+
+	// User information
+    user: itchio.User,
+}
+
+namespace profile {
+    // Lists remembered profiles
+    server fn list() -> (profiles: Array<Profile>)
+}
+
+namespace system {
+    // Returns the current runtime
+    server fn current() -> (runtime: ox.Runtime)
+}
+
+namespace launch {
+    // Attempt to launch an installed game
+    server fn launch(caveId: string) {
+        nf running()
+        nf exited()
+        nf prereqs_started();
+        nf prereqs_task_state(
+            name: string,
+            status: PrereqsStatus,
+            progress: float64,
+            eta: float64,
+            bps: float64,
+        );
+        nf prereqs_ended();
+
+        client fn accept_license(text: string) -> (accept: bool)
+        client fn pick_manifest_action(actions: Array<Action>) -> (index: int64)
+
+        client fn perform_shell_launch(item_path: string)
+        client fn perform_html_launch(
+            root_folder: string,
+            index_path: string,
+            args: Array<string>,
+            env: Map<string, string>,
+        )
+    }
+}
+
+namespace test {
+    server fn quadruple(x: float64) -> (x: float64) {
+        client fn double(x: float64) -> (x: float64)
+    }
+}
+

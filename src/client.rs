@@ -41,9 +41,9 @@ pub async fn run(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::E
 
         show_stats::call(&handle, ()).await?;
 
-        use proto::sample::get_cookies;
-        let cookies = get_cookies::call(&handle, ()).await?.cookies;
-        println!("[client] Our cookies are: {:#?}", cookies);
+        use proto::sample::get_session_info;
+        let session = get_session_info::call(&handle, ()).await?.session;
+        println!("[client] Session info: {:#?}", session);
 
         let list = vec!["one", "two", "three"]
             .iter()

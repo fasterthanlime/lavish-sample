@@ -15,6 +15,8 @@ mod server;
 pub static ADDR: &'static str = "127.0.0.1:9596";
 
 fn main() {
+    env_logger::init();
+
     let mut executor = executor::ThreadPool::new().unwrap();
     let pool = executor.clone();
 

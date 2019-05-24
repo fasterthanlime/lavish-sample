@@ -50,14 +50,19 @@ pub async fn run(
         });
 
         {
-            use proto::sample::get_cookies::*;
+            use proto::sample::get_session_info::*;
             use std::collections::HashMap;
             register(&mut h, async move |_call| {
                 let mut cookies = HashMap::new();
                 cookies.insert("ads".to_string(), None);
                 cookies.insert("user_id".to_string(), Some("1235".to_string()));
 
-                Ok(Results { cookies })
+                Ok(Results {
+                    session: proto::sample::SessionInfo {
+                        display_name: "Jane Doe".into(),
+                        cookies,
+                    },
+                })
             })
         }
 

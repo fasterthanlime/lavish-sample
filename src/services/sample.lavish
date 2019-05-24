@@ -1,0 +1,7 @@
+
+struct Cookie {
+    key: string,
+    value: string,
+}
+
+server fn get_cookies() -> (array: Array<Cookie>)
