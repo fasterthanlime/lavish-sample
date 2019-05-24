@@ -1,11 +1,6 @@
 
 target rust
 
-build butlerd from git {
-    repo "github.com/itchio/butler"
-    path "butlerd.lavish"
-}
+build butlerd from "github.com/itchio/butler"
+build sample
 
-build sample from file {
-    path "sample.lavish"
-}
