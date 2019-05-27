@@ -4,4 +4,4 @@ struct Cookie {
     value: string,
 }
 
-server fn get_cookies() -> (array: Array<Cookie>)
+server fn get_cookies() -> (cookies: Array<Cookie>)

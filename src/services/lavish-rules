@@ -1,6 +1,5 @@
 
 target rust
 
-build butlerd from "github.com/itchio/butler"
+// build butlerd from "github.com/itchio/butler"
 build sample
-

@@ -30,15 +30,15 @@ namespace launch {
     server fn launch(caveId: string) {
         nf running()
         nf exited()
-        nf prereqs_started();
+        nf prereqs_started()
         nf prereqs_task_state(
             name: string,
             status: PrereqsStatus,
             progress: float64,
             eta: float64,
             bps: float64,
-        );
-        nf prereqs_ended();
+        )
+        nf prereqs_ended()
 
         client fn accept_license(text: string) -> (accept: bool)
         client fn pick_manifest_action(actions: Array<Action>) -> (index: int64)
