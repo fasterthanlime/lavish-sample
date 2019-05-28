@@ -150,9 +150,9 @@ mod __ {
     }
     
     impl<'a, T> Handler<'a, T> {
-        pub fn new(state: T) -> Self {
+        pub fn new(state: Arc<T>) -> Self {
             Self {
-                state: Arc::new(state),
+                state,
                 get_cookies: None,
                 get_user_agent: None,
             }
@@ -300,14 +300,20 @@ mod __ {
         }
     }
     
-    pub fn peer_with_handler<IO, T, F>(io: IO, pool: &futures::executor::ThreadPool, state: T, setup: F) -> Result<Handle, lavish_rpc::Error>
+    pub fn peer_with_handler<C, T, F>(conn: C, pool: futures::executor::ThreadPool, state: Arc<T>, setup: F) -> Result<Handle, lavish_rpc::Error>
     where
-        IO: lavish_rpc::IO,
+        C: lavish_rpc::Conn,
         T: Send + Sync + 'static,
         F: Fn(&mut Handler<'static, T>),
     {
         let mut handler = Handler::new(state);
         setup(&mut handler);
-        Ok(lavish_rpc::System::new(protocol(), handler, io, pool.clone())?.handle())
+        Ok(lavish_rpc::System::new(protocol(), handler, conn, pool)?.handle())
+    }
+    pub fn peer<C>(conn: C, pool: futures::executor::ThreadPool) -> Result<Handle, lavish_rpc::Error>
+    where
+        C: lavish_rpc::Conn,
+    {
+        peer_with_handler(conn, pool, std::sync::Arc::new(()), |_| {})
     }
 }

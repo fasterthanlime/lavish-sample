@@ -4,11 +4,11 @@ use futures::prelude::*;
 use romio::tcp::TcpListener;
 
 use super::services::sample;
+use std::sync::Arc;
 
-#[allow(clippy::needless_lifetimes)]
 pub async fn run(
     mut listener: TcpListener,
-    pool: &executor::ThreadPool,
+    pool: executor::ThreadPool,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
     let mut incoming = listener.incoming();
 
@@ -18,7 +18,7 @@ pub async fn run(
         println!("[server] <- {}", addr);
         conn.set_nodelay(true)?;
 
-        sample::peer_with_handler(conn, pool, (), |mut h| {
+        sample::peer_with_handler(conn, pool, Arc::new(()), |mut h| {
             use sample::get_cookies::*;
             register(&mut h, async move |call| {
                 let mut cookies: Vec<sample::Cookie> = Vec::new();
