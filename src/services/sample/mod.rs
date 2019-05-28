@@ -41,7 +41,6 @@ mod __ {
     
     pub type Message = rpc::Message<Params, NotificationParams, Results>;
     pub type Handle = rpc::Handle<Params, NotificationParams, Results>;
-    pub type System = rpc::System<Params, NotificationParams, Results>;
     pub type Protocol = rpc::Protocol<Params, NotificationParams, Results>;
     
     pub fn protocol() -> Protocol {
@@ -300,6 +299,7 @@ mod __ {
         }
     }
     
+    
     pub fn peer_with_handler<C, T, F>(conn: C, pool: futures::executor::ThreadPool, state: Arc<T>, setup: F) -> Result<Handle, lavish_rpc::Error>
     where
         C: lavish_rpc::Conn,
@@ -308,12 +308,55 @@ mod __ {
     {
         let mut handler = Handler::new(state);
         setup(&mut handler);
-        Ok(lavish_rpc::System::new(protocol(), handler, conn, pool)?.handle())
+        lavish_rpc::connect(protocol(), handler, conn, pool)
     }
+    
     pub fn peer<C>(conn: C, pool: futures::executor::ThreadPool) -> Result<Handle, lavish_rpc::Error>
     where
         C: lavish_rpc::Conn,
     {
         peer_with_handler(conn, pool, std::sync::Arc::new(()), |_| {})
     }
+    
+    pub struct PeerBuilder<C>
+    where
+        C: lavish_rpc::Conn,
+    {
+        conn: C,
+        pool: futures::executor::ThreadPool,
+    }
+    
+    impl<C> PeerBuilder<C>
+    where
+        C: lavish_rpc::Conn,
+    {
+        pub fn new(conn: C, pool: futures::executor::ThreadPool) -> Self {
+            Self { conn, pool }
+        }
+        
+        pub fn with_noop_handler(self) -> Result<Handle, lavish_rpc::Error> {
+            let handler = Handler::new(std::sync::Arc::new(()));
+            lavish_rpc::connect(protocol(), handler, self.conn, self.pool)
+        }
+        
+        pub fn with_handler<S>(self, setup: S) -> Result<Handle, lavish_rpc::Error>
+        where
+            S: Fn(&mut Handler<()>),
+        {
+            let mut handler = Handler::new(std::sync::Arc::new(()));
+            setup(&mut handler);
+            lavish_rpc::connect(protocol(), handler, self.conn, self.pool)
+        }
+        
+        pub fn with_stateful_handler<T, S>(self, state: Arc<T>, setup: S) -> Result<Handle, lavish_rpc::Error>
+        where
+            S: Fn(&mut Handler<T>),
+            T: Sync + Send + 'static,
+        {
+            let mut handler = Handler::new(state);
+            setup(&mut handler);
+            lavish_rpc::connect(protocol(), handler, self.conn, self.pool)
+        }
+    }
+    
 }
