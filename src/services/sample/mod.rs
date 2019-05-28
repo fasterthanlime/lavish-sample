@@ -153,20 +153,20 @@ mod __ {
     
     pub type SlotReturn = Pin<Box<SlotFuture>>;
     
-    pub type SlotFn<'a, T> = 
-        Fn(Arc<T>, Handle, Params) -> SlotReturn + 'a + Send + Sync;
+    pub type SlotFn<T> = 
+        Fn(Arc<T>, Handle, Params) -> SlotReturn + 'static + Send + Sync;
     
-    pub type Slot<'a, T> = Option<Box<SlotFn<'a, T>>>;
+    pub type Slot<T> = Option<Box<SlotFn<T>>>;
     
-    pub struct Handler<'a, T> {
+    pub struct Handler<T> {
         state: Arc<T>,
-        get_cookies: Slot<'a, T>,
-        get_user_agent: Slot<'a, T>,
-        ping: Slot<'a, T>,
-        ping_ping: Slot<'a, T>,
+        get_cookies: Slot<T>,
+        get_user_agent: Slot<T>,
+        ping: Slot<T>,
+        ping_ping: Slot<T>,
     }
     
-    impl<'a, T> Handler<'a, T> {
+    impl<T> Handler<T> {
         pub fn new(state: Arc<T>) -> Self {
             Self {
                 state,
@@ -180,7 +180,7 @@ mod __ {
     
     type HandlerRet = Pin<Box<dyn Future<Output = Result<Results, rpc::Error>> + Send + 'static>>;
     
-    impl<'a, T> rpc::Handler<Params, NotificationParams, Results, HandlerRet> for Handler<'a, T>
+    impl<T> rpc::Handler<Params, NotificationParams, Results, HandlerRet> for Handler<T>
     where
         T: Send + Sync,
     {
@@ -205,12 +205,19 @@ mod __ {
     
     use lavish_rpc::serde_derive::*;
     
+    /// A key/value pair used to remember session information.
+    /// 
+    /// Can be harmful in real life, but this is just a sample schema
     #[derive(Serialize, Deserialize, Debug)]
     pub struct Cookie {
+        /// The key of the cookie
         pub key: String,
+        /// The value of the cookie.
+        /// Although it's typed as a string, it can be anything underneath.
         pub value: String,
     }
     
+    /// Ask for a list of cookies from the server.
     pub mod get_cookies {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
@@ -250,9 +257,9 @@ mod __ {
             ).await
         }
         
-        pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+        pub fn register<T, F, FT>(h: &mut __::Handler<T>, f: F)
         where
-            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'static,
             FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
         {
             h.get_cookies = Some(Box::new(move |state, handle, params| {
@@ -266,6 +273,7 @@ mod __ {
         }
         }
         
+    /// Ask the client what its user-agent is.
     pub mod get_user_agent {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
@@ -305,9 +313,9 @@ mod __ {
             ).await
         }
         
-        pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+        pub fn register<T, F, FT>(h: &mut __::Handler<T>, f: F)
         where
-            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'static,
             FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
         {
             h.get_user_agent = Some(Box::new(move |state, handle, params| {
@@ -321,6 +329,7 @@ mod __ {
         }
         }
         
+    /// Ping the server to make sure it's alive
     pub mod ping {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
@@ -359,9 +368,9 @@ mod __ {
             ).await
         }
         
-        pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+        pub fn register<T, F, FT>(h: &mut __::Handler<T>, f: F)
         where
-            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'static,
             FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
         {
             h.ping = Some(Box::new(move |state, handle, params| {
@@ -375,6 +384,7 @@ mod __ {
         }
         use lavish_rpc::serde_derive::*;
         
+        /// Ping the client to make sure it's alive
         pub mod ping {
             use futures::prelude::*;
             use lavish_rpc::serde_derive::*;
@@ -413,9 +423,9 @@ mod __ {
                 ).await
             }
             
-            pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+            pub fn register<T, F, FT>(h: &mut __::Handler<T>, f: F)
             where
-                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'static,
                 FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
             {
                 h.ping_ping = Some(Box::new(move |state, handle, params| {

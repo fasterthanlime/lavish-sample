@@ -1,12 +1,24 @@
 
+// A key/value pair used to remember session information.
+//
+// Can be harmful in real life, but this is just a sample schema
 struct Cookie {
+    // The key of the cookie
     key: string,
+    // The value of the cookie.
+    // Although it's typed as a string, it can be anything underneath.
     value: string,
 }
 
+// Ask for a list of cookies from the server.
 server fn get_cookies() -> (cookies: Array<Cookie>)
+
+// Ask the client what its user-agent is.
 client fn get_user_agent() -> (user_agent: string)
 
+// Ping the server to make sure it's alive
 server fn ping() {
+    // Ping the client to make sure it's alive
     client fn ping()
 }
+
