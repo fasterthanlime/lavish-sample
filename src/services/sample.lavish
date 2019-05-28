@@ -6,3 +6,7 @@ struct Cookie {
 
 server fn get_cookies() -> (cookies: Array<Cookie>)
 client fn get_user_agent() -> (user_agent: string)
+
+server fn ping() {
+    client fn ping()
+}

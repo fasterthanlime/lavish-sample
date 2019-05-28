@@ -23,6 +23,8 @@ mod __ {
     pub enum Params {
         get_cookies(get_cookies::Params),
         get_user_agent(get_user_agent::Params),
+        ping(ping::Params),
+        ping_ping(ping::ping::Params),
     }
     
     #[derive(Serialize, Debug)]
@@ -31,6 +33,8 @@ mod __ {
     pub enum Results {
         get_cookies(get_cookies::Results),
         get_user_agent(get_user_agent::Results),
+        ping(ping::Results),
+        ping_ping(ping::ping::Results),
     }
     
     #[derive(Serialize, Debug)]
@@ -52,6 +56,8 @@ mod __ {
             match self {
                 Params::get_cookies(_) => "get_cookies",
                 Params::get_user_agent(_) => "get_user_agent",
+                Params::ping(_) => "ping",
+                Params::ping_ping(_) => "ping.ping",
             }
         }
         
@@ -67,6 +73,10 @@ mod __ {
                     Ok(Params::get_cookies(deser::<get_cookies::Params>(de)?)),
                 "get_user_agent" =>
                     Ok(Params::get_user_agent(deser::<get_user_agent::Params>(de)?)),
+                "ping" =>
+                    Ok(Params::ping(deser::<ping::Params>(de)?)),
+                "ping.ping" =>
+                    Ok(Params::ping_ping(deser::<ping::ping::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -80,6 +90,8 @@ mod __ {
             match self {
                 Results::get_cookies(_) => "get_cookies",
                 Results::get_user_agent(_) => "get_user_agent",
+                Results::ping(_) => "ping",
+                Results::ping_ping(_) => "ping.ping",
             }
         }
         
@@ -95,6 +107,10 @@ mod __ {
                     Ok(Results::get_cookies(deser::<get_cookies::Results>(de)?)),
                 "get_user_agent" =>
                     Ok(Results::get_user_agent(deser::<get_user_agent::Results>(de)?)),
+                "ping" =>
+                    Ok(Results::ping(deser::<ping::Results>(de)?)),
+                "ping.ping" =>
+                    Ok(Results::ping_ping(deser::<ping::ping::Results>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -146,6 +162,8 @@ mod __ {
         state: Arc<T>,
         get_cookies: Slot<'a, T>,
         get_user_agent: Slot<'a, T>,
+        ping: Slot<'a, T>,
+        ping_ping: Slot<'a, T>,
     }
     
     impl<'a, T> Handler<'a, T> {
@@ -154,6 +172,8 @@ mod __ {
                 state,
                 get_cookies: None,
                 get_user_agent: None,
+                ping: None,
+                ping_ping: None,
             }
         }
     }
@@ -169,6 +189,8 @@ mod __ {
             let slot = match params {
                 Params::get_cookies(_) => self.get_cookies.as_ref(),
                 Params::get_user_agent(_) => self.get_user_agent.as_ref(),
+                Params::ping(_) => self.ping.as_ref(),
+                Params::ping_ping(_) => self.ping_ping.as_ref(),
                 _ => None,
             };
             match slot {
@@ -242,8 +264,8 @@ mod __ {
                 )
             }));
         }
-    }
-    
+        }
+        
     pub mod get_user_agent {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
@@ -297,8 +319,118 @@ mod __ {
                 )
             }));
         }
-    }
-    
+        }
+        
+    pub mod ping {
+        use futures::prelude::*;
+        use lavish_rpc::serde_derive::*;
+        use super::super::__;
+        
+        #[derive(Serialize, Deserialize, Debug)]
+        pub struct Params {
+        }
+        
+        impl Params {
+            pub fn downgrade(p: __::Params) -> Option<Self> {
+                match p {
+                    __::Params::ping(p) => Some(p),
+                    _ => None,
+                }
+            }
+        }
+        
+        #[derive(Serialize, Deserialize, Debug)]
+        pub struct Results {
+        }
+        
+        impl Results {
+            pub fn downgrade(p: __::Results) -> Option<Self> {
+                match p {
+                    __::Results::ping(p) => Some(p),
+                    _ => None,
+                }
+            }
+        }
+        
+        pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
+            h.call(
+                __::Params::ping(Params {}),
+                Results::downgrade,
+            ).await
+        }
+        
+        pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+        where
+            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+            FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
+        {
+            h.ping = Some(Box::new(move |state, handle, params| {
+                Box::pin(
+                    f(__::Call {
+                        state, handle,
+                        params: Params::downgrade(params).unwrap(),
+                    }).map_ok(|_| __::Results::ping(Results {}))
+                )
+            }));
+        }
+        use lavish_rpc::serde_derive::*;
+        
+        pub mod ping {
+            use futures::prelude::*;
+            use lavish_rpc::serde_derive::*;
+            use super::super::super::__;
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Params {
+            }
+            
+            impl Params {
+                pub fn downgrade(p: __::Params) -> Option<Self> {
+                    match p {
+                        __::Params::ping_ping(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct Results {
+            }
+            
+            impl Results {
+                pub fn downgrade(p: __::Results) -> Option<Self> {
+                    match p {
+                        __::Results::ping_ping(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+            
+            pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
+                h.call(
+                    __::Params::ping_ping(Params {}),
+                    Results::downgrade,
+                ).await
+            }
+            
+            pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+            where
+                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+                FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
+            {
+                h.ping_ping = Some(Box::new(move |state, handle, params| {
+                    Box::pin(
+                        f(__::Call {
+                            state, handle,
+                            params: Params::downgrade(params).unwrap(),
+                        }).map_ok(|_| __::Results::ping_ping(Results {}))
+                    )
+                }));
+            }
+            }
+            
+        }
+        
     
     pub struct PeerBuilder<C>
     where
