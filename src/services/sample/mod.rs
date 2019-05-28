@@ -44,11 +44,14 @@ mod __ {
     }
     
     pub type Message = rpc::Message<Params, NotificationParams, Results>;
-    pub type Handle = rpc::Handle<Params, NotificationParams, Results>;
+    pub type RootHandle = rpc::Handle<Params, NotificationParams, Results>;
     pub type Protocol = rpc::Protocol<Params, NotificationParams, Results>;
     
     pub fn protocol() -> Protocol {
         Protocol::new()
+    }
+    pub struct Handle {
+        root: RootHandle,
     }
     
     impl rpc::Atom for Params {
@@ -245,7 +248,7 @@ mod __ {
     where
         T: Send + Sync,
     {
-        fn handle(&self, handle: Handle, params: Params) -> HandlerRet {
+        fn handle(&self, handle: RootHandle, params: Params) -> HandlerRet {
             let method = params.method();
             let slot = match params {
                 Params::get_cookies(_) => self.get_cookies.as_ref(),
@@ -256,7 +259,7 @@ mod __ {
             };
             match slot {
                 Some(slot_fn) => {
-                    let res = slot_fn(self.state.clone(), handle, params);
+                    let res = slot_fn(self.state.clone(), Handle { root: handle }, params);
                     Box::pin(async move { Ok(res.await?) })
                 }
                 None => Box::pin(async move { Err(rpc::Error::MethodUnimplemented(method)) }),
@@ -312,7 +315,7 @@ mod __ {
         }
         
         pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
-            h.call(
+            h.root.call(
                 __::Params::get_cookies(Params {}),
                 Results::downgrade,
             ).await
@@ -353,7 +356,7 @@ mod __ {
         }
         
         pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
-            h.call(
+            h.root.call(
                 __::Params::get_user_agent(Params {}),
                 Results::downgrade,
             ).await
@@ -393,7 +396,7 @@ mod __ {
         }
         
         pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
-            h.call(
+            h.root.call(
                 __::Params::ping(Params {}),
                 Results::downgrade,
             ).await
@@ -433,7 +436,7 @@ mod __ {
             }
             
             pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
-                h.call(
+                h.root.call(
                     __::Params::ping_ping(Params {}),
                     Results::downgrade,
                 ).await
@@ -477,7 +480,8 @@ mod __ {
         {
             let mut handler = Handler::new(state);
             setup(&mut handler);
-            lavish_rpc::connect(protocol(), handler, self.conn, self.pool)
+            let root = lavish_rpc::connect(protocol(), handler, self.conn, self.pool)?;
+            Ok(Handle { root })
         }
     }
     
