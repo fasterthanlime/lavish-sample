@@ -25,9 +25,8 @@ fn main() {
         let listener = TcpListener::bind(&addr).unwrap();
         println!("[server] <> {}", addr);
 
-        let client = client::run(pool.clone()).map_err(|e| eprintln!("client error: {:#?}", e));
-        let server =
-            server::run(listener, pool.clone()).map_err(|e| eprintln!("server error: {:#?}", e));
+        let client = client::run(&pool).map_err(|e| eprintln!("client error: {:#?}", e));
+        let server = server::run(listener, &pool).map_err(|e| eprintln!("server error: {:#?}", e));
         futures::future::join(client, server).await;
     });
 }

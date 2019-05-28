@@ -22,6 +22,7 @@ mod __ {
     #[allow(non_camel_case_types, unused)]
     pub enum Params {
         get_cookies(get_cookies::Params),
+        get_user_agent(get_user_agent::Params),
     }
     
     #[derive(Serialize, Debug)]
@@ -29,6 +30,7 @@ mod __ {
     #[allow(non_camel_case_types, unused)]
     pub enum Results {
         get_cookies(get_cookies::Results),
+        get_user_agent(get_user_agent::Results),
     }
     
     #[derive(Serialize, Debug)]
@@ -50,6 +52,7 @@ mod __ {
         fn method(&self) -> &'static str {
             match self {
                 Params::get_cookies(_) => "get_cookies",
+                Params::get_user_agent(_) => "get_user_agent",
             }
         }
         
@@ -63,6 +66,8 @@ mod __ {
             match method {
                 "get_cookies" =>
                     Ok(Params::get_cookies(deser::<get_cookies::Params>(de)?)),
+                "get_user_agent" =>
+                    Ok(Params::get_user_agent(deser::<get_user_agent::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -75,6 +80,7 @@ mod __ {
         fn method(&self) -> &'static str {
             match self {
                 Results::get_cookies(_) => "get_cookies",
+                Results::get_user_agent(_) => "get_user_agent",
             }
         }
         
@@ -88,6 +94,8 @@ mod __ {
             match method {
                 "get_cookies" =>
                     Ok(Results::get_cookies(deser::<get_cookies::Results>(de)?)),
+                "get_user_agent" =>
+                    Ok(Results::get_user_agent(deser::<get_user_agent::Results>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -138,6 +146,7 @@ mod __ {
     pub struct Handler<'a, T> {
         state: Arc<T>,
         get_cookies: Slot<'a, T>,
+        get_user_agent: Slot<'a, T>,
     }
     
     impl<'a, T> Handler<'a, T> {
@@ -145,6 +154,7 @@ mod __ {
             Self {
                 state: Arc::new(state),
                 get_cookies: None,
+                get_user_agent: None,
             }
         }
     }
@@ -159,6 +169,7 @@ mod __ {
             let method = params.method();
             let slot = match params {
                 Params::get_cookies(_) => self.get_cookies.as_ref(),
+                Params::get_user_agent(_) => self.get_user_agent.as_ref(),
                 _ => None,
             };
             match slot {
@@ -233,16 +244,63 @@ mod __ {
             }));
         }
     }
-
-    pub fn client<'a, IO>(io: IO, pool: &futures::executor::ThreadPool) -> Result<Handle, lavish_rpc::Error>
-    where
-        IO: lavish_rpc::IO,
-    {
-        let mut h = Handler::new(());
-        Ok(lavish_rpc::System::new(protocol(), h, io, pool.clone())?.handle())
+    
+    pub mod get_user_agent {
+        use futures::prelude::*;
+        use lavish_rpc::serde_derive::*;
+        use super::super::__;
+        
+        #[derive(Serialize, Deserialize, Debug)]
+        pub struct Params {
+        }
+        
+        impl Params {
+            pub fn downgrade(p: __::Params) -> Option<Self> {
+                match p {
+                    __::Params::get_user_agent(p) => Some(p),
+                    _ => None,
+                }
+            }
+        }
+        
+        #[derive(Serialize, Deserialize, Debug)]
+        pub struct Results {
+            pub user_agent: String,
+        }
+        
+        impl Results {
+            pub fn downgrade(p: __::Results) -> Option<Self> {
+                match p {
+                    __::Results::get_user_agent(p) => Some(p),
+                    _ => None,
+                }
+            }
+        }
+        
+        pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
+            h.call(
+                __::Params::get_user_agent(Params {}),
+                Results::downgrade,
+            ).await
+        }
+        
+        pub fn register<'a, T, F, FT>(h: &mut __::Handler<'a, T>, f: F)
+        where
+            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'a,
+            FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
+        {
+            h.get_user_agent = Some(Box::new(move |state, handle, params| {
+                Box::pin(
+                    f(__::Call {
+                        state, handle,
+                        params: Params::downgrade(params).unwrap(),
+                    }).map_ok(__::Results::get_user_agent)
+                )
+            }));
+        }
     }
-
-    pub fn client_with_handler<'a, IO, T, F>(io: IO, pool: &futures::executor::ThreadPool, state: T, setup: F) -> Result<Handle, lavish_rpc::Error>
+    
+    pub fn peer_with_handler<IO, T, F>(io: IO, pool: &futures::executor::ThreadPool, state: T, setup: F) -> Result<Handle, lavish_rpc::Error>
     where
         IO: lavish_rpc::IO,
         T: Send + Sync + 'static,

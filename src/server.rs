@@ -4,11 +4,11 @@ use futures::prelude::*;
 use romio::tcp::TcpListener;
 
 use super::services::sample;
-use lavish_rpc::System;
 
+#[allow(clippy::needless_lifetimes)]
 pub async fn run(
     mut listener: TcpListener,
-    pool: executor::ThreadPool,
+    pool: &executor::ThreadPool,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
     let mut incoming = listener.incoming();
 
@@ -16,13 +16,11 @@ pub async fn run(
         let conn = conn?;
         let addr = conn.peer_addr()?;
         println!("[server] <- {}", addr);
-
         conn.set_nodelay(true)?;
 
-        let mut h = sample::Handler::new(());
-        {
+        sample::peer_with_handler(conn, pool, (), |mut h| {
             use sample::get_cookies::*;
-            register(&mut h, async move |_call| {
+            register(&mut h, async move |call| {
                 let mut cookies: Vec<sample::Cookie> = Vec::new();
                 cookies.push(sample::Cookie {
                     key: "ads".into(),
@@ -33,11 +31,16 @@ pub async fn run(
                     value: "John Doe".into(),
                 });
 
+                cookies.push(sample::Cookie {
+                    key: "user-agent".into(),
+                    value: sample::get_user_agent::call(&call.handle, ())
+                        .await?
+                        .user_agent,
+                });
+
                 Ok(Results { cookies })
             });
-        }
-
-        System::new(sample::protocol(), h, conn, pool.clone())?;
+        })?;
     }
     Ok(())
 }
