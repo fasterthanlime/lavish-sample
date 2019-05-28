@@ -18,8 +18,7 @@ pub async fn run(
         conn.set_nodelay(true)?;
 
         sample::peer(conn, pool).with_handler(|h| {
-            use sample::get_cookies::*;
-            register(h, async move |call| {
+            h.on_get_cookies(async move |call| {
                 let mut cookies: Vec<sample::Cookie> = Vec::new();
                 cookies.push(sample::Cookie {
                     key: "ads".into(),
@@ -37,7 +36,7 @@ pub async fn run(
                         .user_agent,
                 });
 
-                Ok(Results { cookies })
+                Ok(sample::get_cookies::Results { cookies })
             });
         })?;
     }

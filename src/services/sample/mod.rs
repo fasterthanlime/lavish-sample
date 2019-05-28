@@ -176,6 +176,67 @@ mod __ {
                 ping_ping: None,
             }
         }
+        
+        pub fn on_get_cookies<F, FT> (&mut self, f: F)
+        where
+            F: Fn(Call<T, get_cookies::Params>) -> FT + Sync + Send + 'static,
+            FT: Future<Output = Result<get_cookies::Results, lavish_rpc::Error>> + Send + 'static,
+        {
+            self.get_cookies = Some(Box::new(move |state, handle, params| {
+                Box::pin(
+                    f(Call {
+                        state, handle,
+                        params: get_cookies::Params::downgrade(params).unwrap(),
+                    }).map_ok(Results::get_cookies)
+                )
+            }));
+        }
+        
+        pub fn on_get_user_agent<F, FT> (&mut self, f: F)
+        where
+            F: Fn(Call<T, get_user_agent::Params>) -> FT + Sync + Send + 'static,
+            FT: Future<Output = Result<get_user_agent::Results, lavish_rpc::Error>> + Send + 'static,
+        {
+            self.get_user_agent = Some(Box::new(move |state, handle, params| {
+                Box::pin(
+                    f(Call {
+                        state, handle,
+                        params: get_user_agent::Params::downgrade(params).unwrap(),
+                    }).map_ok(Results::get_user_agent)
+                )
+            }));
+        }
+        
+        pub fn on_ping<F, FT> (&mut self, f: F)
+        where
+            F: Fn(Call<T, ping::Params>) -> FT + Sync + Send + 'static,
+            FT: Future<Output = Result<ping::Results, lavish_rpc::Error>> + Send + 'static,
+        {
+            self.ping = Some(Box::new(move |state, handle, params| {
+                Box::pin(
+                    f(Call {
+                        state, handle,
+                        params: ping::Params::downgrade(params).unwrap(),
+                    }).map_ok(|_| Results::ping(ping::Results {}))
+                )
+            }));
+        }
+        
+        pub fn on_ping_ping<F, FT> (&mut self, f: F)
+        where
+            F: Fn(Call<T, ping::ping::Params>) -> FT + Sync + Send + 'static,
+            FT: Future<Output = Result<ping::ping::Results, lavish_rpc::Error>> + Send + 'static,
+        {
+            self.ping_ping = Some(Box::new(move |state, handle, params| {
+                Box::pin(
+                    f(Call {
+                        state, handle,
+                        params: ping::ping::Params::downgrade(params).unwrap(),
+                    }).map_ok(|_| Results::ping_ping(ping::ping::Results {}))
+                )
+            }));
+        }
+        
     }
     
     type HandlerRet = Pin<Box<dyn Future<Output = Result<Results, rpc::Error>> + Send + 'static>>;
@@ -256,21 +317,6 @@ mod __ {
                 Results::downgrade,
             ).await
         }
-        
-        pub fn register<T, F, FT>(h: &mut __::Handler<T>, f: F)
-        where
-            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
-        {
-            h.get_cookies = Some(Box::new(move |state, handle, params| {
-                Box::pin(
-                    f(__::Call {
-                        state, handle,
-                        params: Params::downgrade(params).unwrap(),
-                    }).map_ok(__::Results::get_cookies)
-                )
-            }));
-        }
         }
         
     /// Ask the client what its user-agent is.
@@ -312,21 +358,6 @@ mod __ {
                 Results::downgrade,
             ).await
         }
-        
-        pub fn register<T, F, FT>(h: &mut __::Handler<T>, f: F)
-        where
-            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<Results, lavish_rpc::Error>> + Send + 'static,
-        {
-            h.get_user_agent = Some(Box::new(move |state, handle, params| {
-                Box::pin(
-                    f(__::Call {
-                        state, handle,
-                        params: Params::downgrade(params).unwrap(),
-                    }).map_ok(__::Results::get_user_agent)
-                )
-            }));
-        }
         }
         
     /// Ping the server to make sure it's alive
@@ -367,21 +398,6 @@ mod __ {
                 Results::downgrade,
             ).await
         }
-        
-        pub fn register<T, F, FT>(h: &mut __::Handler<T>, f: F)
-        where
-            F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
-        {
-            h.ping = Some(Box::new(move |state, handle, params| {
-                Box::pin(
-                    f(__::Call {
-                        state, handle,
-                        params: Params::downgrade(params).unwrap(),
-                    }).map_ok(|_| __::Results::ping(Results {}))
-                )
-            }));
-        }
         use lavish_rpc::serde_derive::*;
         
         /// Ping the client to make sure it's alive
@@ -421,21 +437,6 @@ mod __ {
                     __::Params::ping_ping(Params {}),
                     Results::downgrade,
                 ).await
-            }
-            
-            pub fn register<T, F, FT>(h: &mut __::Handler<T>, f: F)
-            where
-                F: Fn(__::Call<T, Params>) -> FT + Sync + Send + 'static,
-                FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
-            {
-                h.ping_ping = Some(Box::new(move |state, handle, params| {
-                    Box::pin(
-                        f(__::Call {
-                            state, handle,
-                            params: Params::downgrade(params).unwrap(),
-                        }).map_ok(|_| __::Results::ping_ping(Results {}))
-                    )
-                }));
             }
             }
             
