@@ -22,8 +22,7 @@ pub async fn run(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::E
         asked_for_user_agent: false,
     }));
 
-    let builder = sample::PeerBuilder::new(conn, pool);
-    let client = builder.with_stateful_handler(state.clone(), |h| {
+    let client = sample::peer(conn, pool).with_stateful_handler(state.clone(), |h| {
         sample::get_user_agent::register(h, async move |call| {
             let mut state = call.state.lock().await;
             state.asked_for_user_agent = true;

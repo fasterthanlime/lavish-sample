@@ -4,7 +4,6 @@ use futures::prelude::*;
 use romio::tcp::TcpListener;
 
 use super::services::sample;
-use std::sync::Arc;
 
 pub async fn run(
     mut listener: TcpListener,
@@ -18,9 +17,9 @@ pub async fn run(
         println!("[server] <- {}", addr);
         conn.set_nodelay(true)?;
 
-        sample::peer_with_handler(conn, pool, Arc::new(()), |mut h| {
+        sample::peer(conn, pool).with_handler(|h| {
             use sample::get_cookies::*;
-            register(&mut h, async move |call| {
+            register(h, async move |call| {
                 let mut cookies: Vec<sample::Cookie> = Vec::new();
                 cookies.push(sample::Cookie {
                     key: "ads".into(),

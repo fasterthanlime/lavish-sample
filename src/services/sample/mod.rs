@@ -300,24 +300,6 @@ mod __ {
     }
     
     
-    pub fn peer_with_handler<C, T, F>(conn: C, pool: futures::executor::ThreadPool, state: Arc<T>, setup: F) -> Result<Handle, lavish_rpc::Error>
-    where
-        C: lavish_rpc::Conn,
-        T: Send + Sync + 'static,
-        F: Fn(&mut Handler<'static, T>),
-    {
-        let mut handler = Handler::new(state);
-        setup(&mut handler);
-        lavish_rpc::connect(protocol(), handler, conn, pool)
-    }
-    
-    pub fn peer<C>(conn: C, pool: futures::executor::ThreadPool) -> Result<Handle, lavish_rpc::Error>
-    where
-        C: lavish_rpc::Conn,
-    {
-        peer_with_handler(conn, pool, std::sync::Arc::new(()), |_| {})
-    }
-    
     pub struct PeerBuilder<C>
     where
         C: lavish_rpc::Conn,
@@ -335,17 +317,14 @@ mod __ {
         }
         
         pub fn with_noop_handler(self) -> Result<Handle, lavish_rpc::Error> {
-            let handler = Handler::new(std::sync::Arc::new(()));
-            lavish_rpc::connect(protocol(), handler, self.conn, self.pool)
+            self.with_handler(|_| {})
         }
         
         pub fn with_handler<S>(self, setup: S) -> Result<Handle, lavish_rpc::Error>
         where
             S: Fn(&mut Handler<()>),
         {
-            let mut handler = Handler::new(std::sync::Arc::new(()));
-            setup(&mut handler);
-            lavish_rpc::connect(protocol(), handler, self.conn, self.pool)
+            self.with_stateful_handler(std::sync::Arc::new(()), setup)
         }
         
         pub fn with_stateful_handler<T, S>(self, state: Arc<T>, setup: S) -> Result<Handle, lavish_rpc::Error>
@@ -359,4 +338,10 @@ mod __ {
         }
     }
     
+    pub fn peer<C>(conn: C, pool: futures::executor::ThreadPool) -> PeerBuilder<C>
+    where
+        C: lavish_rpc::Conn,
+    {
+        PeerBuilder::new(conn, pool)
+    }
 }
