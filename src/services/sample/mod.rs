@@ -13,10 +13,10 @@ mod __ {
     use futures::prelude::*;
     use std::pin::Pin;
     use std::sync::Arc;
-    
+
     use lavish_rpc as rpc;
     use rpc::{Atom, erased_serde, serde_derive::*};
-    
+
     #[derive(Serialize, Debug)]
     #[serde(untagged)]
     #[allow(non_camel_case_types, unused)]
@@ -27,7 +27,7 @@ mod __ {
         ping(ping::Params),
         ping_ping(ping::ping::Params),
     }
-    
+
     #[derive(Serialize, Debug)]
     #[serde(untagged)]
     #[allow(non_camel_case_types, unused)]
@@ -38,25 +38,25 @@ mod __ {
         ping(ping::Results),
         ping_ping(ping::ping::Results),
     }
-    
+
     #[derive(Serialize, Debug)]
     #[serde(untagged)]
     #[allow(non_camel_case_types, unused)]
     pub enum NotificationParams {
     }
-    
+
     pub type Message = rpc::Message<Params, NotificationParams, Results>;
     pub type RootClient = rpc::Client<Params, NotificationParams, Results>;
     pub type Protocol = rpc::Protocol<Params, NotificationParams, Results>;
-    
+
     pub fn protocol() -> Protocol {
         Protocol::new()
     }
-    
+
     pub struct Client {
         root: RootClient,
     }
-    
+
     impl Client {
         pub async fn get_cookies(&self) -> Result<get_cookies::Results, lavish_rpc::Error> {
             self.root.call(
@@ -64,37 +64,37 @@ mod __ {
                 get_cookies::Results::downgrade,
             ).await
         }
-        
+
         pub async fn reverse(&self, p: reverse::Params) -> Result<reverse::Results, lavish_rpc::Error> {
             self.root.call(
                 Params::reverse(p),
                 reverse::Results::downgrade,
             ).await
         }
-        
+
         pub async fn get_user_agent(&self) -> Result<get_user_agent::Results, lavish_rpc::Error> {
             self.root.call(
                 Params::get_user_agent(get_user_agent::Params {}),
                 get_user_agent::Results::downgrade,
             ).await
         }
-        
+
         pub async fn ping(&self) -> Result<ping::Results, lavish_rpc::Error> {
             self.root.call(
                 Params::ping(ping::Params {}),
                 ping::Results::downgrade,
             ).await
         }
-        
+
         pub async fn ping_ping(&self) -> Result<ping::ping::Results, lavish_rpc::Error> {
             self.root.call(
                 Params::ping_ping(ping::ping::Params {}),
                 ping::ping::Results::downgrade,
             ).await
         }
-        
+
     }
-    
+
     impl rpc::Atom for Params {
         fn method(&self) -> &'static str {
             match self {
@@ -105,14 +105,14 @@ mod __ {
                 Params::ping_ping(_) => "ping.ping",
             }
         }
-        
+
         fn deserialize(
             method: &str,
             de: &mut erased_serde::Deserializer,
         ) -> erased_serde::Result<Self> {
             use erased_serde::deserialize as deser;
             use serde::de::Error;
-            
+
             match method {
                 "get_cookies" =>
                     Ok(Params::get_cookies(deser::<get_cookies::Params>(de)?)),
@@ -131,7 +131,7 @@ mod __ {
             }
         }
     }
-    
+
     impl rpc::Atom for Results {
         fn method(&self) -> &'static str {
             match self {
@@ -142,14 +142,14 @@ mod __ {
                 Results::ping_ping(_) => "ping.ping",
             }
         }
-        
+
         fn deserialize(
             method: &str,
             de: &mut erased_serde::Deserializer,
         ) -> erased_serde::Result<Self> {
             use erased_serde::deserialize as deser;
             use serde::de::Error;
-            
+
             match method {
                 "get_cookies" =>
                     Ok(Results::get_cookies(deser::<get_cookies::Results>(de)?)),
@@ -168,21 +168,21 @@ mod __ {
             }
         }
     }
-    
+
     impl rpc::Atom for NotificationParams {
         fn method(&self) -> &'static str {
             match self {
                 _ => unimplemented!()
             }
         }
-        
+
         fn deserialize(
             method: &str,
             de: &mut erased_serde::Deserializer,
         ) -> erased_serde::Result<Self> {
             use erased_serde::deserialize as deser;
             use serde::de::Error;
-            
+
             match method {
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
@@ -191,23 +191,23 @@ mod __ {
             }
         }
     }
-    
+
     pub struct Call<T, PP> {
         pub state: Arc<T>,
         pub client: Client,
         pub params: PP,
     }
-    
+
     pub type SlotFuture = 
         Future<Output = Result<Results, rpc::Error>> + Send + 'static;
-    
+
     pub type SlotReturn = Pin<Box<SlotFuture>>;
-    
+
     pub type SlotFn<T> = 
         Fn(Arc<T>, Client, Params) -> SlotReturn + 'static + Send + Sync;
-    
+
     pub type Slot<T> = Option<Box<SlotFn<T>>>;
-    
+
     pub struct Handler<T> {
         state: Arc<T>,
         get_cookies: Slot<T>,
@@ -216,7 +216,7 @@ mod __ {
         ping: Slot<T>,
         ping_ping: Slot<T>,
     }
-    
+
     impl<T> Handler<T> {
         pub fn new(state: Arc<T>) -> Self {
             Self {
@@ -228,7 +228,7 @@ mod __ {
                 ping_ping: None,
             }
         }
-        
+
         pub fn on_get_cookies<F, FT> (&mut self, f: F)
         where
             F: Fn(Call<T, get_cookies::Params>) -> FT + Sync + Send + 'static,
@@ -243,7 +243,7 @@ mod __ {
                 )
             }));
         }
-        
+
         pub fn on_reverse<F, FT> (&mut self, f: F)
         where
             F: Fn(Call<T, reverse::Params>) -> FT + Sync + Send + 'static,
@@ -258,7 +258,7 @@ mod __ {
                 )
             }));
         }
-        
+
         pub fn on_get_user_agent<F, FT> (&mut self, f: F)
         where
             F: Fn(Call<T, get_user_agent::Params>) -> FT + Sync + Send + 'static,
@@ -273,7 +273,7 @@ mod __ {
                 )
             }));
         }
-        
+
         pub fn on_ping<F, FT> (&mut self, f: F)
         where
             F: Fn(Call<T, ping::Params>) -> FT + Sync + Send + 'static,
@@ -288,7 +288,7 @@ mod __ {
                 )
             }));
         }
-        
+
         pub fn on_ping_ping<F, FT> (&mut self, f: F)
         where
             F: Fn(Call<T, ping::ping::Params>) -> FT + Sync + Send + 'static,
@@ -303,11 +303,11 @@ mod __ {
                 )
             }));
         }
-        
+
     }
-    
+
     type HandlerRet = Pin<Box<dyn Future<Output = Result<Results, rpc::Error>> + Send + 'static>>;
-    
+
     impl<T> rpc::Handler<Params, NotificationParams, Results, HandlerRet> for Handler<T>
     where
         T: Send + Sync,
@@ -331,9 +331,9 @@ mod __ {
             }
         }
     }
-    
+
     use lavish_rpc::serde_derive::*;
-    
+
     /// A key/value pair used to remember session information.
     /// 
     /// Can be harmful in real life, but this is just a sample schema
@@ -345,17 +345,17 @@ mod __ {
         /// Although it's typed as a string, it can be anything underneath.
         pub value: String,
     }
-    
+
     /// Ask for a list of cookies from the server.
     pub mod get_cookies {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
         use super::super::__;
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Params {
         }
-        
+
         impl Params {
             pub fn downgrade(p: __::Params) -> Option<Self> {
                 match p {
@@ -364,12 +364,12 @@ mod __ {
                 }
             }
         }
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Results {
             pub cookies: Vec<super::Cookie>,
         }
-        
+
         impl Results {
             pub fn downgrade(p: __::Results) -> Option<Self> {
                 match p {
@@ -379,18 +379,18 @@ mod __ {
             }
         }
         }
-        
+
     /// Reverse a string
     pub mod reverse {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
         use super::super::__;
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Params {
             pub s: String,
         }
-        
+
         impl Params {
             pub fn downgrade(p: __::Params) -> Option<Self> {
                 match p {
@@ -399,12 +399,12 @@ mod __ {
                 }
             }
         }
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Results {
             pub s: String,
         }
-        
+
         impl Results {
             pub fn downgrade(p: __::Results) -> Option<Self> {
                 match p {
@@ -414,17 +414,17 @@ mod __ {
             }
         }
         }
-        
+
     /// Ask the client what its user-agent is.
     pub mod get_user_agent {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
         use super::super::__;
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Params {
         }
-        
+
         impl Params {
             pub fn downgrade(p: __::Params) -> Option<Self> {
                 match p {
@@ -433,12 +433,12 @@ mod __ {
                 }
             }
         }
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Results {
             pub user_agent: String,
         }
-        
+
         impl Results {
             pub fn downgrade(p: __::Results) -> Option<Self> {
                 match p {
@@ -448,17 +448,17 @@ mod __ {
             }
         }
         }
-        
+
     /// Ping the server to make sure it's alive
     pub mod ping {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
         use super::super::__;
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Params {
         }
-        
+
         impl Params {
             pub fn downgrade(p: __::Params) -> Option<Self> {
                 match p {
@@ -467,11 +467,11 @@ mod __ {
                 }
             }
         }
-        
+
         #[derive(Serialize, Deserialize, Debug)]
         pub struct Results {
         }
-        
+
         impl Results {
             pub fn downgrade(p: __::Results) -> Option<Self> {
                 match p {
@@ -481,17 +481,17 @@ mod __ {
             }
         }
         use lavish_rpc::serde_derive::*;
-        
+
         /// Ping the client to make sure it's alive
         pub mod ping {
             use futures::prelude::*;
             use lavish_rpc::serde_derive::*;
             use super::super::super::__;
-            
+
             #[derive(Serialize, Deserialize, Debug)]
             pub struct Params {
             }
-            
+
             impl Params {
                 pub fn downgrade(p: __::Params) -> Option<Self> {
                     match p {
@@ -500,11 +500,11 @@ mod __ {
                     }
                 }
             }
-            
+
             #[derive(Serialize, Deserialize, Debug)]
             pub struct Results {
             }
-            
+
             impl Results {
                 pub fn downgrade(p: __::Results) -> Option<Self> {
                     match p {
@@ -514,10 +514,10 @@ mod __ {
                 }
             }
             }
-            
+
         }
-        
-    
+
+
     pub struct PeerBuilder<C>
     where
         C: lavish_rpc::Conn,
@@ -525,7 +525,7 @@ mod __ {
         conn: C,
         pool: futures::executor::ThreadPool,
     }
-    
+
     impl<C> PeerBuilder<C>
     where
         C: lavish_rpc::Conn,
@@ -533,18 +533,18 @@ mod __ {
         pub fn new(conn: C, pool: futures::executor::ThreadPool) -> Self {
             Self { conn, pool }
         }
-        
+
         pub fn with_noop_handler(self) -> Result<Client, lavish_rpc::Error> {
             self.with_handler(|_| {})
         }
-        
+
         pub fn with_handler<S>(self, setup: S) -> Result<Client, lavish_rpc::Error>
         where
             S: Fn(&mut Handler<()>),
         {
             self.with_stateful_handler(std::sync::Arc::new(()), setup)
         }
-        
+
         pub fn with_stateful_handler<T, S>(self, state: Arc<T>, setup: S) -> Result<Client, lavish_rpc::Error>
         where
             S: Fn(&mut Handler<T>),
@@ -556,7 +556,7 @@ mod __ {
             Ok(Client { root })
         }
     }
-    
+
     pub fn peer<C>(conn: C, pool: futures::executor::ThreadPool) -> PeerBuilder<C>
     where
         C: lavish_rpc::Conn,
