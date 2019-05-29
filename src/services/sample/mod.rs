@@ -22,6 +22,7 @@ mod __ {
     #[allow(non_camel_case_types, unused)]
     pub enum Params {
         get_cookies(get_cookies::Params),
+        reverse(reverse::Params),
         get_user_agent(get_user_agent::Params),
         ping(ping::Params),
         ping_ping(ping::ping::Params),
@@ -32,6 +33,7 @@ mod __ {
     #[allow(non_camel_case_types, unused)]
     pub enum Results {
         get_cookies(get_cookies::Results),
+        reverse(reverse::Results),
         get_user_agent(get_user_agent::Results),
         ping(ping::Results),
         ping_ping(ping::ping::Results),
@@ -44,20 +46,60 @@ mod __ {
     }
     
     pub type Message = rpc::Message<Params, NotificationParams, Results>;
-    pub type RootHandle = rpc::Handle<Params, NotificationParams, Results>;
+    pub type RootClient = rpc::Client<Params, NotificationParams, Results>;
     pub type Protocol = rpc::Protocol<Params, NotificationParams, Results>;
     
     pub fn protocol() -> Protocol {
         Protocol::new()
     }
-    pub struct Handle {
-        root: RootHandle,
+    
+    pub struct Client {
+        root: RootClient,
+    }
+    
+    impl Client {
+        pub async fn get_cookies(&self) -> Result<get_cookies::Results, lavish_rpc::Error> {
+            self.root.call(
+                Params::get_cookies(get_cookies::Params {}),
+                get_cookies::Results::downgrade,
+            ).await
+        }
+        
+        pub async fn reverse(&self, p: reverse::Params) -> Result<reverse::Results, lavish_rpc::Error> {
+            self.root.call(
+                Params::reverse(p),
+                reverse::Results::downgrade,
+            ).await
+        }
+        
+        pub async fn get_user_agent(&self) -> Result<get_user_agent::Results, lavish_rpc::Error> {
+            self.root.call(
+                Params::get_user_agent(get_user_agent::Params {}),
+                get_user_agent::Results::downgrade,
+            ).await
+        }
+        
+        pub async fn ping(&self) -> Result<ping::Results, lavish_rpc::Error> {
+            self.root.call(
+                Params::ping(ping::Params {}),
+                ping::Results::downgrade,
+            ).await
+        }
+        
+        pub async fn ping_ping(&self) -> Result<ping::ping::Results, lavish_rpc::Error> {
+            self.root.call(
+                Params::ping_ping(ping::ping::Params {}),
+                ping::ping::Results::downgrade,
+            ).await
+        }
+        
     }
     
     impl rpc::Atom for Params {
         fn method(&self) -> &'static str {
             match self {
                 Params::get_cookies(_) => "get_cookies",
+                Params::reverse(_) => "reverse",
                 Params::get_user_agent(_) => "get_user_agent",
                 Params::ping(_) => "ping",
                 Params::ping_ping(_) => "ping.ping",
@@ -74,6 +116,8 @@ mod __ {
             match method {
                 "get_cookies" =>
                     Ok(Params::get_cookies(deser::<get_cookies::Params>(de)?)),
+                "reverse" =>
+                    Ok(Params::reverse(deser::<reverse::Params>(de)?)),
                 "get_user_agent" =>
                     Ok(Params::get_user_agent(deser::<get_user_agent::Params>(de)?)),
                 "ping" =>
@@ -92,6 +136,7 @@ mod __ {
         fn method(&self) -> &'static str {
             match self {
                 Results::get_cookies(_) => "get_cookies",
+                Results::reverse(_) => "reverse",
                 Results::get_user_agent(_) => "get_user_agent",
                 Results::ping(_) => "ping",
                 Results::ping_ping(_) => "ping.ping",
@@ -108,6 +153,8 @@ mod __ {
             match method {
                 "get_cookies" =>
                     Ok(Results::get_cookies(deser::<get_cookies::Results>(de)?)),
+                "reverse" =>
+                    Ok(Results::reverse(deser::<reverse::Results>(de)?)),
                 "get_user_agent" =>
                     Ok(Results::get_user_agent(deser::<get_user_agent::Results>(de)?)),
                 "ping" =>
@@ -147,7 +194,7 @@ mod __ {
     
     pub struct Call<T, PP> {
         pub state: Arc<T>,
-        pub handle: Handle,
+        pub client: Client,
         pub params: PP,
     }
     
@@ -157,13 +204,14 @@ mod __ {
     pub type SlotReturn = Pin<Box<SlotFuture>>;
     
     pub type SlotFn<T> = 
-        Fn(Arc<T>, Handle, Params) -> SlotReturn + 'static + Send + Sync;
+        Fn(Arc<T>, Client, Params) -> SlotReturn + 'static + Send + Sync;
     
     pub type Slot<T> = Option<Box<SlotFn<T>>>;
     
     pub struct Handler<T> {
         state: Arc<T>,
         get_cookies: Slot<T>,
+        reverse: Slot<T>,
         get_user_agent: Slot<T>,
         ping: Slot<T>,
         ping_ping: Slot<T>,
@@ -174,6 +222,7 @@ mod __ {
             Self {
                 state,
                 get_cookies: None,
+                reverse: None,
                 get_user_agent: None,
                 ping: None,
                 ping_ping: None,
@@ -185,12 +234,27 @@ mod __ {
             F: Fn(Call<T, get_cookies::Params>) -> FT + Sync + Send + 'static,
             FT: Future<Output = Result<get_cookies::Results, lavish_rpc::Error>> + Send + 'static,
         {
-            self.get_cookies = Some(Box::new(move |state, handle, params| {
+            self.get_cookies = Some(Box::new(move |state, client, params| {
                 Box::pin(
                     f(Call {
-                        state, handle,
+                        state, client,
                         params: get_cookies::Params::downgrade(params).unwrap(),
                     }).map_ok(Results::get_cookies)
+                )
+            }));
+        }
+        
+        pub fn on_reverse<F, FT> (&mut self, f: F)
+        where
+            F: Fn(Call<T, reverse::Params>) -> FT + Sync + Send + 'static,
+            FT: Future<Output = Result<reverse::Results, lavish_rpc::Error>> + Send + 'static,
+        {
+            self.reverse = Some(Box::new(move |state, client, params| {
+                Box::pin(
+                    f(Call {
+                        state, client,
+                        params: reverse::Params::downgrade(params).unwrap(),
+                    }).map_ok(Results::reverse)
                 )
             }));
         }
@@ -200,10 +264,10 @@ mod __ {
             F: Fn(Call<T, get_user_agent::Params>) -> FT + Sync + Send + 'static,
             FT: Future<Output = Result<get_user_agent::Results, lavish_rpc::Error>> + Send + 'static,
         {
-            self.get_user_agent = Some(Box::new(move |state, handle, params| {
+            self.get_user_agent = Some(Box::new(move |state, client, params| {
                 Box::pin(
                     f(Call {
-                        state, handle,
+                        state, client,
                         params: get_user_agent::Params::downgrade(params).unwrap(),
                     }).map_ok(Results::get_user_agent)
                 )
@@ -213,12 +277,12 @@ mod __ {
         pub fn on_ping<F, FT> (&mut self, f: F)
         where
             F: Fn(Call<T, ping::Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<ping::Results, lavish_rpc::Error>> + Send + 'static,
+            FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
         {
-            self.ping = Some(Box::new(move |state, handle, params| {
+            self.ping = Some(Box::new(move |state, client, params| {
                 Box::pin(
                     f(Call {
-                        state, handle,
+                        state, client,
                         params: ping::Params::downgrade(params).unwrap(),
                     }).map_ok(|_| Results::ping(ping::Results {}))
                 )
@@ -228,12 +292,12 @@ mod __ {
         pub fn on_ping_ping<F, FT> (&mut self, f: F)
         where
             F: Fn(Call<T, ping::ping::Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<ping::ping::Results, lavish_rpc::Error>> + Send + 'static,
+            FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
         {
-            self.ping_ping = Some(Box::new(move |state, handle, params| {
+            self.ping_ping = Some(Box::new(move |state, client, params| {
                 Box::pin(
                     f(Call {
-                        state, handle,
+                        state, client,
                         params: ping::ping::Params::downgrade(params).unwrap(),
                     }).map_ok(|_| Results::ping_ping(ping::ping::Results {}))
                 )
@@ -248,10 +312,11 @@ mod __ {
     where
         T: Send + Sync,
     {
-        fn handle(&self, handle: RootHandle, params: Params) -> HandlerRet {
+        fn handle(&self, client: RootClient, params: Params) -> HandlerRet {
             let method = params.method();
             let slot = match params {
                 Params::get_cookies(_) => self.get_cookies.as_ref(),
+                Params::reverse(_) => self.reverse.as_ref(),
                 Params::get_user_agent(_) => self.get_user_agent.as_ref(),
                 Params::ping(_) => self.ping.as_ref(),
                 Params::ping_ping(_) => self.ping_ping.as_ref(),
@@ -259,7 +324,7 @@ mod __ {
             };
             match slot {
                 Some(slot_fn) => {
-                    let res = slot_fn(self.state.clone(), Handle { root: handle }, params);
+                    let res = slot_fn(self.state.clone(), Client { root: client }, params);
                     Box::pin(async move { Ok(res.await?) })
                 }
                 None => Box::pin(async move { Err(rpc::Error::MethodUnimplemented(method)) }),
@@ -313,12 +378,40 @@ mod __ {
                 }
             }
         }
+        }
         
-        pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
-            h.root.call(
-                __::Params::get_cookies(Params {}),
-                Results::downgrade,
-            ).await
+    /// Reverse a string
+    pub mod reverse {
+        use futures::prelude::*;
+        use lavish_rpc::serde_derive::*;
+        use super::super::__;
+        
+        #[derive(Serialize, Deserialize, Debug)]
+        pub struct Params {
+            pub s: String,
+        }
+        
+        impl Params {
+            pub fn downgrade(p: __::Params) -> Option<Self> {
+                match p {
+                    __::Params::reverse(p) => Some(p),
+                    _ => None,
+                }
+            }
+        }
+        
+        #[derive(Serialize, Deserialize, Debug)]
+        pub struct Results {
+            pub s: String,
+        }
+        
+        impl Results {
+            pub fn downgrade(p: __::Results) -> Option<Self> {
+                match p {
+                    __::Results::reverse(p) => Some(p),
+                    _ => None,
+                }
+            }
         }
         }
         
@@ -354,13 +447,6 @@ mod __ {
                 }
             }
         }
-        
-        pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
-            h.root.call(
-                __::Params::get_user_agent(Params {}),
-                Results::downgrade,
-            ).await
-        }
         }
         
     /// Ping the server to make sure it's alive
@@ -393,13 +479,6 @@ mod __ {
                     _ => None,
                 }
             }
-        }
-        
-        pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
-            h.root.call(
-                __::Params::ping(Params {}),
-                Results::downgrade,
-            ).await
         }
         use lavish_rpc::serde_derive::*;
         
@@ -434,13 +513,6 @@ mod __ {
                     }
                 }
             }
-            
-            pub async fn call(h: &__::Handle, p: ()) -> Result<Results, lavish_rpc::Error> {
-                h.root.call(
-                    __::Params::ping_ping(Params {}),
-                    Results::downgrade,
-                ).await
-            }
             }
             
         }
@@ -462,18 +534,18 @@ mod __ {
             Self { conn, pool }
         }
         
-        pub fn with_noop_handler(self) -> Result<Handle, lavish_rpc::Error> {
+        pub fn with_noop_handler(self) -> Result<Client, lavish_rpc::Error> {
             self.with_handler(|_| {})
         }
         
-        pub fn with_handler<S>(self, setup: S) -> Result<Handle, lavish_rpc::Error>
+        pub fn with_handler<S>(self, setup: S) -> Result<Client, lavish_rpc::Error>
         where
             S: Fn(&mut Handler<()>),
         {
             self.with_stateful_handler(std::sync::Arc::new(()), setup)
         }
         
-        pub fn with_stateful_handler<T, S>(self, state: Arc<T>, setup: S) -> Result<Handle, lavish_rpc::Error>
+        pub fn with_stateful_handler<T, S>(self, state: Arc<T>, setup: S) -> Result<Client, lavish_rpc::Error>
         where
             S: Fn(&mut Handler<T>),
             T: Sync + Send + 'static,
@@ -481,7 +553,7 @@ mod __ {
             let mut handler = Handler::new(state);
             setup(&mut handler);
             let root = lavish_rpc::connect(protocol(), handler, self.conn, self.pool)?;
-            Ok(Handle { root })
+            Ok(Client { root })
         }
     }
     

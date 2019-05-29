@@ -24,19 +24,26 @@ pub async fn run(
                     key: "ads".into(),
                     value: "no".into(),
                 });
-                cookies.push(sample::Cookie {
-                    key: "user".into(),
-                    value: "John Doe".into(),
-                });
 
                 cookies.push(sample::Cookie {
                     key: "user-agent".into(),
-                    value: sample::get_user_agent::call(&call.handle, ())
-                        .await?
-                        .user_agent,
+                    value: call.client.get_user_agent().await?.user_agent,
                 });
 
                 Ok(sample::get_cookies::Results { cookies })
+            });
+
+            h.on_reverse(async move |call| {
+                Ok(sample::reverse::Results {
+                    s: call.params.s.chars().rev().collect(),
+                })
+            });
+
+            h.on_ping(async move |call| {
+                // FIXME: this should be call.handle.ping
+                call.client.ping_ping().await?;
+
+                Ok(())
             });
         })?;
     }

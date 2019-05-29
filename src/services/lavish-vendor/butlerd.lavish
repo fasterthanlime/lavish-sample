@@ -18,6 +18,12 @@ struct Profile {
 namespace profile {
     // Lists remembered profiles
     server fn list() -> (profiles: Array<Profile>)
+
+    // Adds a new profile, by username/password
+    server fn login_with_password(username: string, password: string) -> (profile: Profile) {
+        client fn solve_captcha(url: string) -> (response: string),
+        client fn solve_totp() -> (code: string),
+    }
 }
 
 namespace system {

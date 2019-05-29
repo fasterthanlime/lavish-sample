@@ -13,6 +13,9 @@ struct Cookie {
 // Ask for a list of cookies from the server.
 server fn get_cookies() -> (cookies: Array<Cookie>)
 
+// Reverse a string
+server fn reverse(s: string) -> (s: string)
+
 // Ask the client what its user-agent is.
 client fn get_user_agent() -> (user_agent: string)
 

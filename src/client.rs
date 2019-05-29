@@ -37,13 +37,27 @@ pub async fn run(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::E
         state.lock().await.asked_for_user_agent
     );
 
-    let cookies = sample::get_cookies::call(&client, ()).await?.cookies;
-    println!("Cookies = {:#?}", cookies);
+    let cookies = client.get_cookies().await?.cookies;
+    println!("Cookies = {:?}", cookies);
 
     println!(
         "Asked for ua? = {:#?}",
         state.lock().await.asked_for_user_agent
     );
+
+    let s = "rust";
+    println!("s (original) = {}", s);
+    let s = client
+        .reverse(sample::reverse::Params { s: s.into() })
+        .await?
+        .s;
+    println!("s (reversed) = {}", s);
+
+    println!("Pinging server");
+
+    // Wrong! We don't define `ping.ping`, so the server's call to us
+    // is going to fail.
+    client.ping().await?;
 
     Ok(())
 }
