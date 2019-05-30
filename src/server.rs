@@ -41,7 +41,7 @@ pub async fn run(
 
             h.on_ping(async move |call| {
                 // FIXME: this should be call.handle.ping
-                call.client.ping_ping().await?;
+                call.client.ping__ping().await?;
 
                 Ok(())
             });

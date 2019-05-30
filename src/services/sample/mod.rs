@@ -8,6 +8,88 @@
 
 pub use __::*;
 
+
+//============= FIXME: experimental (start)
+pub mod protocol {
+    #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
+    #[allow(non_camel_case_types, unused)]
+    #[serde(untagged)]
+    pub enum Params {
+        get_cookies(super::get_cookies::Params),
+        reverse(super::reverse::Params),
+        get_user_agent(super::get_user_agent::Params),
+        ping(super::ping::Params),
+        ping__ping(super::ping::ping::Params),
+    }
+    impl lavish_rpc::Atom for Params {
+        fn method(&self) -> &'static str {
+            // TODO
+            match self {
+                Params::get_cookies(_) => "get_cookies",
+                Params::reverse(_) => "reverse",
+                Params::get_user_agent(_) => "get_user_agent",
+                Params::ping(_) => "ping",
+                Params::ping__ping(_) => "ping.ping",
+            }
+        }
+        fn deserialize() -> erased_serde::Result<Self> {
+            unimplemented!()
+        }
+    }
+
+
+
+    #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
+    #[allow(non_camel_case_types, unused)]
+    #[serde(untagged)]
+    pub enum Results {
+        get_cookies(super::get_cookies::Results),
+        reverse(super::reverse::Results),
+        get_user_agent(super::get_user_agent::Results),
+        ping(super::ping::Results),
+        ping__ping(super::ping::ping::Results),
+    }
+    impl lavish_rpc::Atom for Results {
+        fn method(&self) -> &'static str {
+            // TODO
+            match self {
+                Results::get_cookies(_) => "get_cookies",
+                Results::reverse(_) => "reverse",
+                Results::get_user_agent(_) => "get_user_agent",
+                Results::ping(_) => "ping",
+                Results::ping__ping(_) => "ping.ping",
+            }
+        }
+        fn deserialize() -> erased_serde::Result<Self> {
+            unimplemented!()
+        }
+    }
+
+
+
+    #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
+    #[allow(non_camel_case_types, unused)]
+    #[serde(untagged)]
+    pub enum NotificationParams {
+    }
+    impl lavish_rpc::Atom for NotificationParams {
+        fn method(&self) -> &'static str {
+            // TODO
+            match self {
+            }
+        }
+        fn deserialize() -> erased_serde::Result<Self> {
+            unimplemented!()
+        }
+    }
+
+
+
+}
+
+
+//============= FIXME: experimental (end)
+
 mod __ {
     // Notes: as of 2019-05-21, futures-preview is required
     use futures::prelude::*;
@@ -25,7 +107,7 @@ mod __ {
         reverse(reverse::Params),
         get_user_agent(get_user_agent::Params),
         ping(ping::Params),
-        ping_ping(ping::ping::Params),
+        ping__ping(ping::ping::Params),
     }
 
     #[derive(Serialize, Debug)]
@@ -36,7 +118,7 @@ mod __ {
         reverse(reverse::Results),
         get_user_agent(get_user_agent::Results),
         ping(ping::Results),
-        ping_ping(ping::ping::Results),
+        ping__ping(ping::ping::Results),
     }
 
     #[derive(Serialize, Debug)]
@@ -86,9 +168,9 @@ mod __ {
             ).await
         }
 
-        pub async fn ping_ping(&self) -> Result<ping::ping::Results, lavish_rpc::Error> {
+        pub async fn ping__ping(&self) -> Result<ping::ping::Results, lavish_rpc::Error> {
             self.root.call(
-                Params::ping_ping(ping::ping::Params {}),
+                Params::ping__ping(ping::ping::Params {}),
                 ping::ping::Results::downgrade,
             ).await
         }
@@ -102,7 +184,7 @@ mod __ {
                 Params::reverse(_) => "reverse",
                 Params::get_user_agent(_) => "get_user_agent",
                 Params::ping(_) => "ping",
-                Params::ping_ping(_) => "ping.ping",
+                Params::ping__ping(_) => "ping.ping",
             }
         }
 
@@ -123,7 +205,7 @@ mod __ {
                 "ping" =>
                     Ok(Params::ping(deser::<ping::Params>(de)?)),
                 "ping.ping" =>
-                    Ok(Params::ping_ping(deser::<ping::ping::Params>(de)?)),
+                    Ok(Params::ping__ping(deser::<ping::ping::Params>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -139,7 +221,7 @@ mod __ {
                 Results::reverse(_) => "reverse",
                 Results::get_user_agent(_) => "get_user_agent",
                 Results::ping(_) => "ping",
-                Results::ping_ping(_) => "ping.ping",
+                Results::ping__ping(_) => "ping.ping",
             }
         }
 
@@ -160,7 +242,7 @@ mod __ {
                 "ping" =>
                     Ok(Results::ping(deser::<ping::Results>(de)?)),
                 "ping.ping" =>
-                    Ok(Results::ping_ping(deser::<ping::ping::Results>(de)?)),
+                    Ok(Results::ping__ping(deser::<ping::ping::Results>(de)?)),
                 _ => Err(erased_serde::Error::custom(format!(
                     "unknown method: {}",
                     method,
@@ -214,7 +296,7 @@ mod __ {
         reverse: Slot<T>,
         get_user_agent: Slot<T>,
         ping: Slot<T>,
-        ping_ping: Slot<T>,
+        ping__ping: Slot<T>,
     }
 
     impl<T> Handler<T> {
@@ -225,7 +307,7 @@ mod __ {
                 reverse: None,
                 get_user_agent: None,
                 ping: None,
-                ping_ping: None,
+                ping__ping: None,
             }
         }
 
@@ -289,17 +371,17 @@ mod __ {
             }));
         }
 
-        pub fn on_ping_ping<F, FT> (&mut self, f: F)
+        pub fn on_ping__ping<F, FT> (&mut self, f: F)
         where
             F: Fn(Call<T, ping::ping::Params>) -> FT + Sync + Send + 'static,
             FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
         {
-            self.ping_ping = Some(Box::new(move |state, client, params| {
+            self.ping__ping = Some(Box::new(move |state, client, params| {
                 Box::pin(
                     f(Call {
                         state, client,
                         params: ping::ping::Params::downgrade(params).unwrap(),
-                    }).map_ok(|_| Results::ping_ping(ping::ping::Results {}))
+                    }).map_ok(|_| Results::ping__ping(ping::ping::Results {}))
                 )
             }));
         }
@@ -319,7 +401,7 @@ mod __ {
                 Params::reverse(_) => self.reverse.as_ref(),
                 Params::get_user_agent(_) => self.get_user_agent.as_ref(),
                 Params::ping(_) => self.ping.as_ref(),
-                Params::ping_ping(_) => self.ping_ping.as_ref(),
+                Params::ping__ping(_) => self.ping__ping.as_ref(),
                 _ => None,
             };
             match slot {
@@ -495,7 +577,7 @@ mod __ {
             impl Params {
                 pub fn downgrade(p: __::Params) -> Option<Self> {
                     match p {
-                        __::Params::ping_ping(p) => Some(p),
+                        __::Params::ping__ping(p) => Some(p),
                         _ => None,
                     }
                 }
@@ -508,7 +590,7 @@ mod __ {
             impl Results {
                 pub fn downgrade(p: __::Results) -> Option<Self> {
                     match p {
-                        __::Results::ping_ping(p) => Some(p),
+                        __::Results::ping__ping(p) => Some(p),
                         _ => None,
                     }
                 }
