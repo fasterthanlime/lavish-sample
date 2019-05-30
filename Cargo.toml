@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 serde = "1.0.91"
 lavish-rpc = { path = "../lavish/lavish-rpc" }
-futures-preview = { version = "0.3.0-alpha.16", features = ["compat"] }
+futures-preview = { version = "0.3.0-alpha.16", default-features = false }
 romio = "0.3.0-alpha.8"
 async-timer = { version = "0.2.3", features = ["romio_on"] }
 lazy_static = "1.3.0"

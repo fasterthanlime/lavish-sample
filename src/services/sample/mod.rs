@@ -2,9 +2,7 @@
 // https://github.com/fasterthanlime/lavish
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
-#![allow(clippy::all)]
-#![allow(unknown_lints)]
-#![allow(unused)]
+#![allow(clippy::all, unknown_lints, unused, non_snake_case)]
 
 pub use __::*;
 
@@ -21,23 +19,6 @@ pub mod protocol {
         ping(super::ping::Params),
         ping__ping(super::ping::ping::Params),
     }
-    impl lavish_rpc::Atom for Params {
-        fn method(&self) -> &'static str {
-            // TODO
-            match self {
-                Params::get_cookies(_) => "get_cookies",
-                Params::reverse(_) => "reverse",
-                Params::get_user_agent(_) => "get_user_agent",
-                Params::ping(_) => "ping",
-                Params::ping__ping(_) => "ping.ping",
-            }
-        }
-        fn deserialize() -> erased_serde::Result<Self> {
-            unimplemented!()
-        }
-    }
-
-
 
     #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
     #[allow(non_camel_case_types, unused)]
@@ -49,44 +30,13 @@ pub mod protocol {
         ping(super::ping::Results),
         ping__ping(super::ping::ping::Results),
     }
-    impl lavish_rpc::Atom for Results {
-        fn method(&self) -> &'static str {
-            // TODO
-            match self {
-                Results::get_cookies(_) => "get_cookies",
-                Results::reverse(_) => "reverse",
-                Results::get_user_agent(_) => "get_user_agent",
-                Results::ping(_) => "ping",
-                Results::ping__ping(_) => "ping.ping",
-            }
-        }
-        fn deserialize() -> erased_serde::Result<Self> {
-            unimplemented!()
-        }
-    }
-
-
 
     #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
-    pub enum NotificationParams {
-    }
-    impl lavish_rpc::Atom for NotificationParams {
-        fn method(&self) -> &'static str {
-            // TODO
-            match self {
-            }
-        }
-        fn deserialize() -> erased_serde::Result<Self> {
-            unimplemented!()
-        }
-    }
-
-
+    pub enum NotificationParams {}
 
 }
-
 
 //============= FIXME: experimental (end)
 
@@ -280,12 +230,12 @@ mod __ {
         pub params: PP,
     }
 
-    pub type SlotFuture = 
+    pub type SlotFuture =
         Future<Output = Result<Results, rpc::Error>> + Send + 'static;
 
     pub type SlotReturn = Pin<Box<SlotFuture>>;
 
-    pub type SlotFn<T> = 
+    pub type SlotFn<T> =
         Fn(Arc<T>, Client, Params) -> SlotReturn + 'static + Send + Sync;
 
     pub type Slot<T> = Option<Box<SlotFn<T>>>;
