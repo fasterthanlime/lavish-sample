@@ -1,12 +1,11 @@
-use futures::executor;
-
-use romio::tcp::TcpStream;
+use std::net::TcpStream;
+use std::sync::{Arc, Mutex};
 
 use super::services::sample;
 
-pub async fn run(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::Error + 'static>> {
+pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
     let addr = super::ADDR.parse()?;
-    let conn = TcpStream::connect(&addr).await?;
+    let conn = TcpStream::connect(&addr)?;
     let addr = conn.peer_addr()?;
     println!("[client] -> {}", addr);
 
@@ -16,15 +15,14 @@ pub async fn run(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::E
         asked_for_user_agent: bool,
     };
 
-    use std::sync::Arc;
-    let state = Arc::new(futures::lock::Mutex::new(ClientState {
+    let state = Arc::new(Mutex::new(ClientState {
         user_agent: "lavish-sample/0.2.0".into(),
         asked_for_user_agent: false,
     }));
 
-    let client = sample::peer(conn, pool).with_stateful_handler(state.clone(), |h| {
-        h.on_get_user_agent(async move |call| {
-            let mut state = call.state.lock().await;
+    let client = sample::peer(conn).with_stateful_handler(state.clone(), |h| {
+        h.on_get_user_agent(move |call| {
+            let mut state = call.state.lock()?;
             state.asked_for_user_agent = true;
             Ok(sample::get_user_agent::Results {
                 user_agent: state.user_agent.clone(),
@@ -32,32 +30,23 @@ pub async fn run(pool: executor::ThreadPool) -> Result<(), Box<dyn std::error::E
         });
     })?;
 
-    println!(
-        "Asked for ua? = {:#?}",
-        state.lock().await.asked_for_user_agent
-    );
+    println!("Asked for ua? = {:#?}", state.lock()?.asked_for_user_agent);
 
-    let cookies = client.get_cookies().await?.cookies;
+    let cookies = client.get_cookies()?.cookies;
     println!("Cookies = {:?}", cookies);
 
-    println!(
-        "Asked for ua? = {:#?}",
-        state.lock().await.asked_for_user_agent
-    );
+    println!("Asked for ua? = {:#?}", state.lock().asked_for_user_agent);
 
     let s = "rust";
     println!("s (original) = {}", s);
-    let s = client
-        .reverse(sample::reverse::Params { s: s.into() })
-        .await?
-        .s;
+    let s = client.reverse(sample::reverse::Params { s: s.into() })?.s;
     println!("s (reversed) = {}", s);
 
     println!("Pinging server");
 
     // Wrong! We don't define `ping.ping`, so the server's call to us
     // is going to fail.
-    client.ping().await?;
+    client.ping()?;
 
     Ok(())
 }

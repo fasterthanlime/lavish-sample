@@ -19,6 +19,35 @@ pub mod protocol {
         ping(super::ping::Params),
         ping__ping(super::ping::ping::Params),
     }
+    impl lavish_rpc::Atom for Params {
+        fn method(&self) -> &'static str {
+            match self {
+                Params::get_cookies(_) => "get_cookies",
+                Params::reverse(_) => "reverse",
+                Params::get_user_agent(_) => "get_user_agent",
+                Params::ping(_) => "ping",
+                Params::ping__ping(_) => "ping.ping",
+            }
+        }
+        fn deserialize(method: &str, de: &mut lavish_rpc::erased_serde::Deserializer) -> lavish_rpc::erased_serde::Result<Self> {
+            use lavish_rpc::erased_serde::deserialize as __DS;
+            use lavish_rpc::serde::de::Error;
+
+            match method {
+                "get_cookies" => 
+                    Ok(Params::get_cookies(__DS::<super::get_cookies::Params>(de)?)),
+                "reverse" => 
+                    Ok(Params::reverse(__DS::<super::reverse::Params>(de)?)),
+                "get_user_agent" => 
+                    Ok(Params::get_user_agent(__DS::<super::get_user_agent::Params>(de)?)),
+                "ping" => 
+                    Ok(Params::ping(__DS::<super::ping::Params>(de)?)),
+                "ping.ping" => 
+                    Ok(Params::ping__ping(__DS::<super::ping::ping::Params>(de)?)),
+                _ =>
+                    Err(lavish_rpc::erased_serde::Error::custom(format!("unknown method: {}", method)))    }
+        }
+    }
 
     #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
     #[allow(non_camel_case_types, unused)]
@@ -30,14 +59,110 @@ pub mod protocol {
         ping(super::ping::Results),
         ping__ping(super::ping::ping::Results),
     }
+    impl lavish_rpc::Atom for Results {
+        fn method(&self) -> &'static str {
+            match self {
+                Results::get_cookies(_) => "get_cookies",
+                Results::reverse(_) => "reverse",
+                Results::get_user_agent(_) => "get_user_agent",
+                Results::ping(_) => "ping",
+                Results::ping__ping(_) => "ping.ping",
+            }
+        }
+        fn deserialize(method: &str, de: &mut lavish_rpc::erased_serde::Deserializer) -> lavish_rpc::erased_serde::Result<Self> {
+            use lavish_rpc::erased_serde::deserialize as __DS;
+            use lavish_rpc::serde::de::Error;
+
+            match method {
+                "get_cookies" => 
+                    Ok(Results::get_cookies(__DS::<super::get_cookies::Results>(de)?)),
+                "reverse" => 
+                    Ok(Results::reverse(__DS::<super::reverse::Results>(de)?)),
+                "get_user_agent" => 
+                    Ok(Results::get_user_agent(__DS::<super::get_user_agent::Results>(de)?)),
+                "ping" => 
+                    Ok(Results::ping(__DS::<super::ping::Results>(de)?)),
+                "ping.ping" => 
+                    Ok(Results::ping__ping(__DS::<super::ping::ping::Results>(de)?)),
+                _ =>
+                    Err(lavish_rpc::erased_serde::Error::custom(format!("unknown method: {}", method)))    }
+        }
+    }
 
     #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
     pub enum NotificationParams {}
+    impl lavish_rpc::Atom for NotificationParams {
+        fn method(&self) -> &'static str {
+            panic!("no variants for NotificationParams")
+        }
+        fn deserialize(method: &str, de: &mut lavish_rpc::erased_serde::Deserializer) -> lavish_rpc::erased_serde::Result<Self> {
+            use lavish_rpc::erased_serde::deserialize as __DS;
+            use lavish_rpc::serde::de::Error;
+
+            match method {
+                _ =>
+                    Err(lavish_rpc::erased_serde::Error::custom(format!("unknown method: {}", method)))    }
+        }
+    }
 
 }
 
+pub mod client {
+    use futures::prelude::*;
+    pub struct Client {
+        get_cookies: (),
+        reverse: (),
+        ping: (),
+        // TODO
+    }
+
+    pub struct Call<T, PP> {
+        pub state: std::sync::Arc<T>,
+        pub client: Client,
+        pub params: PP,
+    }
+
+    pub type SlotFuture = Future<Output = Result<super::protocol::Results, lavish_rpc::Error>> + Send + 'static;
+    pub type SlotReturn = std::pin::Pin<Box<SlotFuture>>;
+    pub type SlotFn<T> = Fn(std::sync::Arc<T>, Client, super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
+    pub type Slot<T> = Option<Box<SlotFn<T>>>;
+    pub struct Handler<T> {
+        // TODO
+        state: std::sync::Arc<T>,
+        on_get_user_agent: Slot<T>,
+    }
+
+
+}
+pub mod server {
+    use futures::prelude::*;
+    pub struct Client {
+        get_user_agent: (),
+        // TODO
+    }
+
+    pub struct Call<T, PP> {
+        pub state: std::sync::Arc<T>,
+        pub client: Client,
+        pub params: PP,
+    }
+
+    pub type SlotFuture = Future<Output = Result<super::protocol::Results, lavish_rpc::Error>> + Send + 'static;
+    pub type SlotReturn = std::pin::Pin<Box<SlotFuture>>;
+    pub type SlotFn<T> = Fn(std::sync::Arc<T>, Client, super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
+    pub type Slot<T> = Option<Box<SlotFn<T>>>;
+    pub struct Handler<T> {
+        // TODO
+        state: std::sync::Arc<T>,
+        on_get_cookies: Slot<T>,
+        on_reverse: Slot<T>,
+        on_ping: Slot<T>,
+    }
+
+
+}
 //============= FIXME: experimental (end)
 
 mod __ {
@@ -378,7 +503,6 @@ mod __ {
         pub value: String,
     }
 
-    /// Ask for a list of cookies from the server.
     pub mod get_cookies {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
@@ -410,9 +534,8 @@ mod __ {
                 }
             }
         }
-        }
+    }
 
-    /// Reverse a string
     pub mod reverse {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
@@ -445,9 +568,8 @@ mod __ {
                 }
             }
         }
-        }
+    }
 
-    /// Ask the client what its user-agent is.
     pub mod get_user_agent {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
@@ -479,9 +601,8 @@ mod __ {
                 }
             }
         }
-        }
+    }
 
-    /// Ping the server to make sure it's alive
     pub mod ping {
         use futures::prelude::*;
         use lavish_rpc::serde_derive::*;
@@ -514,7 +635,6 @@ mod __ {
         }
         use lavish_rpc::serde_derive::*;
 
-        /// Ping the client to make sure it's alive
         pub mod ping {
             use futures::prelude::*;
             use lavish_rpc::serde_derive::*;
@@ -545,9 +665,32 @@ mod __ {
                     }
                 }
             }
-            }
-
         }
+
+        use futures::prelude::*;
+        pub struct Client {
+            ping__ping: (),
+            // TODO
+        }
+
+        pub struct Call<T, PP> {
+            pub state: std::sync::Arc<T>,
+            pub client: Client,
+            pub params: PP,
+        }
+
+        pub type SlotFuture = Future<Output = Result<super::super::protocol::Results, lavish_rpc::Error>> + Send + 'static;
+        pub type SlotReturn = std::pin::Pin<Box<SlotFuture>>;
+        pub type SlotFn<T> = Fn(std::sync::Arc<T>, Client, super::super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
+        pub type Slot<T> = Option<Box<SlotFn<T>>>;
+        pub struct Handler<T> {
+            // TODO
+            state: std::sync::Arc<T>,
+            on_ping: Slot<T>,
+        }
+
+
+    }
 
 
     pub struct PeerBuilder<C>
