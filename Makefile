@@ -10,5 +10,5 @@ doc: schema
 	cargo doc --no-deps
 
 schema:
-	(cd ../lavish && cargo build)
-	../lavish/target/debug/lavish build src/services
+	(cd ../lavish-compiler && cargo build)
+	../lavish-compiler/target/debug/lavish build src/services

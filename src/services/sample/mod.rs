@@ -4,113 +4,154 @@
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(clippy::all, unknown_lints, unused, non_snake_case)]
 
-pub use __::*;
-
-
-//============= FIXME: experimental (start)
 pub mod protocol {
-    #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
+    #[derive(Debug, ::lavish::serde_derive::Serialize)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
     pub enum Params {
-        get_cookies(super::get_cookies::Params),
-        reverse(super::reverse::Params),
-        get_user_agent(super::get_user_agent::Params),
-        ping(super::ping::Params),
-        ping__ping(super::ping::ping::Params),
+        GetCookies(super::schema::get_cookies::Params),
+        Reverse(super::schema::reverse::Params),
+        GetUserAgent(super::schema::get_user_agent::Params),
+        Ping(super::schema::ping::Params),
+        Ping_Ping(super::schema::ping::ping::Params),
+        Universe_Earth_Country_City_NewYork(super::schema::universe::earth::country::city::new_york::Params),
+        Session_Login(super::schema::session::login::Params),
+        Session_Login_SolveTotp(super::schema::session::login::solve_totp::Params),
     }
-    impl lavish_rpc::Atom for Params {
+    impl ::lavish::Atom for Params {
         fn method(&self) -> &'static str {
             match self {
-                Params::get_cookies(_) => "get_cookies",
-                Params::reverse(_) => "reverse",
-                Params::get_user_agent(_) => "get_user_agent",
-                Params::ping(_) => "ping",
-                Params::ping__ping(_) => "ping.ping",
+                Params::GetCookies(_) => "get_cookies",
+                Params::Reverse(_) => "reverse",
+                Params::GetUserAgent(_) => "get_user_agent",
+                Params::Ping(_) => "ping",
+                Params::Ping_Ping(_) => "ping.ping",
+                Params::Universe_Earth_Country_City_NewYork(_) => "universe.earth.country.city.new_york",
+                Params::Session_Login(_) => "session.login",
+                Params::Session_Login_SolveTotp(_) => "session.login.solve_totp",
             }
         }
-        fn deserialize(method: &str, de: &mut lavish_rpc::erased_serde::Deserializer) -> lavish_rpc::erased_serde::Result<Self> {
-            use lavish_rpc::erased_serde::deserialize as __DS;
-            use lavish_rpc::serde::de::Error;
+        fn deserialize(method: &str, de: &mut ::lavish::erased_serde::Deserializer) -> ::lavish::erased_serde::Result<Self> {
+            use ::lavish::erased_serde::deserialize as __DS;
+            use ::lavish::serde::de::Error;
 
             match method {
                 "get_cookies" => 
-                    Ok(Params::get_cookies(__DS::<super::get_cookies::Params>(de)?)),
+                    Ok(Params::GetCookies(__DS::<super::schema::get_cookies::Params>(de)?)),
                 "reverse" => 
-                    Ok(Params::reverse(__DS::<super::reverse::Params>(de)?)),
+                    Ok(Params::Reverse(__DS::<super::schema::reverse::Params>(de)?)),
                 "get_user_agent" => 
-                    Ok(Params::get_user_agent(__DS::<super::get_user_agent::Params>(de)?)),
+                    Ok(Params::GetUserAgent(__DS::<super::schema::get_user_agent::Params>(de)?)),
                 "ping" => 
-                    Ok(Params::ping(__DS::<super::ping::Params>(de)?)),
+                    Ok(Params::Ping(__DS::<super::schema::ping::Params>(de)?)),
                 "ping.ping" => 
-                    Ok(Params::ping__ping(__DS::<super::ping::ping::Params>(de)?)),
+                    Ok(Params::Ping_Ping(__DS::<super::schema::ping::ping::Params>(de)?)),
+                "universe.earth.country.city.new_york" => 
+                    Ok(Params::Universe_Earth_Country_City_NewYork(__DS::<super::schema::universe::earth::country::city::new_york::Params>(de)?)),
+                "session.login" => 
+                    Ok(Params::Session_Login(__DS::<super::schema::session::login::Params>(de)?)),
+                "session.login.solve_totp" => 
+                    Ok(Params::Session_Login_SolveTotp(__DS::<super::schema::session::login::solve_totp::Params>(de)?)),
                 _ =>
-                    Err(lavish_rpc::erased_serde::Error::custom(format!("unknown method: {}", method)))    }
+                    Err(::lavish::erased_serde::Error::custom(format!("unknown method: {}", method))),
+            }
         }
     }
 
-    #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
+    #[derive(Debug, ::lavish::serde_derive::Serialize)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
     pub enum Results {
-        get_cookies(super::get_cookies::Results),
-        reverse(super::reverse::Results),
-        get_user_agent(super::get_user_agent::Results),
-        ping(super::ping::Results),
-        ping__ping(super::ping::ping::Results),
+        GetCookies(super::schema::get_cookies::Results),
+        Reverse(super::schema::reverse::Results),
+        GetUserAgent(super::schema::get_user_agent::Results),
+        Ping(super::schema::ping::Results),
+        Ping_Ping(super::schema::ping::ping::Results),
+        Universe_Earth_Country_City_NewYork(super::schema::universe::earth::country::city::new_york::Results),
+        Session_Login(super::schema::session::login::Results),
+        Session_Login_SolveTotp(super::schema::session::login::solve_totp::Results),
     }
-    impl lavish_rpc::Atom for Results {
+    impl ::lavish::Atom for Results {
         fn method(&self) -> &'static str {
             match self {
-                Results::get_cookies(_) => "get_cookies",
-                Results::reverse(_) => "reverse",
-                Results::get_user_agent(_) => "get_user_agent",
-                Results::ping(_) => "ping",
-                Results::ping__ping(_) => "ping.ping",
+                Results::GetCookies(_) => "get_cookies",
+                Results::Reverse(_) => "reverse",
+                Results::GetUserAgent(_) => "get_user_agent",
+                Results::Ping(_) => "ping",
+                Results::Ping_Ping(_) => "ping.ping",
+                Results::Universe_Earth_Country_City_NewYork(_) => "universe.earth.country.city.new_york",
+                Results::Session_Login(_) => "session.login",
+                Results::Session_Login_SolveTotp(_) => "session.login.solve_totp",
             }
         }
-        fn deserialize(method: &str, de: &mut lavish_rpc::erased_serde::Deserializer) -> lavish_rpc::erased_serde::Result<Self> {
-            use lavish_rpc::erased_serde::deserialize as __DS;
-            use lavish_rpc::serde::de::Error;
+        fn deserialize(method: &str, de: &mut ::lavish::erased_serde::Deserializer) -> ::lavish::erased_serde::Result<Self> {
+            use ::lavish::erased_serde::deserialize as __DS;
+            use ::lavish::serde::de::Error;
 
             match method {
                 "get_cookies" => 
-                    Ok(Results::get_cookies(__DS::<super::get_cookies::Results>(de)?)),
+                    Ok(Results::GetCookies(__DS::<super::schema::get_cookies::Results>(de)?)),
                 "reverse" => 
-                    Ok(Results::reverse(__DS::<super::reverse::Results>(de)?)),
+                    Ok(Results::Reverse(__DS::<super::schema::reverse::Results>(de)?)),
                 "get_user_agent" => 
-                    Ok(Results::get_user_agent(__DS::<super::get_user_agent::Results>(de)?)),
+                    Ok(Results::GetUserAgent(__DS::<super::schema::get_user_agent::Results>(de)?)),
                 "ping" => 
-                    Ok(Results::ping(__DS::<super::ping::Results>(de)?)),
+                    Ok(Results::Ping(__DS::<super::schema::ping::Results>(de)?)),
                 "ping.ping" => 
-                    Ok(Results::ping__ping(__DS::<super::ping::ping::Results>(de)?)),
+                    Ok(Results::Ping_Ping(__DS::<super::schema::ping::ping::Results>(de)?)),
+                "universe.earth.country.city.new_york" => 
+                    Ok(Results::Universe_Earth_Country_City_NewYork(__DS::<super::schema::universe::earth::country::city::new_york::Results>(de)?)),
+                "session.login" => 
+                    Ok(Results::Session_Login(__DS::<super::schema::session::login::Results>(de)?)),
+                "session.login.solve_totp" => 
+                    Ok(Results::Session_Login_SolveTotp(__DS::<super::schema::session::login::solve_totp::Results>(de)?)),
                 _ =>
-                    Err(lavish_rpc::erased_serde::Error::custom(format!("unknown method: {}", method)))    }
+                    Err(::lavish::erased_serde::Error::custom(format!("unknown method: {}", method))),
+            }
         }
     }
 
-    #[derive(Debug, lavish_rpc::serde_derive::Serialize)]
+    #[derive(Debug, ::lavish::serde_derive::Serialize)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
     pub enum NotificationParams {}
-    impl lavish_rpc::Atom for NotificationParams {
+    impl ::lavish::Atom for NotificationParams {
         fn method(&self) -> &'static str {
             panic!("no variants for NotificationParams")
         }
-        fn deserialize(method: &str, de: &mut lavish_rpc::erased_serde::Deserializer) -> lavish_rpc::erased_serde::Result<Self> {
-            use lavish_rpc::erased_serde::deserialize as __DS;
-            use lavish_rpc::serde::de::Error;
+        fn deserialize(method: &str, de: &mut ::lavish::erased_serde::Deserializer) -> ::lavish::erased_serde::Result<Self> {
+            use ::lavish::erased_serde::deserialize as __DS;
+            use ::lavish::serde::de::Error;
 
             match method {
                 _ =>
-                    Err(lavish_rpc::erased_serde::Error::custom(format!("unknown method: {}", method)))    }
+                    Err(::lavish::erased_serde::Error::custom(format!("unknown method: {}", method))),
+            }
         }
     }
 
 }
 
+pub mod schema {
+    // trace = 
+    pub mod universe {
+        // trace = universe
+        pub mod earth {
+            // trace = universe::earth
+            pub mod country {
+                // trace = universe::earth::country
+                pub mod city {
+                    // trace = universe::earth::country::city
+                }
+            }
+        }
+    }
+    pub mod session {
+        // trace = session
+    }
+}
+
 pub mod client {
-    use futures::prelude::*;
     pub struct Client {
         get_cookies: (),
         reverse: (),
@@ -119,623 +160,41 @@ pub mod client {
     }
 
     pub struct Call<T, PP> {
-        pub state: std::sync::Arc<T>,
+        pub state: ::std::sync::Arc<T>,
         pub client: Client,
         pub params: PP,
     }
 
-    pub type SlotFuture = Future<Output = Result<super::protocol::Results, lavish_rpc::Error>> + Send + 'static;
-    pub type SlotReturn = std::pin::Pin<Box<SlotFuture>>;
-    pub type SlotFn<T> = Fn(std::sync::Arc<T>, Client, super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
+    pub type SlotReturn = Result<super::protocol::Results, ::lavish::Error>;
+    pub type SlotFn<T> = Fn(::std::sync::Arc<T>, Client, super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
     pub type Slot<T> = Option<Box<SlotFn<T>>>;
     pub struct Handler<T> {
-        // TODO
         state: std::sync::Arc<T>,
         on_get_user_agent: Slot<T>,
     }
 
-
 }
+
 pub mod server {
-    use futures::prelude::*;
     pub struct Client {
         get_user_agent: (),
         // TODO
     }
 
     pub struct Call<T, PP> {
-        pub state: std::sync::Arc<T>,
+        pub state: ::std::sync::Arc<T>,
         pub client: Client,
         pub params: PP,
     }
 
-    pub type SlotFuture = Future<Output = Result<super::protocol::Results, lavish_rpc::Error>> + Send + 'static;
-    pub type SlotReturn = std::pin::Pin<Box<SlotFuture>>;
-    pub type SlotFn<T> = Fn(std::sync::Arc<T>, Client, super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
+    pub type SlotReturn = Result<super::protocol::Results, ::lavish::Error>;
+    pub type SlotFn<T> = Fn(::std::sync::Arc<T>, Client, super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
     pub type Slot<T> = Option<Box<SlotFn<T>>>;
     pub struct Handler<T> {
-        // TODO
         state: std::sync::Arc<T>,
         on_get_cookies: Slot<T>,
         on_reverse: Slot<T>,
         on_ping: Slot<T>,
     }
 
-
-}
-//============= FIXME: experimental (end)
-
-mod __ {
-    // Notes: as of 2019-05-21, futures-preview is required
-    use futures::prelude::*;
-    use std::pin::Pin;
-    use std::sync::Arc;
-
-    use lavish_rpc as rpc;
-    use rpc::{Atom, erased_serde, serde_derive::*};
-
-    #[derive(Serialize, Debug)]
-    #[serde(untagged)]
-    #[allow(non_camel_case_types, unused)]
-    pub enum Params {
-        get_cookies(get_cookies::Params),
-        reverse(reverse::Params),
-        get_user_agent(get_user_agent::Params),
-        ping(ping::Params),
-        ping__ping(ping::ping::Params),
-    }
-
-    #[derive(Serialize, Debug)]
-    #[serde(untagged)]
-    #[allow(non_camel_case_types, unused)]
-    pub enum Results {
-        get_cookies(get_cookies::Results),
-        reverse(reverse::Results),
-        get_user_agent(get_user_agent::Results),
-        ping(ping::Results),
-        ping__ping(ping::ping::Results),
-    }
-
-    #[derive(Serialize, Debug)]
-    #[serde(untagged)]
-    #[allow(non_camel_case_types, unused)]
-    pub enum NotificationParams {
-    }
-
-    pub type Message = rpc::Message<Params, NotificationParams, Results>;
-    pub type RootClient = rpc::Client<Params, NotificationParams, Results>;
-    pub type Protocol = rpc::Protocol<Params, NotificationParams, Results>;
-
-    pub fn protocol() -> Protocol {
-        Protocol::new()
-    }
-
-    pub struct Client {
-        root: RootClient,
-    }
-
-    impl Client {
-        pub async fn get_cookies(&self) -> Result<get_cookies::Results, lavish_rpc::Error> {
-            self.root.call(
-                Params::get_cookies(get_cookies::Params {}),
-                get_cookies::Results::downgrade,
-            ).await
-        }
-
-        pub async fn reverse(&self, p: reverse::Params) -> Result<reverse::Results, lavish_rpc::Error> {
-            self.root.call(
-                Params::reverse(p),
-                reverse::Results::downgrade,
-            ).await
-        }
-
-        pub async fn get_user_agent(&self) -> Result<get_user_agent::Results, lavish_rpc::Error> {
-            self.root.call(
-                Params::get_user_agent(get_user_agent::Params {}),
-                get_user_agent::Results::downgrade,
-            ).await
-        }
-
-        pub async fn ping(&self) -> Result<ping::Results, lavish_rpc::Error> {
-            self.root.call(
-                Params::ping(ping::Params {}),
-                ping::Results::downgrade,
-            ).await
-        }
-
-        pub async fn ping__ping(&self) -> Result<ping::ping::Results, lavish_rpc::Error> {
-            self.root.call(
-                Params::ping__ping(ping::ping::Params {}),
-                ping::ping::Results::downgrade,
-            ).await
-        }
-
-    }
-
-    impl rpc::Atom for Params {
-        fn method(&self) -> &'static str {
-            match self {
-                Params::get_cookies(_) => "get_cookies",
-                Params::reverse(_) => "reverse",
-                Params::get_user_agent(_) => "get_user_agent",
-                Params::ping(_) => "ping",
-                Params::ping__ping(_) => "ping.ping",
-            }
-        }
-
-        fn deserialize(
-            method: &str,
-            de: &mut erased_serde::Deserializer,
-        ) -> erased_serde::Result<Self> {
-            use erased_serde::deserialize as deser;
-            use serde::de::Error;
-
-            match method {
-                "get_cookies" =>
-                    Ok(Params::get_cookies(deser::<get_cookies::Params>(de)?)),
-                "reverse" =>
-                    Ok(Params::reverse(deser::<reverse::Params>(de)?)),
-                "get_user_agent" =>
-                    Ok(Params::get_user_agent(deser::<get_user_agent::Params>(de)?)),
-                "ping" =>
-                    Ok(Params::ping(deser::<ping::Params>(de)?)),
-                "ping.ping" =>
-                    Ok(Params::ping__ping(deser::<ping::ping::Params>(de)?)),
-                _ => Err(erased_serde::Error::custom(format!(
-                    "unknown method: {}",
-                    method,
-                ))),
-            }
-        }
-    }
-
-    impl rpc::Atom for Results {
-        fn method(&self) -> &'static str {
-            match self {
-                Results::get_cookies(_) => "get_cookies",
-                Results::reverse(_) => "reverse",
-                Results::get_user_agent(_) => "get_user_agent",
-                Results::ping(_) => "ping",
-                Results::ping__ping(_) => "ping.ping",
-            }
-        }
-
-        fn deserialize(
-            method: &str,
-            de: &mut erased_serde::Deserializer,
-        ) -> erased_serde::Result<Self> {
-            use erased_serde::deserialize as deser;
-            use serde::de::Error;
-
-            match method {
-                "get_cookies" =>
-                    Ok(Results::get_cookies(deser::<get_cookies::Results>(de)?)),
-                "reverse" =>
-                    Ok(Results::reverse(deser::<reverse::Results>(de)?)),
-                "get_user_agent" =>
-                    Ok(Results::get_user_agent(deser::<get_user_agent::Results>(de)?)),
-                "ping" =>
-                    Ok(Results::ping(deser::<ping::Results>(de)?)),
-                "ping.ping" =>
-                    Ok(Results::ping__ping(deser::<ping::ping::Results>(de)?)),
-                _ => Err(erased_serde::Error::custom(format!(
-                    "unknown method: {}",
-                    method,
-                ))),
-            }
-        }
-    }
-
-    impl rpc::Atom for NotificationParams {
-        fn method(&self) -> &'static str {
-            match self {
-                _ => unimplemented!()
-            }
-        }
-
-        fn deserialize(
-            method: &str,
-            de: &mut erased_serde::Deserializer,
-        ) -> erased_serde::Result<Self> {
-            use erased_serde::deserialize as deser;
-            use serde::de::Error;
-
-            match method {
-                _ => Err(erased_serde::Error::custom(format!(
-                    "unknown method: {}",
-                    method,
-                ))),
-            }
-        }
-    }
-
-    pub struct Call<T, PP> {
-        pub state: Arc<T>,
-        pub client: Client,
-        pub params: PP,
-    }
-
-    pub type SlotFuture =
-        Future<Output = Result<Results, rpc::Error>> + Send + 'static;
-
-    pub type SlotReturn = Pin<Box<SlotFuture>>;
-
-    pub type SlotFn<T> =
-        Fn(Arc<T>, Client, Params) -> SlotReturn + 'static + Send + Sync;
-
-    pub type Slot<T> = Option<Box<SlotFn<T>>>;
-
-    pub struct Handler<T> {
-        state: Arc<T>,
-        get_cookies: Slot<T>,
-        reverse: Slot<T>,
-        get_user_agent: Slot<T>,
-        ping: Slot<T>,
-        ping__ping: Slot<T>,
-    }
-
-    impl<T> Handler<T> {
-        pub fn new(state: Arc<T>) -> Self {
-            Self {
-                state,
-                get_cookies: None,
-                reverse: None,
-                get_user_agent: None,
-                ping: None,
-                ping__ping: None,
-            }
-        }
-
-        pub fn on_get_cookies<F, FT> (&mut self, f: F)
-        where
-            F: Fn(Call<T, get_cookies::Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<get_cookies::Results, lavish_rpc::Error>> + Send + 'static,
-        {
-            self.get_cookies = Some(Box::new(move |state, client, params| {
-                Box::pin(
-                    f(Call {
-                        state, client,
-                        params: get_cookies::Params::downgrade(params).unwrap(),
-                    }).map_ok(Results::get_cookies)
-                )
-            }));
-        }
-
-        pub fn on_reverse<F, FT> (&mut self, f: F)
-        where
-            F: Fn(Call<T, reverse::Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<reverse::Results, lavish_rpc::Error>> + Send + 'static,
-        {
-            self.reverse = Some(Box::new(move |state, client, params| {
-                Box::pin(
-                    f(Call {
-                        state, client,
-                        params: reverse::Params::downgrade(params).unwrap(),
-                    }).map_ok(Results::reverse)
-                )
-            }));
-        }
-
-        pub fn on_get_user_agent<F, FT> (&mut self, f: F)
-        where
-            F: Fn(Call<T, get_user_agent::Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<get_user_agent::Results, lavish_rpc::Error>> + Send + 'static,
-        {
-            self.get_user_agent = Some(Box::new(move |state, client, params| {
-                Box::pin(
-                    f(Call {
-                        state, client,
-                        params: get_user_agent::Params::downgrade(params).unwrap(),
-                    }).map_ok(Results::get_user_agent)
-                )
-            }));
-        }
-
-        pub fn on_ping<F, FT> (&mut self, f: F)
-        where
-            F: Fn(Call<T, ping::Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
-        {
-            self.ping = Some(Box::new(move |state, client, params| {
-                Box::pin(
-                    f(Call {
-                        state, client,
-                        params: ping::Params::downgrade(params).unwrap(),
-                    }).map_ok(|_| Results::ping(ping::Results {}))
-                )
-            }));
-        }
-
-        pub fn on_ping__ping<F, FT> (&mut self, f: F)
-        where
-            F: Fn(Call<T, ping::ping::Params>) -> FT + Sync + Send + 'static,
-            FT: Future<Output = Result<(), lavish_rpc::Error>> + Send + 'static,
-        {
-            self.ping__ping = Some(Box::new(move |state, client, params| {
-                Box::pin(
-                    f(Call {
-                        state, client,
-                        params: ping::ping::Params::downgrade(params).unwrap(),
-                    }).map_ok(|_| Results::ping__ping(ping::ping::Results {}))
-                )
-            }));
-        }
-
-    }
-
-    type HandlerRet = Pin<Box<dyn Future<Output = Result<Results, rpc::Error>> + Send + 'static>>;
-
-    impl<T> rpc::Handler<Params, NotificationParams, Results, HandlerRet> for Handler<T>
-    where
-        T: Send + Sync,
-    {
-        fn handle(&self, client: RootClient, params: Params) -> HandlerRet {
-            let method = params.method();
-            let slot = match params {
-                Params::get_cookies(_) => self.get_cookies.as_ref(),
-                Params::reverse(_) => self.reverse.as_ref(),
-                Params::get_user_agent(_) => self.get_user_agent.as_ref(),
-                Params::ping(_) => self.ping.as_ref(),
-                Params::ping__ping(_) => self.ping__ping.as_ref(),
-                _ => None,
-            };
-            match slot {
-                Some(slot_fn) => {
-                    let res = slot_fn(self.state.clone(), Client { root: client }, params);
-                    Box::pin(async move { Ok(res.await?) })
-                }
-                None => Box::pin(async move { Err(rpc::Error::MethodUnimplemented(method)) }),
-            }
-        }
-    }
-
-    use lavish_rpc::serde_derive::*;
-
-    /// A key/value pair used to remember session information.
-    /// 
-    /// Can be harmful in real life, but this is just a sample schema
-    #[derive(Serialize, Deserialize, Debug)]
-    pub struct Cookie {
-        /// The key of the cookie
-        pub key: String,
-        /// The value of the cookie.
-        /// Although it's typed as a string, it can be anything underneath.
-        pub value: String,
-    }
-
-    pub mod get_cookies {
-        use futures::prelude::*;
-        use lavish_rpc::serde_derive::*;
-        use super::super::__;
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct Params {
-        }
-
-        impl Params {
-            pub fn downgrade(p: __::Params) -> Option<Self> {
-                match p {
-                    __::Params::get_cookies(p) => Some(p),
-                    _ => None,
-                }
-            }
-        }
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct Results {
-            pub cookies: Vec<super::Cookie>,
-        }
-
-        impl Results {
-            pub fn downgrade(p: __::Results) -> Option<Self> {
-                match p {
-                    __::Results::get_cookies(p) => Some(p),
-                    _ => None,
-                }
-            }
-        }
-    }
-
-    pub mod reverse {
-        use futures::prelude::*;
-        use lavish_rpc::serde_derive::*;
-        use super::super::__;
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct Params {
-            pub s: String,
-        }
-
-        impl Params {
-            pub fn downgrade(p: __::Params) -> Option<Self> {
-                match p {
-                    __::Params::reverse(p) => Some(p),
-                    _ => None,
-                }
-            }
-        }
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct Results {
-            pub s: String,
-        }
-
-        impl Results {
-            pub fn downgrade(p: __::Results) -> Option<Self> {
-                match p {
-                    __::Results::reverse(p) => Some(p),
-                    _ => None,
-                }
-            }
-        }
-    }
-
-    pub mod get_user_agent {
-        use futures::prelude::*;
-        use lavish_rpc::serde_derive::*;
-        use super::super::__;
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct Params {
-        }
-
-        impl Params {
-            pub fn downgrade(p: __::Params) -> Option<Self> {
-                match p {
-                    __::Params::get_user_agent(p) => Some(p),
-                    _ => None,
-                }
-            }
-        }
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct Results {
-            pub user_agent: String,
-        }
-
-        impl Results {
-            pub fn downgrade(p: __::Results) -> Option<Self> {
-                match p {
-                    __::Results::get_user_agent(p) => Some(p),
-                    _ => None,
-                }
-            }
-        }
-    }
-
-    pub mod ping {
-        use futures::prelude::*;
-        use lavish_rpc::serde_derive::*;
-        use super::super::__;
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct Params {
-        }
-
-        impl Params {
-            pub fn downgrade(p: __::Params) -> Option<Self> {
-                match p {
-                    __::Params::ping(p) => Some(p),
-                    _ => None,
-                }
-            }
-        }
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct Results {
-        }
-
-        impl Results {
-            pub fn downgrade(p: __::Results) -> Option<Self> {
-                match p {
-                    __::Results::ping(p) => Some(p),
-                    _ => None,
-                }
-            }
-        }
-        use lavish_rpc::serde_derive::*;
-
-        pub mod ping {
-            use futures::prelude::*;
-            use lavish_rpc::serde_derive::*;
-            use super::super::super::__;
-
-            #[derive(Serialize, Deserialize, Debug)]
-            pub struct Params {
-            }
-
-            impl Params {
-                pub fn downgrade(p: __::Params) -> Option<Self> {
-                    match p {
-                        __::Params::ping__ping(p) => Some(p),
-                        _ => None,
-                    }
-                }
-            }
-
-            #[derive(Serialize, Deserialize, Debug)]
-            pub struct Results {
-            }
-
-            impl Results {
-                pub fn downgrade(p: __::Results) -> Option<Self> {
-                    match p {
-                        __::Results::ping__ping(p) => Some(p),
-                        _ => None,
-                    }
-                }
-            }
-        }
-
-        use futures::prelude::*;
-        pub struct Client {
-            ping__ping: (),
-            // TODO
-        }
-
-        pub struct Call<T, PP> {
-            pub state: std::sync::Arc<T>,
-            pub client: Client,
-            pub params: PP,
-        }
-
-        pub type SlotFuture = Future<Output = Result<super::super::protocol::Results, lavish_rpc::Error>> + Send + 'static;
-        pub type SlotReturn = std::pin::Pin<Box<SlotFuture>>;
-        pub type SlotFn<T> = Fn(std::sync::Arc<T>, Client, super::super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
-        pub type Slot<T> = Option<Box<SlotFn<T>>>;
-        pub struct Handler<T> {
-            // TODO
-            state: std::sync::Arc<T>,
-            on_ping: Slot<T>,
-        }
-
-
-    }
-
-
-    pub struct PeerBuilder<C>
-    where
-        C: lavish_rpc::Conn,
-    {
-        conn: C,
-        pool: futures::executor::ThreadPool,
-    }
-
-    impl<C> PeerBuilder<C>
-    where
-        C: lavish_rpc::Conn,
-    {
-        pub fn new(conn: C, pool: futures::executor::ThreadPool) -> Self {
-            Self { conn, pool }
-        }
-
-        pub fn with_noop_handler(self) -> Result<Client, lavish_rpc::Error> {
-            self.with_handler(|_| {})
-        }
-
-        pub fn with_handler<S>(self, setup: S) -> Result<Client, lavish_rpc::Error>
-        where
-            S: Fn(&mut Handler<()>),
-        {
-            self.with_stateful_handler(std::sync::Arc::new(()), setup)
-        }
-
-        pub fn with_stateful_handler<T, S>(self, state: Arc<T>, setup: S) -> Result<Client, lavish_rpc::Error>
-        where
-            S: Fn(&mut Handler<T>),
-            T: Sync + Send + 'static,
-        {
-            let mut handler = Handler::new(state);
-            setup(&mut handler);
-            let root = lavish_rpc::connect(protocol(), handler, self.conn, self.pool)?;
-            Ok(Client { root })
-        }
-    }
-
-    pub fn peer<C>(conn: C, pool: futures::executor::ThreadPool) -> PeerBuilder<C>
-    where
-        C: lavish_rpc::Conn,
-    {
-        PeerBuilder::new(conn, pool)
-    }
 }

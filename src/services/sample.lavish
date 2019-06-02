@@ -25,3 +25,19 @@ server fn ping() {
     client fn ping()
 }
 
+namespace universe {
+    namespace earth {
+        namespace country {
+            namespace city {
+                server fn new_york()
+            }
+        }
+    }
+}
+
+namespace session {
+    server fn login(username: string, password: string) {
+        client fn solve_totp() -> (result: string)
+    }
+}
+
