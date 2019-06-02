@@ -156,6 +156,8 @@ pub mod client {
         get_cookies: (),
         reverse: (),
         ping: (),
+        universe__earth__country__city__new_york: (),
+        session__login: (),
         // TODO
     }
 
@@ -195,6 +197,8 @@ pub mod server {
         on_get_cookies: Slot<T>,
         on_reverse: Slot<T>,
         on_ping: Slot<T>,
+        on_universe__earth__country__city__new_york: Slot<T>,
+        on_session__login: Slot<T>,
     }
 
 }
