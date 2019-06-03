@@ -130,6 +130,8 @@ pub mod protocol {
         }
     }
 
+    pub type Client = ::lavish::Client<super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
+    pub type Handler = ::lavish::Handler<super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
 }
 
 pub mod schema {
@@ -188,10 +190,14 @@ pub mod schema {
             }
         }
         pub struct Client {
-            ping__ping: (),
-            // TODO
+            root: super::super::protocol::Client,
         }
 
+        impl Client {
+            pub fn ping(&self, params: super::super::schema::ping::ping::Params) {
+                // TODO
+            }
+        }
         pub struct Call<T, PP> {
             pub state: ::std::sync::Arc<T>,
             pub client: Client,
@@ -203,6 +209,7 @@ pub mod schema {
         pub type Slot<T> = Option<Box<SlotFn<T>>>;
         pub struct Handler<T> {
             state: std::sync::Arc<T>,
+            on_ping__ping: Slot<T>,
         }
 
     }
@@ -246,10 +253,14 @@ pub mod schema {
                 }
             }
             pub struct Client {
-                session__login__solve_totp: (),
-                // TODO
+                root: super::super::super::protocol::Client,
             }
 
+            impl Client {
+                pub fn solve_totp(&self, params: super::super::super::schema::session::login::solve_totp::Params) {
+                    // TODO
+                }
+            }
             pub struct Call<T, PP> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: Client,
@@ -261,6 +272,7 @@ pub mod schema {
             pub type Slot<T> = Option<Box<SlotFn<T>>>;
             pub struct Handler<T> {
                 state: std::sync::Arc<T>,
+                on_session__login__solve_totp: Slot<T>,
             }
 
         }
@@ -269,14 +281,26 @@ pub mod schema {
 
 pub mod client {
     pub struct Client {
-        get_cookies: (),
-        reverse: (),
-        ping: (),
-        universe__earth__country__city__new_york: (),
-        session__login: (),
-        // TODO
+        root: super::protocol::Client,
     }
 
+    impl Client {
+        pub fn get_cookies(&self, params: super::schema::get_cookies::Params) {
+            // TODO
+        }
+        pub fn reverse(&self, params: super::schema::reverse::Params) {
+            // TODO
+        }
+        pub fn ping(&self, params: super::schema::ping::Params) {
+            // TODO
+        }
+        pub fn new_york(&self, params: super::schema::universe::earth::country::city::new_york::Params) {
+            // TODO
+        }
+        pub fn login(&self, params: super::schema::session::login::Params) {
+            // TODO
+        }
+    }
     pub struct Call<T, PP> {
         pub state: ::std::sync::Arc<T>,
         pub client: Client,
@@ -295,10 +319,14 @@ pub mod client {
 
 pub mod server {
     pub struct Client {
-        get_user_agent: (),
-        // TODO
+        root: super::protocol::Client,
     }
 
+    impl Client {
+        pub fn get_user_agent(&self, params: super::schema::get_user_agent::Params) {
+            // TODO
+        }
+    }
     pub struct Call<T, PP> {
         pub state: ::std::sync::Arc<T>,
         pub client: Client,
