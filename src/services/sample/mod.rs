@@ -12,11 +12,11 @@ pub mod protocol {
         GetCookies(super::schema::get_cookies::Params),
         Reverse(super::schema::reverse::Params),
         GetUserAgent(super::schema::get_user_agent::Params),
-        Ping(super::schema::ping::Params),
         Ping_Ping(super::schema::ping::ping::Params),
+        Ping(super::schema::ping::Params),
         Universe_Earth_Country_City_NewYork(super::schema::universe::earth::country::city::new_york::Params),
-        Session_Login(super::schema::session::login::Params),
         Session_Login_SolveTotp(super::schema::session::login::solve_totp::Params),
+        Session_Login(super::schema::session::login::Params),
     }
     impl ::lavish::Atom for Params {
         fn method(&self) -> &'static str {
@@ -24,11 +24,11 @@ pub mod protocol {
                 Params::GetCookies(_) => "get_cookies",
                 Params::Reverse(_) => "reverse",
                 Params::GetUserAgent(_) => "get_user_agent",
-                Params::Ping(_) => "ping",
                 Params::Ping_Ping(_) => "ping.ping",
+                Params::Ping(_) => "ping",
                 Params::Universe_Earth_Country_City_NewYork(_) => "universe.earth.country.city.new_york",
-                Params::Session_Login(_) => "session.login",
                 Params::Session_Login_SolveTotp(_) => "session.login.solve_totp",
+                Params::Session_Login(_) => "session.login",
             }
         }
         fn deserialize(method: &str, de: &mut ::lavish::erased_serde::Deserializer) -> ::lavish::erased_serde::Result<Self> {
@@ -42,16 +42,16 @@ pub mod protocol {
                     Ok(Params::Reverse(__DS::<super::schema::reverse::Params>(de)?)),
                 "get_user_agent" => 
                     Ok(Params::GetUserAgent(__DS::<super::schema::get_user_agent::Params>(de)?)),
-                "ping" => 
-                    Ok(Params::Ping(__DS::<super::schema::ping::Params>(de)?)),
                 "ping.ping" => 
                     Ok(Params::Ping_Ping(__DS::<super::schema::ping::ping::Params>(de)?)),
+                "ping" => 
+                    Ok(Params::Ping(__DS::<super::schema::ping::Params>(de)?)),
                 "universe.earth.country.city.new_york" => 
                     Ok(Params::Universe_Earth_Country_City_NewYork(__DS::<super::schema::universe::earth::country::city::new_york::Params>(de)?)),
-                "session.login" => 
-                    Ok(Params::Session_Login(__DS::<super::schema::session::login::Params>(de)?)),
                 "session.login.solve_totp" => 
                     Ok(Params::Session_Login_SolveTotp(__DS::<super::schema::session::login::solve_totp::Params>(de)?)),
+                "session.login" => 
+                    Ok(Params::Session_Login(__DS::<super::schema::session::login::Params>(de)?)),
                 _ =>
                     Err(::lavish::erased_serde::Error::custom(format!("unknown method: {}", method))),
             }
@@ -65,11 +65,11 @@ pub mod protocol {
         GetCookies(super::schema::get_cookies::Results),
         Reverse(super::schema::reverse::Results),
         GetUserAgent(super::schema::get_user_agent::Results),
-        Ping(super::schema::ping::Results),
         Ping_Ping(super::schema::ping::ping::Results),
+        Ping(super::schema::ping::Results),
         Universe_Earth_Country_City_NewYork(super::schema::universe::earth::country::city::new_york::Results),
-        Session_Login(super::schema::session::login::Results),
         Session_Login_SolveTotp(super::schema::session::login::solve_totp::Results),
+        Session_Login(super::schema::session::login::Results),
     }
     impl ::lavish::Atom for Results {
         fn method(&self) -> &'static str {
@@ -77,11 +77,11 @@ pub mod protocol {
                 Results::GetCookies(_) => "get_cookies",
                 Results::Reverse(_) => "reverse",
                 Results::GetUserAgent(_) => "get_user_agent",
-                Results::Ping(_) => "ping",
                 Results::Ping_Ping(_) => "ping.ping",
+                Results::Ping(_) => "ping",
                 Results::Universe_Earth_Country_City_NewYork(_) => "universe.earth.country.city.new_york",
-                Results::Session_Login(_) => "session.login",
                 Results::Session_Login_SolveTotp(_) => "session.login.solve_totp",
+                Results::Session_Login(_) => "session.login",
             }
         }
         fn deserialize(method: &str, de: &mut ::lavish::erased_serde::Deserializer) -> ::lavish::erased_serde::Result<Self> {
@@ -95,16 +95,16 @@ pub mod protocol {
                     Ok(Results::Reverse(__DS::<super::schema::reverse::Results>(de)?)),
                 "get_user_agent" => 
                     Ok(Results::GetUserAgent(__DS::<super::schema::get_user_agent::Results>(de)?)),
-                "ping" => 
-                    Ok(Results::Ping(__DS::<super::schema::ping::Results>(de)?)),
                 "ping.ping" => 
                     Ok(Results::Ping_Ping(__DS::<super::schema::ping::ping::Results>(de)?)),
+                "ping" => 
+                    Ok(Results::Ping(__DS::<super::schema::ping::Results>(de)?)),
                 "universe.earth.country.city.new_york" => 
                     Ok(Results::Universe_Earth_Country_City_NewYork(__DS::<super::schema::universe::earth::country::city::new_york::Results>(de)?)),
-                "session.login" => 
-                    Ok(Results::Session_Login(__DS::<super::schema::session::login::Results>(de)?)),
                 "session.login.solve_totp" => 
                     Ok(Results::Session_Login_SolveTotp(__DS::<super::schema::session::login::solve_totp::Results>(de)?)),
+                "session.login" => 
+                    Ok(Results::Session_Login(__DS::<super::schema::session::login::Results>(de)?)),
                 _ =>
                     Err(::lavish::erased_serde::Error::custom(format!("unknown method: {}", method))),
             }
@@ -133,21 +133,137 @@ pub mod protocol {
 }
 
 pub mod schema {
-    // trace = 
+    #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+    pub struct Cookie {
+        key: String,
+        value: String,
+    }
+    pub mod get_cookies {
+        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        pub struct Params {
+        }
+
+        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        pub struct Results {
+            cookies: Vec<super::Cookie>,
+        }
+    }
+    pub mod reverse {
+        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        pub struct Params {
+            s: String,
+        }
+
+        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        pub struct Results {
+            s: String,
+        }
+    }
+    pub mod get_user_agent {
+        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        pub struct Params {
+        }
+
+        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        pub struct Results {
+            user_agent: String,
+        }
+    }
+    pub mod ping {
+        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        pub struct Params {
+        }
+
+        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        pub struct Results {
+        }
+
+        pub mod ping {
+            #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+            pub struct Params {
+            }
+
+            #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+            pub struct Results {
+            }
+        }
+        pub struct Client {
+            ping__ping: (),
+            // TODO
+        }
+
+        pub struct Call<T, PP> {
+            pub state: ::std::sync::Arc<T>,
+            pub client: Client,
+            pub params: PP,
+        }
+
+        pub type SlotReturn = Result<super::super::protocol::Results, ::lavish::Error>;
+        pub type SlotFn<T> = Fn(::std::sync::Arc<T>, Client, super::super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
+        pub type Slot<T> = Option<Box<SlotFn<T>>>;
+        pub struct Handler<T> {
+            state: std::sync::Arc<T>,
+        }
+
+    }
     pub mod universe {
-        // trace = universe
         pub mod earth {
-            // trace = universe::earth
             pub mod country {
-                // trace = universe::earth::country
                 pub mod city {
-                    // trace = universe::earth::country::city
+                    pub mod new_york {
+                        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+                        pub struct Params {
+                        }
+
+                        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+                        pub struct Results {
+                        }
+                    }
                 }
             }
         }
     }
     pub mod session {
-        // trace = session
+        pub mod login {
+            #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+            pub struct Params {
+                username: String,
+                password: String,
+            }
+
+            #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+            pub struct Results {
+            }
+
+            pub mod solve_totp {
+                #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+                pub struct Params {
+                }
+
+                #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+                pub struct Results {
+                    result: String,
+                }
+            }
+            pub struct Client {
+                session__login__solve_totp: (),
+                // TODO
+            }
+
+            pub struct Call<T, PP> {
+                pub state: ::std::sync::Arc<T>,
+                pub client: Client,
+                pub params: PP,
+            }
+
+            pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
+            pub type SlotFn<T> = Fn(::std::sync::Arc<T>, Client, super::super::super::protocol::Params) -> SlotReturn + 'static + Send + Sync;
+            pub type Slot<T> = Option<Box<SlotFn<T>>>;
+            pub struct Handler<T> {
+                state: std::sync::Arc<T>,
+            }
+
+        }
     }
 }
 
