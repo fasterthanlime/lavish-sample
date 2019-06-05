@@ -1,7 +1,8 @@
 use super::services::sample;
 use std::net::TcpListener;
+use std::sync::Arc;
 
-pub fn run(mut listener: TcpListener) -> Result<(), Box<dyn std::error::Error + 'static>> {
+pub fn run(listener: TcpListener) -> Result<(), Box<dyn std::error::Error + 'static>> {
     let mut incoming = listener.incoming();
 
     if let Some(conn) = incoming.next() {
@@ -10,35 +11,44 @@ pub fn run(mut listener: TcpListener) -> Result<(), Box<dyn std::error::Error + 
         println!("[server] <- {}", addr);
         conn.set_nodelay(true)?;
 
-        sample::peer(conn).with_handler(|h| {
-            h.on_get_cookies(move |call| {
-                let mut cookies: Vec<sample::Cookie> = Vec::new();
-                cookies.push(sample::Cookie {
-                    key: "ads".into(),
-                    value: "no".into(),
-                });
-
-                cookies.push(sample::Cookie {
-                    key: "user-agent".into(),
-                    value: call.client.get_user_agent()?.user_agent,
-                });
-
-                Ok(sample::get_cookies::Results { cookies })
+        // sample::peer(conn).with_handler(|h| {
+        let mut h = sample::server::Handler::new(Arc::new(()));
+        h.on_get_cookies(|call| {
+            let mut cookies: Vec<sample::Cookie> = Vec::new();
+            cookies.push(sample::Cookie {
+                key: "ads".into(),
+                value: "no".into(),
             });
 
-            h.on_reverse(move |call| {
-                Ok(sample::reverse::Results {
-                    s: call.params.s.chars().rev().collect(),
-                })
+            cookies.push(sample::Cookie {
+                key: "user-agent".into(),
+                value: call
+                    .client
+                    .get_user_agent(sample::get_user_agent::Params {})?
+                    .user_agent,
             });
 
-            h.on_ping(move |call| {
-                // FIXME: this should be call.handle.ping
-                call.client.ping__ping()?;
+            Ok(sample::get_cookies::Results { cookies })
+        });
 
-                Ok(())
-            });
-        })?;
+        h.on_reverse(|call| {
+            Ok(sample::reverse::Results {
+                s: call.params.s.chars().rev().collect(),
+            })
+        });
+
+        h.on_ping(|_| {
+            // FIXME: this should be call.handle.ping
+            // call.client.ping__ping()?;
+
+            Ok(sample::ping::Results {})
+        });
+        // })?;
+
+        type P = sample::protocol::Params;
+        type NP = sample::protocol::NotificationParams;
+        type R = sample::protocol::Results;
+        lavish::connect(lavish::Protocol::<P, NP, R>::new(), h, conn)?;
     }
     Ok(())
 }

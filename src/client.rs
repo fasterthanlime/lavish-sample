@@ -4,8 +4,7 @@ use std::sync::{Arc, Mutex};
 use super::services::sample;
 
 pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let addr = super::ADDR.parse()?;
-    let conn = TcpStream::connect(&addr)?;
+    let conn = TcpStream::connect(super::ADDR)?;
     let addr = conn.peer_addr()?;
     println!("[client] -> {}", addr);
 
@@ -31,14 +30,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
     type P = sample::protocol::Params;
     type NP = sample::protocol::NotificationParams;
     type R = sample::protocol::Results;
-    let client = lavish::connect(
-        lavish::Protocol::<P, NP, R> {
-            phantom: std::marker::PhantomData,
-        },
-        h,
-        conn,
-    )?;
-    let client = sample::client::Client { root: client };
+    let client = lavish::connect(lavish::Protocol::<P, NP, R>::new(), h, conn)?;
+    let client = sample::client::Client::new(client);
     // let client = sample::peer(conn).with_stateful_handler(state.clone(), |h| {
     //     h.on_get_user_agent(move |call| {
     //         let mut state = call.state.lock()?;
@@ -49,12 +42,16 @@ pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
     //     });
     // })?;
 
-    println!("Asked for ua? = {:#?}", state.lock()?.asked_for_user_agent);
+    if let Ok(state) = state.lock() {
+        println!("Asked for ua? = {:#?}", state.asked_for_user_agent);
+    }
 
-    let cookies = client.get_cookies()?.cookies;
+    let cookies = client.get_cookies(sample::get_cookies::Params {})?.cookies;
     println!("Cookies = {:?}", cookies);
 
-    println!("Asked for ua? = {:#?}", state.lock()?.asked_for_user_agent);
+    if let Ok(state) = state.lock() {
+        println!("Asked for ua? = {:#?}", state.asked_for_user_agent);
+    }
 
     let s = "rust";
     println!("s (original) = {}", s);
@@ -65,7 +62,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
 
     // Wrong! We don't define `ping.ping`, so the server's call to us
     // is going to fail.
-    client.ping()?;
+    client.ping(sample::ping::Params {})?;
 
     Ok(())
 }
