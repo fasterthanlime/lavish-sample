@@ -7,6 +7,7 @@
 pub use schema::*;
 
 pub mod protocol {
+    pub fn protocol() -> ::lavish::Protocol<super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results> { ::lavish::Protocol::new() }
     #[derive(Debug, ::lavish::serde_derive::Serialize)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
@@ -1388,7 +1389,8 @@ pub mod schema {
             on_session__login: Slot<T>,
         }
 
-        impl<T> Handler<T> {
+        impl<T> Handler<T>
+        where T: Send + Sync + 'static {
             pub fn new(state: ::std::sync::Arc<T>) -> Self {
                 Self {
                     state,
@@ -1398,6 +1400,10 @@ pub mod schema {
                     on_universe__earth__country__city__new_york: None,
                     on_session__login: None,
                 }
+            }
+            pub fn connect<C>(self, conn: C) -> Result<Client, lavish::Error>
+            where C: lavish::Conn {
+                Ok(Client::new(lavish::connect(super::super::protocol::protocol(), self, conn)?))
             }
             pub fn on_get_cookies<F>(&mut self, f: F)
             where
@@ -1495,4 +1501,3 @@ pub mod schema {
     }
 
 }
-

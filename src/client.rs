@@ -32,15 +32,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
     type R = sample::protocol::Results;
     let client = lavish::connect(lavish::Protocol::<P, NP, R>::new(), h, conn)?;
     let client = sample::client::Client::new(client);
-    // let client = sample::peer(conn).with_stateful_handler(state.clone(), |h| {
-    //     h.on_get_user_agent(move |call| {
-    //         let mut state = call.state.lock()?;
-    //         state.asked_for_user_agent = true;
-    //         Ok(sample::get_user_agent::Results {
-    //             user_agent: state.user_agent.clone(),
-    //         })
-    //     });
-    // })?;
 
     if let Ok(state) = state.lock() {
         println!("Asked for ua? = {:#?}", state.asked_for_user_agent);
