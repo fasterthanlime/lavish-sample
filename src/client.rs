@@ -27,11 +27,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
             user_agent: state.user_agent.clone(),
         })
     });
-    type P = sample::protocol::Params;
-    type NP = sample::protocol::NotificationParams;
-    type R = sample::protocol::Results;
-    let client = lavish::connect(lavish::Protocol::<P, NP, R>::new(), h, conn)?;
-    let client = sample::client::Client::new(client);
+    let client = h.connect(conn)?;
 
     if let Ok(state) = state.lock() {
         println!("Asked for ua? = {:#?}", state.asked_for_user_agent);

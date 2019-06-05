@@ -226,17 +226,31 @@ pub mod schema {
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
             pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
             pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T> {
+            pub struct Handler<T>
+            where
+                T: Send + Sync + 'static
+            {
                 state: std::sync::Arc<T>,
                 on_ping__ping: Slot<T>,
             }
 
-            impl<T> Handler<T> {
+            impl<T> Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
                 pub fn new(state: ::std::sync::Arc<T>) -> Self {
                     Self {
                         state,
                         on_ping__ping: None,
                     }
+                }
+                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                where
+                    Conn: ::lavish::Conn,
+                {
+                    let proto = super::super::super::protocol::protocol();
+                    let root = ::lavish::connect(proto, self, conn)?;
+                    Ok(Client::new(root))
                 }
                 pub fn on_ping__ping<F>(&mut self, f: F)
                 where
@@ -255,7 +269,7 @@ pub mod schema {
             }
             impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
-                T: Send + Sync,
+                T: Send + Sync + 'static,
             {
                 fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
@@ -313,20 +327,34 @@ pub mod schema {
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
             pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
             pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T> {
+            pub struct Handler<T>
+            where
+                T: Send + Sync + 'static
+            {
                 state: std::sync::Arc<T>,
             }
 
-            impl<T> Handler<T> {
+            impl<T> Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
                 pub fn new(state: ::std::sync::Arc<T>) -> Self {
                     Self {
                         state,
                     }
                 }
+                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                where
+                    Conn: ::lavish::Conn,
+                {
+                    let proto = super::super::super::protocol::protocol();
+                    let root = ::lavish::connect(proto, self, conn)?;
+                    Ok(Client::new(root))
+                }
             }
             impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
-                T: Send + Sync,
+                T: Send + Sync + 'static,
             {
                 fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
@@ -389,20 +417,34 @@ pub mod schema {
                         pub type SlotReturn = Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error>;
                         pub type SlotFn<T> = Fn(Call<T, super::super::super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
                         pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                        pub struct Handler<T> {
+                        pub struct Handler<T>
+                        where
+                            T: Send + Sync + 'static
+                        {
                             state: std::sync::Arc<T>,
                         }
 
-                        impl<T> Handler<T> {
+                        impl<T> Handler<T>
+                        where
+                            T: Send + Sync + 'static,
+                        {
                             pub fn new(state: ::std::sync::Arc<T>) -> Self {
                                 Self {
                                     state,
                                 }
                             }
+                            pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                            where
+                                Conn: ::lavish::Conn,
+                            {
+                                let proto = super::super::super::super::super::super::protocol::protocol();
+                                let root = ::lavish::connect(proto, self, conn)?;
+                                Ok(Client::new(root))
+                            }
                         }
                         impl<T> ::lavish::Handler<super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results> for Handler<T>
                         where
-                            T: Send + Sync,
+                            T: Send + Sync + 'static,
                         {
                             fn handle(&self, root: super::super::super::super::super::super::protocol::Client, params: super::super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error> {
                                 use ::lavish::Atom;
@@ -442,17 +484,31 @@ pub mod schema {
                         pub type SlotReturn = Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error>;
                         pub type SlotFn<T> = Fn(Call<T, super::super::super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
                         pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                        pub struct Handler<T> {
+                        pub struct Handler<T>
+                        where
+                            T: Send + Sync + 'static
+                        {
                             state: std::sync::Arc<T>,
                             on_universe__earth__country__city__new_york: Slot<T>,
                         }
 
-                        impl<T> Handler<T> {
+                        impl<T> Handler<T>
+                        where
+                            T: Send + Sync + 'static,
+                        {
                             pub fn new(state: ::std::sync::Arc<T>) -> Self {
                                 Self {
                                     state,
                                     on_universe__earth__country__city__new_york: None,
                                 }
+                            }
+                            pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                            where
+                                Conn: ::lavish::Conn,
+                            {
+                                let proto = super::super::super::super::super::super::protocol::protocol();
+                                let root = ::lavish::connect(proto, self, conn)?;
+                                Ok(Client::new(root))
                             }
                             pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                             where
@@ -471,7 +527,7 @@ pub mod schema {
                         }
                         impl<T> ::lavish::Handler<super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results> for Handler<T>
                         where
-                            T: Send + Sync,
+                            T: Send + Sync + 'static,
                         {
                             fn handle(&self, root: super::super::super::super::super::super::protocol::Client, params: super::super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error> {
                                 use ::lavish::Atom;
@@ -530,20 +586,34 @@ pub mod schema {
                     pub type SlotReturn = Result<super::super::super::super::super::protocol::Results, ::lavish::Error>;
                     pub type SlotFn<T> = Fn(Call<T, super::super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
                     pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                    pub struct Handler<T> {
+                    pub struct Handler<T>
+                    where
+                        T: Send + Sync + 'static
+                    {
                         state: std::sync::Arc<T>,
                     }
 
-                    impl<T> Handler<T> {
+                    impl<T> Handler<T>
+                    where
+                        T: Send + Sync + 'static,
+                    {
                         pub fn new(state: ::std::sync::Arc<T>) -> Self {
                             Self {
                                 state,
                             }
                         }
+                        pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                        where
+                            Conn: ::lavish::Conn,
+                        {
+                            let proto = super::super::super::super::super::protocol::protocol();
+                            let root = ::lavish::connect(proto, self, conn)?;
+                            Ok(Client::new(root))
+                        }
                     }
                     impl<T> ::lavish::Handler<super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results> for Handler<T>
                     where
-                        T: Send + Sync,
+                        T: Send + Sync + 'static,
                     {
                         fn handle(&self, root: super::super::super::super::super::protocol::Client, params: super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::protocol::Results, ::lavish::Error> {
                             use ::lavish::Atom;
@@ -583,17 +653,31 @@ pub mod schema {
                     pub type SlotReturn = Result<super::super::super::super::super::protocol::Results, ::lavish::Error>;
                     pub type SlotFn<T> = Fn(Call<T, super::super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
                     pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                    pub struct Handler<T> {
+                    pub struct Handler<T>
+                    where
+                        T: Send + Sync + 'static
+                    {
                         state: std::sync::Arc<T>,
                         on_universe__earth__country__city__new_york: Slot<T>,
                     }
 
-                    impl<T> Handler<T> {
+                    impl<T> Handler<T>
+                    where
+                        T: Send + Sync + 'static,
+                    {
                         pub fn new(state: ::std::sync::Arc<T>) -> Self {
                             Self {
                                 state,
                                 on_universe__earth__country__city__new_york: None,
                             }
+                        }
+                        pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                        where
+                            Conn: ::lavish::Conn,
+                        {
+                            let proto = super::super::super::super::super::protocol::protocol();
+                            let root = ::lavish::connect(proto, self, conn)?;
+                            Ok(Client::new(root))
                         }
                         pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                         where
@@ -612,7 +696,7 @@ pub mod schema {
                     }
                     impl<T> ::lavish::Handler<super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results> for Handler<T>
                     where
-                        T: Send + Sync,
+                        T: Send + Sync + 'static,
                     {
                         fn handle(&self, root: super::super::super::super::super::protocol::Client, params: super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::protocol::Results, ::lavish::Error> {
                             use ::lavish::Atom;
@@ -671,20 +755,34 @@ pub mod schema {
                 pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
                 pub type SlotFn<T> = Fn(Call<T, super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
                 pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                pub struct Handler<T> {
+                pub struct Handler<T>
+                where
+                    T: Send + Sync + 'static
+                {
                     state: std::sync::Arc<T>,
                 }
 
-                impl<T> Handler<T> {
+                impl<T> Handler<T>
+                where
+                    T: Send + Sync + 'static,
+                {
                     pub fn new(state: ::std::sync::Arc<T>) -> Self {
                         Self {
                             state,
                         }
                     }
+                    pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                    where
+                        Conn: ::lavish::Conn,
+                    {
+                        let proto = super::super::super::super::protocol::protocol();
+                        let root = ::lavish::connect(proto, self, conn)?;
+                        Ok(Client::new(root))
+                    }
                 }
                 impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
                 where
-                    T: Send + Sync,
+                    T: Send + Sync + 'static,
                 {
                     fn handle(&self, root: super::super::super::super::protocol::Client, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
                         use ::lavish::Atom;
@@ -724,17 +822,31 @@ pub mod schema {
                 pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
                 pub type SlotFn<T> = Fn(Call<T, super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
                 pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                pub struct Handler<T> {
+                pub struct Handler<T>
+                where
+                    T: Send + Sync + 'static
+                {
                     state: std::sync::Arc<T>,
                     on_universe__earth__country__city__new_york: Slot<T>,
                 }
 
-                impl<T> Handler<T> {
+                impl<T> Handler<T>
+                where
+                    T: Send + Sync + 'static,
+                {
                     pub fn new(state: ::std::sync::Arc<T>) -> Self {
                         Self {
                             state,
                             on_universe__earth__country__city__new_york: None,
                         }
+                    }
+                    pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                    where
+                        Conn: ::lavish::Conn,
+                    {
+                        let proto = super::super::super::super::protocol::protocol();
+                        let root = ::lavish::connect(proto, self, conn)?;
+                        Ok(Client::new(root))
                     }
                     pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                     where
@@ -753,7 +865,7 @@ pub mod schema {
                 }
                 impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
                 where
-                    T: Send + Sync,
+                    T: Send + Sync + 'static,
                 {
                     fn handle(&self, root: super::super::super::super::protocol::Client, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
                         use ::lavish::Atom;
@@ -812,20 +924,34 @@ pub mod schema {
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
             pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
             pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T> {
+            pub struct Handler<T>
+            where
+                T: Send + Sync + 'static
+            {
                 state: std::sync::Arc<T>,
             }
 
-            impl<T> Handler<T> {
+            impl<T> Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
                 pub fn new(state: ::std::sync::Arc<T>) -> Self {
                     Self {
                         state,
                     }
                 }
+                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                where
+                    Conn: ::lavish::Conn,
+                {
+                    let proto = super::super::super::protocol::protocol();
+                    let root = ::lavish::connect(proto, self, conn)?;
+                    Ok(Client::new(root))
+                }
             }
             impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
-                T: Send + Sync,
+                T: Send + Sync + 'static,
             {
                 fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
@@ -865,17 +991,31 @@ pub mod schema {
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
             pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
             pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T> {
+            pub struct Handler<T>
+            where
+                T: Send + Sync + 'static
+            {
                 state: std::sync::Arc<T>,
                 on_universe__earth__country__city__new_york: Slot<T>,
             }
 
-            impl<T> Handler<T> {
+            impl<T> Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
                 pub fn new(state: ::std::sync::Arc<T>) -> Self {
                     Self {
                         state,
                         on_universe__earth__country__city__new_york: None,
                     }
+                }
+                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                where
+                    Conn: ::lavish::Conn,
+                {
+                    let proto = super::super::super::protocol::protocol();
+                    let root = ::lavish::connect(proto, self, conn)?;
+                    Ok(Client::new(root))
                 }
                 pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                 where
@@ -894,7 +1034,7 @@ pub mod schema {
             }
             impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
-                T: Send + Sync,
+                T: Send + Sync + 'static,
             {
                 fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
@@ -966,17 +1106,31 @@ pub mod schema {
                 pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
                 pub type SlotFn<T> = Fn(Call<T, super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
                 pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                pub struct Handler<T> {
+                pub struct Handler<T>
+                where
+                    T: Send + Sync + 'static
+                {
                     state: std::sync::Arc<T>,
                     on_session__login__solve_totp: Slot<T>,
                 }
 
-                impl<T> Handler<T> {
+                impl<T> Handler<T>
+                where
+                    T: Send + Sync + 'static,
+                {
                     pub fn new(state: ::std::sync::Arc<T>) -> Self {
                         Self {
                             state,
                             on_session__login__solve_totp: None,
                         }
+                    }
+                    pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                    where
+                        Conn: ::lavish::Conn,
+                    {
+                        let proto = super::super::super::super::protocol::protocol();
+                        let root = ::lavish::connect(proto, self, conn)?;
+                        Ok(Client::new(root))
                     }
                     pub fn on_session__login__solve_totp<F>(&mut self, f: F)
                     where
@@ -995,7 +1149,7 @@ pub mod schema {
                 }
                 impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
                 where
-                    T: Send + Sync,
+                    T: Send + Sync + 'static,
                 {
                     fn handle(&self, root: super::super::super::super::protocol::Client, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
                         use ::lavish::Atom;
@@ -1053,20 +1207,34 @@ pub mod schema {
                 pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
                 pub type SlotFn<T> = Fn(Call<T, super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
                 pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                pub struct Handler<T> {
+                pub struct Handler<T>
+                where
+                    T: Send + Sync + 'static
+                {
                     state: std::sync::Arc<T>,
                 }
 
-                impl<T> Handler<T> {
+                impl<T> Handler<T>
+                where
+                    T: Send + Sync + 'static,
+                {
                     pub fn new(state: ::std::sync::Arc<T>) -> Self {
                         Self {
                             state,
                         }
                     }
+                    pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                    where
+                        Conn: ::lavish::Conn,
+                    {
+                        let proto = super::super::super::super::protocol::protocol();
+                        let root = ::lavish::connect(proto, self, conn)?;
+                        Ok(Client::new(root))
+                    }
                 }
                 impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
                 where
-                    T: Send + Sync,
+                    T: Send + Sync + 'static,
                 {
                     fn handle(&self, root: super::super::super::super::protocol::Client, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
                         use ::lavish::Atom;
@@ -1116,20 +1284,34 @@ pub mod schema {
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
             pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
             pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T> {
+            pub struct Handler<T>
+            where
+                T: Send + Sync + 'static
+            {
                 state: std::sync::Arc<T>,
             }
 
-            impl<T> Handler<T> {
+            impl<T> Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
                 pub fn new(state: ::std::sync::Arc<T>) -> Self {
                     Self {
                         state,
                     }
                 }
+                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                where
+                    Conn: ::lavish::Conn,
+                {
+                    let proto = super::super::super::protocol::protocol();
+                    let root = ::lavish::connect(proto, self, conn)?;
+                    Ok(Client::new(root))
+                }
             }
             impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
-                T: Send + Sync,
+                T: Send + Sync + 'static,
             {
                 fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
@@ -1169,17 +1351,31 @@ pub mod schema {
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
             pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
             pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T> {
+            pub struct Handler<T>
+            where
+                T: Send + Sync + 'static
+            {
                 state: std::sync::Arc<T>,
                 on_session__login: Slot<T>,
             }
 
-            impl<T> Handler<T> {
+            impl<T> Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
                 pub fn new(state: ::std::sync::Arc<T>) -> Self {
                     Self {
                         state,
                         on_session__login: None,
                     }
+                }
+                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                where
+                    Conn: ::lavish::Conn,
+                {
+                    let proto = super::super::super::protocol::protocol();
+                    let root = ::lavish::connect(proto, self, conn)?;
+                    Ok(Client::new(root))
                 }
                 pub fn on_session__login<F>(&mut self, f: F)
                 where
@@ -1198,7 +1394,7 @@ pub mod schema {
             }
             impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
-                T: Send + Sync,
+                T: Send + Sync + 'static,
             {
                 fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
@@ -1293,17 +1489,31 @@ pub mod schema {
         pub type SlotReturn = Result<super::super::protocol::Results, ::lavish::Error>;
         pub type SlotFn<T> = Fn(Call<T, super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
         pub type Slot<T> = Option<Box<SlotFn<T>>>;
-        pub struct Handler<T> {
+        pub struct Handler<T>
+        where
+            T: Send + Sync + 'static
+        {
             state: std::sync::Arc<T>,
             on_get_user_agent: Slot<T>,
         }
 
-        impl<T> Handler<T> {
+        impl<T> Handler<T>
+        where
+            T: Send + Sync + 'static,
+        {
             pub fn new(state: ::std::sync::Arc<T>) -> Self {
                 Self {
                     state,
                     on_get_user_agent: None,
                 }
+            }
+            pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+            where
+                Conn: ::lavish::Conn,
+            {
+                let proto = super::super::protocol::protocol();
+                let root = ::lavish::connect(proto, self, conn)?;
+                Ok(Client::new(root))
             }
             pub fn on_get_user_agent<F>(&mut self, f: F)
             where
@@ -1322,7 +1532,7 @@ pub mod schema {
         }
         impl<T> ::lavish::Handler<super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Handler<T>
         where
-            T: Send + Sync,
+            T: Send + Sync + 'static,
         {
             fn handle(&self, root: super::super::protocol::Client, params: super::super::protocol::Params) -> Result<super::super::protocol::Results, ::lavish::Error> {
                 use ::lavish::Atom;
@@ -1380,7 +1590,10 @@ pub mod schema {
         pub type SlotReturn = Result<super::super::protocol::Results, ::lavish::Error>;
         pub type SlotFn<T> = Fn(Call<T, super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
         pub type Slot<T> = Option<Box<SlotFn<T>>>;
-        pub struct Handler<T> {
+        pub struct Handler<T>
+        where
+            T: Send + Sync + 'static
+        {
             state: std::sync::Arc<T>,
             on_get_cookies: Slot<T>,
             on_reverse: Slot<T>,
@@ -1390,7 +1603,9 @@ pub mod schema {
         }
 
         impl<T> Handler<T>
-        where T: Send + Sync + 'static {
+        where
+            T: Send + Sync + 'static,
+        {
             pub fn new(state: ::std::sync::Arc<T>) -> Self {
                 Self {
                     state,
@@ -1401,9 +1616,13 @@ pub mod schema {
                     on_session__login: None,
                 }
             }
-            pub fn connect<C>(self, conn: C) -> Result<Client, lavish::Error>
-            where C: lavish::Conn {
-                Ok(Client::new(lavish::connect(super::super::protocol::protocol(), self, conn)?))
+            pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+            where
+                Conn: ::lavish::Conn,
+            {
+                let proto = super::super::protocol::protocol();
+                let root = ::lavish::connect(proto, self, conn)?;
+                Ok(Client::new(root))
             }
             pub fn on_get_cookies<F>(&mut self, f: F)
             where
@@ -1478,7 +1697,7 @@ pub mod schema {
         }
         impl<T> ::lavish::Handler<super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Handler<T>
         where
-            T: Send + Sync,
+            T: Send + Sync + 'static,
         {
             fn handle(&self, root: super::super::protocol::Client, params: super::super::protocol::Params) -> Result<super::super::protocol::Results, ::lavish::Error> {
                 use ::lavish::Atom;
@@ -1501,3 +1720,4 @@ pub mod schema {
     }
 
 }
+

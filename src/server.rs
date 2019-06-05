@@ -45,10 +45,7 @@ pub fn run(listener: TcpListener) -> Result<(), Box<dyn std::error::Error + 'sta
         });
         // })?;
 
-        type P = sample::protocol::Params;
-        type NP = sample::protocol::NotificationParams;
-        type R = sample::protocol::Results;
-        lavish::connect(lavish::Protocol::<P, NP, R>::new(), h, conn)?;
+        h.connect(conn)?;
     }
     Ok(())
 }
