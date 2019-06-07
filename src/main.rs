@@ -7,10 +7,14 @@ mod server;
 
 fn main() {
     env_logger::init();
-    let addr = "127.0.0.1:9596";
 
-    let server_handle = lavish::serve_once(server::handler(), addr).unwrap();
-    client::run(addr).unwrap();
+    // binds synchronously, serves in the background
+    // `serve_once` only accepts one connection, then quits
+    let server = lavish::serve_once(server::handler(), "localhost:0").unwrap();
+
+    // do a few test calls;
+    client::run(server.local_addr()).unwrap();
+
     // this makes sure the server shuts down when the client disconnects
-    server_handle.join().unwrap();
+    server.join().unwrap();
 }
