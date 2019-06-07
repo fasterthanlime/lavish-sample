@@ -1,11 +1,16 @@
 
-.PHONY: all run doc schema
+.PHONY: all run debug build doc schema
 
 all: run doc
 
-run: schema
-	cargo build
+debug: build
 	RUST_LOG=debug ./target/debug/lavish-sample
+
+run: build
+	./target/debug/lavish-sample
+
+build:
+	cargo build
 
 doc: schema
 	cargo doc --no-deps

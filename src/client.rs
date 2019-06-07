@@ -45,11 +45,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
     let s = client.reverse(sample::reverse::Params { s: s.into() })?.s;
     println!("s (reversed) = {}", s);
 
-    println!("Pinging server");
-
-    // Wrong! We don't define `ping.ping`, so the server's call to us
-    // is going to fail.
-    client.ping(sample::ping::Params {})?;
+    for _ in 0..2 {
+        println!("Pinging server");
+        // Wrong! We don't define `ping.ping`, so the server's call to us
+        // is going to fail.
+        client.ping(sample::ping::Params {})?;
+    }
 
     Ok(())
 }

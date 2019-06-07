@@ -11,6 +11,8 @@ pub fn run(listener: TcpListener) -> Result<(), Box<dyn std::error::Error + 'sta
         println!("[server] <- {}", addr);
         conn.set_nodelay(true)?;
 
+        let cloned_conn = conn.try_clone()?;
+
         // sample::peer(conn).with_handler(|h| {
         let mut h = sample::server::Handler::new(Arc::new(()));
         h.on_get_cookies(|call| {
@@ -37,13 +39,18 @@ pub fn run(listener: TcpListener) -> Result<(), Box<dyn std::error::Error + 'sta
             })
         });
 
-        h.on_ping(|_| {
+        h.on_ping(move |_| {
             // FIXME: this should be call.handle.ping
             // call.client.ping__ping()?;
 
+            if let Some(val) = std::env::var("SAMPLE_SHUTDOWN").ok() {
+                if val == "1" {
+                    cloned_conn.shutdown(std::net::Shutdown::Both)?;
+                }
+            }
+
             Ok(sample::ping::Results {})
         });
-        // })?;
 
         let (runtime, _) = h.spawn(conn)?;
         runtime.join().unwrap();
