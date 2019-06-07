@@ -9,7 +9,7 @@ debug: build
 run: build
 	./target/debug/lavish-sample
 
-build:
+build: schema
 	cargo build
 
 doc: schema

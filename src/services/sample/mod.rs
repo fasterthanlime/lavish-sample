@@ -132,8 +132,8 @@ pub mod protocol {
         }
     }
 
-    pub type Client = ::lavish::Client<super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
-    pub type Handler = ::lavish::Handler<super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
+    pub type Caller = ::lavish::Caller<super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
+    pub type Handler<CL> = ::lavish::Handler<CL, super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
 }
 
 pub mod schema {
@@ -195,16 +195,17 @@ pub mod schema {
             }
         }
         pub mod client {
+            #[derive(Clone)]
             pub struct Client {
-                root: super::super::super::protocol::Client,
+                caller: super::super::super::protocol::Caller,
             }
 
             impl Client {
-                pub fn new(root: super::super::super::protocol::Client) -> Self {
-                    Self { root }
+                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
+                    Self { caller }
                 }
             }
-            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
+            pub type Runtime = ::lavish::Runtime<Client>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::client::Client,
@@ -221,6 +222,9 @@ pub mod schema {
                         client: self.client,
                         params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                     })
+                }
+                pub fn shutdown_runtime(&self) {
+                    self.client.caller.shutdown_runtime();
                 }
             }
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
@@ -244,14 +248,6 @@ pub mod schema {
                         on_ping__ping: None,
                     }
                 }
-                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                where
-                    Conn: ::lavish::Conn,
-                {
-                    let runtime = ::lavish::spawn(self, conn)?;
-                    let client = Client::new(runtime.client());
-                    Ok((runtime, client))
-                }
                 pub fn on_ping__ping<F>(&mut self, f: F)
                 where
                     F: Fn(Call<T, super::super::super::schema::ping::ping::Params>) -> Result<super::super::super::schema::ping::ping::Results, ::lavish::Error> + Send + Sync + 'static,
@@ -267,11 +263,11 @@ pub mod schema {
                     ));
                 }
             }
-            impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
+            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
                 T: Send + Sync + 'static,
             {
-                fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
+                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
                     let slot = match params {
                         super::super::super::protocol::Params::Ping_Ping(_) => self.on_ping__ping.as_ref(),
@@ -279,25 +275,29 @@ pub mod schema {
                     }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                     let call = Call {
                         state: self.state.clone(),
-                        client: super::client::Client { root },
+                        client: super::client::Client { caller },
                         params,
                     };
                     slot(call)
+                }
+                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
+                    Client { caller }
                 }
             }
         }
 
         pub mod server {
+            #[derive(Clone)]
             pub struct Client {
-                root: super::super::super::protocol::Client,
+                caller: super::super::super::protocol::Caller,
             }
 
             impl Client {
-                pub fn new(root: super::super::super::protocol::Client) -> Self {
-                    Self { root }
+                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
+                    Self { caller }
                 }
                 pub fn ping(&self, p: super::super::super::schema::ping::ping::Params) -> Result<super::super::super::schema::ping::ping::Results, ::lavish::Error> {
-                    self.root.call(
+                    self.caller.call(
                         super::super::super::protocol::Params::Ping_Ping(p),
                         |r| match r {
                             super::super::super::protocol::Results::Ping_Ping(r) => Some(r),
@@ -306,7 +306,7 @@ pub mod schema {
                     )
                 }
             }
-            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
+            pub type Runtime = ::lavish::Runtime<Client>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::server::Client,
@@ -323,6 +323,9 @@ pub mod schema {
                         client: self.client,
                         params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                     })
+                }
+                pub fn shutdown_runtime(&self) {
+                    self.client.caller.shutdown_runtime();
                 }
             }
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
@@ -344,22 +347,17 @@ pub mod schema {
                         state,
                     }
                 }
-                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                where
-                    Conn: ::lavish::Conn,
-                {
-                    let runtime = ::lavish::spawn(self, conn)?;
-                    let client = Client::new(runtime.client());
-                    Ok((runtime, client))
-                }
             }
-            impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
+            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
                 T: Send + Sync + 'static,
             {
-                fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
+                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
                     Err(::lavish::Error::MethodUnimplemented(params.method()))
+                }
+                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
+                    Client { caller }
                 }
             }
         }
@@ -379,16 +377,17 @@ pub mod schema {
                         }
                     }
                     pub mod client {
+                        #[derive(Clone)]
                         pub struct Client {
-                            root: super::super::super::super::super::super::protocol::Client,
+                            caller: super::super::super::super::super::super::protocol::Caller,
                         }
 
                         impl Client {
-                            pub fn new(root: super::super::super::super::super::super::protocol::Client) -> Self {
-                                Self { root }
+                            pub fn new(caller: super::super::super::super::super::super::protocol::Caller) -> Self {
+                                Self { caller }
                             }
                             pub fn new_york(&self, p: super::super::super::super::super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                                self.root.call(
+                                self.caller.call(
                                     super::super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
                                     |r| match r {
                                         super::super::super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
@@ -397,7 +396,7 @@ pub mod schema {
                                 )
                             }
                         }
-                        pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results>;
+                        pub type Runtime = ::lavish::Runtime<Client>;
                         pub struct Call<T, P> {
                             pub state: ::std::sync::Arc<T>,
                             pub client: super::client::Client,
@@ -414,6 +413,9 @@ pub mod schema {
                                     client: self.client,
                                     params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                                 })
+                            }
+                            pub fn shutdown_runtime(&self) {
+                                self.client.caller.shutdown_runtime();
                             }
                         }
                         pub type SlotReturn = Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error>;
@@ -435,37 +437,33 @@ pub mod schema {
                                     state,
                                 }
                             }
-                            pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                            where
-                                Conn: ::lavish::Conn,
-                            {
-                                let runtime = ::lavish::spawn(self, conn)?;
-                                let client = Client::new(runtime.client());
-                                Ok((runtime, client))
-                            }
                         }
-                        impl<T> ::lavish::Handler<super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results> for Handler<T>
+                        impl<T> ::lavish::Handler<Client, super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results> for Handler<T>
                         where
                             T: Send + Sync + 'static,
                         {
-                            fn handle(&self, root: super::super::super::super::super::super::protocol::Client, params: super::super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error> {
+                            fn handle(&self, caller: super::super::super::super::super::super::protocol::Caller, params: super::super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error> {
                                 use ::lavish::Atom;
                                 Err(::lavish::Error::MethodUnimplemented(params.method()))
+                            }
+                            fn make_client(caller: super::super::super::super::super::super::protocol::Caller) -> Client {
+                                Client { caller }
                             }
                         }
                     }
 
                     pub mod server {
+                        #[derive(Clone)]
                         pub struct Client {
-                            root: super::super::super::super::super::super::protocol::Client,
+                            caller: super::super::super::super::super::super::protocol::Caller,
                         }
 
                         impl Client {
-                            pub fn new(root: super::super::super::super::super::super::protocol::Client) -> Self {
-                                Self { root }
+                            pub fn new(caller: super::super::super::super::super::super::protocol::Caller) -> Self {
+                                Self { caller }
                             }
                         }
-                        pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results>;
+                        pub type Runtime = ::lavish::Runtime<Client>;
                         pub struct Call<T, P> {
                             pub state: ::std::sync::Arc<T>,
                             pub client: super::server::Client,
@@ -482,6 +480,9 @@ pub mod schema {
                                     client: self.client,
                                     params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                                 })
+                            }
+                            pub fn shutdown_runtime(&self) {
+                                self.client.caller.shutdown_runtime();
                             }
                         }
                         pub type SlotReturn = Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error>;
@@ -505,14 +506,6 @@ pub mod schema {
                                     on_universe__earth__country__city__new_york: None,
                                 }
                             }
-                            pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                            where
-                                Conn: ::lavish::Conn,
-                            {
-                                let runtime = ::lavish::spawn(self, conn)?;
-                                let client = Client::new(runtime.client());
-                                Ok((runtime, client))
-                            }
                             pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                             where
                                 F: Fn(Call<T, super::super::super::super::super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
@@ -528,11 +521,11 @@ pub mod schema {
                                 ));
                             }
                         }
-                        impl<T> ::lavish::Handler<super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results> for Handler<T>
+                        impl<T> ::lavish::Handler<Client, super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results> for Handler<T>
                         where
                             T: Send + Sync + 'static,
                         {
-                            fn handle(&self, root: super::super::super::super::super::super::protocol::Client, params: super::super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error> {
+                            fn handle(&self, caller: super::super::super::super::super::super::protocol::Caller, params: super::super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error> {
                                 use ::lavish::Atom;
                                 let slot = match params {
                                     super::super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
@@ -540,26 +533,30 @@ pub mod schema {
                                 }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                                 let call = Call {
                                     state: self.state.clone(),
-                                    client: super::server::Client { root },
+                                    client: super::server::Client { caller },
                                     params,
                                 };
                                 slot(call)
+                            }
+                            fn make_client(caller: super::super::super::super::super::super::protocol::Caller) -> Client {
+                                Client { caller }
                             }
                         }
                     }
 
                 }
                 pub mod client {
+                    #[derive(Clone)]
                     pub struct Client {
-                        root: super::super::super::super::super::protocol::Client,
+                        caller: super::super::super::super::super::protocol::Caller,
                     }
 
                     impl Client {
-                        pub fn new(root: super::super::super::super::super::protocol::Client) -> Self {
-                            Self { root }
+                        pub fn new(caller: super::super::super::super::super::protocol::Caller) -> Self {
+                            Self { caller }
                         }
                         pub fn new_york(&self, p: super::super::super::super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                            self.root.call(
+                            self.caller.call(
                                 super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
                                 |r| match r {
                                     super::super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
@@ -568,7 +565,7 @@ pub mod schema {
                             )
                         }
                     }
-                    pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results>;
+                    pub type Runtime = ::lavish::Runtime<Client>;
                     pub struct Call<T, P> {
                         pub state: ::std::sync::Arc<T>,
                         pub client: super::client::Client,
@@ -585,6 +582,9 @@ pub mod schema {
                                 client: self.client,
                                 params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                             })
+                        }
+                        pub fn shutdown_runtime(&self) {
+                            self.client.caller.shutdown_runtime();
                         }
                     }
                     pub type SlotReturn = Result<super::super::super::super::super::protocol::Results, ::lavish::Error>;
@@ -606,37 +606,33 @@ pub mod schema {
                                 state,
                             }
                         }
-                        pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                        where
-                            Conn: ::lavish::Conn,
-                        {
-                            let runtime = ::lavish::spawn(self, conn)?;
-                            let client = Client::new(runtime.client());
-                            Ok((runtime, client))
-                        }
                     }
-                    impl<T> ::lavish::Handler<super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results> for Handler<T>
+                    impl<T> ::lavish::Handler<Client, super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results> for Handler<T>
                     where
                         T: Send + Sync + 'static,
                     {
-                        fn handle(&self, root: super::super::super::super::super::protocol::Client, params: super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::protocol::Results, ::lavish::Error> {
+                        fn handle(&self, caller: super::super::super::super::super::protocol::Caller, params: super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::protocol::Results, ::lavish::Error> {
                             use ::lavish::Atom;
                             Err(::lavish::Error::MethodUnimplemented(params.method()))
+                        }
+                        fn make_client(caller: super::super::super::super::super::protocol::Caller) -> Client {
+                            Client { caller }
                         }
                     }
                 }
 
                 pub mod server {
+                    #[derive(Clone)]
                     pub struct Client {
-                        root: super::super::super::super::super::protocol::Client,
+                        caller: super::super::super::super::super::protocol::Caller,
                     }
 
                     impl Client {
-                        pub fn new(root: super::super::super::super::super::protocol::Client) -> Self {
-                            Self { root }
+                        pub fn new(caller: super::super::super::super::super::protocol::Caller) -> Self {
+                            Self { caller }
                         }
                     }
-                    pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results>;
+                    pub type Runtime = ::lavish::Runtime<Client>;
                     pub struct Call<T, P> {
                         pub state: ::std::sync::Arc<T>,
                         pub client: super::server::Client,
@@ -653,6 +649,9 @@ pub mod schema {
                                 client: self.client,
                                 params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                             })
+                        }
+                        pub fn shutdown_runtime(&self) {
+                            self.client.caller.shutdown_runtime();
                         }
                     }
                     pub type SlotReturn = Result<super::super::super::super::super::protocol::Results, ::lavish::Error>;
@@ -676,14 +675,6 @@ pub mod schema {
                                 on_universe__earth__country__city__new_york: None,
                             }
                         }
-                        pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                        where
-                            Conn: ::lavish::Conn,
-                        {
-                            let runtime = ::lavish::spawn(self, conn)?;
-                            let client = Client::new(runtime.client());
-                            Ok((runtime, client))
-                        }
                         pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                         where
                             F: Fn(Call<T, super::super::super::super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
@@ -699,11 +690,11 @@ pub mod schema {
                             ));
                         }
                     }
-                    impl<T> ::lavish::Handler<super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results> for Handler<T>
+                    impl<T> ::lavish::Handler<Client, super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results> for Handler<T>
                     where
                         T: Send + Sync + 'static,
                     {
-                        fn handle(&self, root: super::super::super::super::super::protocol::Client, params: super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::protocol::Results, ::lavish::Error> {
+                        fn handle(&self, caller: super::super::super::super::super::protocol::Caller, params: super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::protocol::Results, ::lavish::Error> {
                             use ::lavish::Atom;
                             let slot = match params {
                                 super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
@@ -711,26 +702,30 @@ pub mod schema {
                             }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                             let call = Call {
                                 state: self.state.clone(),
-                                client: super::server::Client { root },
+                                client: super::server::Client { caller },
                                 params,
                             };
                             slot(call)
+                        }
+                        fn make_client(caller: super::super::super::super::super::protocol::Caller) -> Client {
+                            Client { caller }
                         }
                     }
                 }
 
             }
             pub mod client {
+                #[derive(Clone)]
                 pub struct Client {
-                    root: super::super::super::super::protocol::Client,
+                    caller: super::super::super::super::protocol::Caller,
                 }
 
                 impl Client {
-                    pub fn new(root: super::super::super::super::protocol::Client) -> Self {
-                        Self { root }
+                    pub fn new(caller: super::super::super::super::protocol::Caller) -> Self {
+                        Self { caller }
                     }
                     pub fn new_york(&self, p: super::super::super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                        self.root.call(
+                        self.caller.call(
                             super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
                             |r| match r {
                                 super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
@@ -739,7 +734,7 @@ pub mod schema {
                         )
                     }
                 }
-                pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results>;
+                pub type Runtime = ::lavish::Runtime<Client>;
                 pub struct Call<T, P> {
                     pub state: ::std::sync::Arc<T>,
                     pub client: super::client::Client,
@@ -756,6 +751,9 @@ pub mod schema {
                             client: self.client,
                             params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                         })
+                    }
+                    pub fn shutdown_runtime(&self) {
+                        self.client.caller.shutdown_runtime();
                     }
                 }
                 pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
@@ -777,37 +775,33 @@ pub mod schema {
                             state,
                         }
                     }
-                    pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                    where
-                        Conn: ::lavish::Conn,
-                    {
-                        let runtime = ::lavish::spawn(self, conn)?;
-                        let client = Client::new(runtime.client());
-                        Ok((runtime, client))
-                    }
                 }
-                impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
+                impl<T> ::lavish::Handler<Client, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
                 where
                     T: Send + Sync + 'static,
                 {
-                    fn handle(&self, root: super::super::super::super::protocol::Client, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
+                    fn handle(&self, caller: super::super::super::super::protocol::Caller, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
                         use ::lavish::Atom;
                         Err(::lavish::Error::MethodUnimplemented(params.method()))
+                    }
+                    fn make_client(caller: super::super::super::super::protocol::Caller) -> Client {
+                        Client { caller }
                     }
                 }
             }
 
             pub mod server {
+                #[derive(Clone)]
                 pub struct Client {
-                    root: super::super::super::super::protocol::Client,
+                    caller: super::super::super::super::protocol::Caller,
                 }
 
                 impl Client {
-                    pub fn new(root: super::super::super::super::protocol::Client) -> Self {
-                        Self { root }
+                    pub fn new(caller: super::super::super::super::protocol::Caller) -> Self {
+                        Self { caller }
                     }
                 }
-                pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results>;
+                pub type Runtime = ::lavish::Runtime<Client>;
                 pub struct Call<T, P> {
                     pub state: ::std::sync::Arc<T>,
                     pub client: super::server::Client,
@@ -824,6 +818,9 @@ pub mod schema {
                             client: self.client,
                             params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                         })
+                    }
+                    pub fn shutdown_runtime(&self) {
+                        self.client.caller.shutdown_runtime();
                     }
                 }
                 pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
@@ -847,14 +844,6 @@ pub mod schema {
                             on_universe__earth__country__city__new_york: None,
                         }
                     }
-                    pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                    where
-                        Conn: ::lavish::Conn,
-                    {
-                        let runtime = ::lavish::spawn(self, conn)?;
-                        let client = Client::new(runtime.client());
-                        Ok((runtime, client))
-                    }
                     pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                     where
                         F: Fn(Call<T, super::super::super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
@@ -870,11 +859,11 @@ pub mod schema {
                         ));
                     }
                 }
-                impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
+                impl<T> ::lavish::Handler<Client, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
                 where
                     T: Send + Sync + 'static,
                 {
-                    fn handle(&self, root: super::super::super::super::protocol::Client, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
+                    fn handle(&self, caller: super::super::super::super::protocol::Caller, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
                         use ::lavish::Atom;
                         let slot = match params {
                             super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
@@ -882,26 +871,30 @@ pub mod schema {
                         }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                         let call = Call {
                             state: self.state.clone(),
-                            client: super::server::Client { root },
+                            client: super::server::Client { caller },
                             params,
                         };
                         slot(call)
+                    }
+                    fn make_client(caller: super::super::super::super::protocol::Caller) -> Client {
+                        Client { caller }
                     }
                 }
             }
 
         }
         pub mod client {
+            #[derive(Clone)]
             pub struct Client {
-                root: super::super::super::protocol::Client,
+                caller: super::super::super::protocol::Caller,
             }
 
             impl Client {
-                pub fn new(root: super::super::super::protocol::Client) -> Self {
-                    Self { root }
+                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
+                    Self { caller }
                 }
                 pub fn new_york(&self, p: super::super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                    self.root.call(
+                    self.caller.call(
                         super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
                         |r| match r {
                             super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
@@ -910,7 +903,7 @@ pub mod schema {
                     )
                 }
             }
-            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
+            pub type Runtime = ::lavish::Runtime<Client>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::client::Client,
@@ -927,6 +920,9 @@ pub mod schema {
                         client: self.client,
                         params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                     })
+                }
+                pub fn shutdown_runtime(&self) {
+                    self.client.caller.shutdown_runtime();
                 }
             }
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
@@ -948,37 +944,33 @@ pub mod schema {
                         state,
                     }
                 }
-                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                where
-                    Conn: ::lavish::Conn,
-                {
-                    let runtime = ::lavish::spawn(self, conn)?;
-                    let client = Client::new(runtime.client());
-                    Ok((runtime, client))
-                }
             }
-            impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
+            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
                 T: Send + Sync + 'static,
             {
-                fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
+                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
                     Err(::lavish::Error::MethodUnimplemented(params.method()))
+                }
+                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
+                    Client { caller }
                 }
             }
         }
 
         pub mod server {
+            #[derive(Clone)]
             pub struct Client {
-                root: super::super::super::protocol::Client,
+                caller: super::super::super::protocol::Caller,
             }
 
             impl Client {
-                pub fn new(root: super::super::super::protocol::Client) -> Self {
-                    Self { root }
+                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
+                    Self { caller }
                 }
             }
-            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
+            pub type Runtime = ::lavish::Runtime<Client>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::server::Client,
@@ -995,6 +987,9 @@ pub mod schema {
                         client: self.client,
                         params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                     })
+                }
+                pub fn shutdown_runtime(&self) {
+                    self.client.caller.shutdown_runtime();
                 }
             }
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
@@ -1018,14 +1013,6 @@ pub mod schema {
                         on_universe__earth__country__city__new_york: None,
                     }
                 }
-                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                where
-                    Conn: ::lavish::Conn,
-                {
-                    let runtime = ::lavish::spawn(self, conn)?;
-                    let client = Client::new(runtime.client());
-                    Ok((runtime, client))
-                }
                 pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                 where
                     F: Fn(Call<T, super::super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
@@ -1041,11 +1028,11 @@ pub mod schema {
                     ));
                 }
             }
-            impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
+            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
                 T: Send + Sync + 'static,
             {
-                fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
+                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
                     let slot = match params {
                         super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
@@ -1053,10 +1040,13 @@ pub mod schema {
                     }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                     let call = Call {
                         state: self.state.clone(),
-                        client: super::server::Client { root },
+                        client: super::server::Client { caller },
                         params,
                     };
                     slot(call)
+                }
+                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
+                    Client { caller }
                 }
             }
         }
@@ -1085,16 +1075,17 @@ pub mod schema {
                 }
             }
             pub mod client {
+                #[derive(Clone)]
                 pub struct Client {
-                    root: super::super::super::super::protocol::Client,
+                    caller: super::super::super::super::protocol::Caller,
                 }
 
                 impl Client {
-                    pub fn new(root: super::super::super::super::protocol::Client) -> Self {
-                        Self { root }
+                    pub fn new(caller: super::super::super::super::protocol::Caller) -> Self {
+                        Self { caller }
                     }
                 }
-                pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results>;
+                pub type Runtime = ::lavish::Runtime<Client>;
                 pub struct Call<T, P> {
                     pub state: ::std::sync::Arc<T>,
                     pub client: super::client::Client,
@@ -1111,6 +1102,9 @@ pub mod schema {
                             client: self.client,
                             params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                         })
+                    }
+                    pub fn shutdown_runtime(&self) {
+                        self.client.caller.shutdown_runtime();
                     }
                 }
                 pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
@@ -1134,14 +1128,6 @@ pub mod schema {
                             on_session__login__solve_totp: None,
                         }
                     }
-                    pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                    where
-                        Conn: ::lavish::Conn,
-                    {
-                        let runtime = ::lavish::spawn(self, conn)?;
-                        let client = Client::new(runtime.client());
-                        Ok((runtime, client))
-                    }
                     pub fn on_session__login__solve_totp<F>(&mut self, f: F)
                     where
                         F: Fn(Call<T, super::super::super::super::schema::session::login::solve_totp::Params>) -> Result<super::super::super::super::schema::session::login::solve_totp::Results, ::lavish::Error> + Send + Sync + 'static,
@@ -1157,11 +1143,11 @@ pub mod schema {
                         ));
                     }
                 }
-                impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
+                impl<T> ::lavish::Handler<Client, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
                 where
                     T: Send + Sync + 'static,
                 {
-                    fn handle(&self, root: super::super::super::super::protocol::Client, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
+                    fn handle(&self, caller: super::super::super::super::protocol::Caller, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
                         use ::lavish::Atom;
                         let slot = match params {
                             super::super::super::super::protocol::Params::Session_Login_SolveTotp(_) => self.on_session__login__solve_totp.as_ref(),
@@ -1169,25 +1155,29 @@ pub mod schema {
                         }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                         let call = Call {
                             state: self.state.clone(),
-                            client: super::client::Client { root },
+                            client: super::client::Client { caller },
                             params,
                         };
                         slot(call)
+                    }
+                    fn make_client(caller: super::super::super::super::protocol::Caller) -> Client {
+                        Client { caller }
                     }
                 }
             }
 
             pub mod server {
+                #[derive(Clone)]
                 pub struct Client {
-                    root: super::super::super::super::protocol::Client,
+                    caller: super::super::super::super::protocol::Caller,
                 }
 
                 impl Client {
-                    pub fn new(root: super::super::super::super::protocol::Client) -> Self {
-                        Self { root }
+                    pub fn new(caller: super::super::super::super::protocol::Caller) -> Self {
+                        Self { caller }
                     }
                     pub fn solve_totp(&self, p: super::super::super::super::schema::session::login::solve_totp::Params) -> Result<super::super::super::super::schema::session::login::solve_totp::Results, ::lavish::Error> {
-                        self.root.call(
+                        self.caller.call(
                             super::super::super::super::protocol::Params::Session_Login_SolveTotp(p),
                             |r| match r {
                                 super::super::super::super::protocol::Results::Session_Login_SolveTotp(r) => Some(r),
@@ -1196,7 +1186,7 @@ pub mod schema {
                         )
                     }
                 }
-                pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results>;
+                pub type Runtime = ::lavish::Runtime<Client>;
                 pub struct Call<T, P> {
                     pub state: ::std::sync::Arc<T>,
                     pub client: super::server::Client,
@@ -1213,6 +1203,9 @@ pub mod schema {
                             client: self.client,
                             params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                         })
+                    }
+                    pub fn shutdown_runtime(&self) {
+                        self.client.caller.shutdown_runtime();
                     }
                 }
                 pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
@@ -1234,38 +1227,34 @@ pub mod schema {
                             state,
                         }
                     }
-                    pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                    where
-                        Conn: ::lavish::Conn,
-                    {
-                        let runtime = ::lavish::spawn(self, conn)?;
-                        let client = Client::new(runtime.client());
-                        Ok((runtime, client))
-                    }
                 }
-                impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
+                impl<T> ::lavish::Handler<Client, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
                 where
                     T: Send + Sync + 'static,
                 {
-                    fn handle(&self, root: super::super::super::super::protocol::Client, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
+                    fn handle(&self, caller: super::super::super::super::protocol::Caller, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
                         use ::lavish::Atom;
                         Err(::lavish::Error::MethodUnimplemented(params.method()))
+                    }
+                    fn make_client(caller: super::super::super::super::protocol::Caller) -> Client {
+                        Client { caller }
                     }
                 }
             }
 
         }
         pub mod client {
+            #[derive(Clone)]
             pub struct Client {
-                root: super::super::super::protocol::Client,
+                caller: super::super::super::protocol::Caller,
             }
 
             impl Client {
-                pub fn new(root: super::super::super::protocol::Client) -> Self {
-                    Self { root }
+                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
+                    Self { caller }
                 }
                 pub fn login(&self, p: super::super::super::schema::session::login::Params) -> Result<super::super::super::schema::session::login::Results, ::lavish::Error> {
-                    self.root.call(
+                    self.caller.call(
                         super::super::super::protocol::Params::Session_Login(p),
                         |r| match r {
                             super::super::super::protocol::Results::Session_Login(r) => Some(r),
@@ -1274,7 +1263,7 @@ pub mod schema {
                     )
                 }
             }
-            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
+            pub type Runtime = ::lavish::Runtime<Client>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::client::Client,
@@ -1291,6 +1280,9 @@ pub mod schema {
                         client: self.client,
                         params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                     })
+                }
+                pub fn shutdown_runtime(&self) {
+                    self.client.caller.shutdown_runtime();
                 }
             }
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
@@ -1312,37 +1304,33 @@ pub mod schema {
                         state,
                     }
                 }
-                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                where
-                    Conn: ::lavish::Conn,
-                {
-                    let runtime = ::lavish::spawn(self, conn)?;
-                    let client = Client::new(runtime.client());
-                    Ok((runtime, client))
-                }
             }
-            impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
+            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
                 T: Send + Sync + 'static,
             {
-                fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
+                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
                     Err(::lavish::Error::MethodUnimplemented(params.method()))
+                }
+                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
+                    Client { caller }
                 }
             }
         }
 
         pub mod server {
+            #[derive(Clone)]
             pub struct Client {
-                root: super::super::super::protocol::Client,
+                caller: super::super::super::protocol::Caller,
             }
 
             impl Client {
-                pub fn new(root: super::super::super::protocol::Client) -> Self {
-                    Self { root }
+                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
+                    Self { caller }
                 }
             }
-            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
+            pub type Runtime = ::lavish::Runtime<Client>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::server::Client,
@@ -1359,6 +1347,9 @@ pub mod schema {
                         client: self.client,
                         params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                     })
+                }
+                pub fn shutdown_runtime(&self) {
+                    self.client.caller.shutdown_runtime();
                 }
             }
             pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
@@ -1382,14 +1373,6 @@ pub mod schema {
                         on_session__login: None,
                     }
                 }
-                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-                where
-                    Conn: ::lavish::Conn,
-                {
-                    let runtime = ::lavish::spawn(self, conn)?;
-                    let client = Client::new(runtime.client());
-                    Ok((runtime, client))
-                }
                 pub fn on_session__login<F>(&mut self, f: F)
                 where
                     F: Fn(Call<T, super::super::super::schema::session::login::Params>) -> Result<super::super::super::schema::session::login::Results, ::lavish::Error> + Send + Sync + 'static,
@@ -1405,11 +1388,11 @@ pub mod schema {
                     ));
                 }
             }
-            impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
+            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
             where
                 T: Send + Sync + 'static,
             {
-                fn handle(&self, root: super::super::super::protocol::Client, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
+                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
                     let slot = match params {
                         super::super::super::protocol::Params::Session_Login(_) => self.on_session__login.as_ref(),
@@ -1417,26 +1400,30 @@ pub mod schema {
                     }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                     let call = Call {
                         state: self.state.clone(),
-                        client: super::server::Client { root },
+                        client: super::server::Client { caller },
                         params,
                     };
                     slot(call)
+                }
+                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
+                    Client { caller }
                 }
             }
         }
 
     }
     pub mod client {
+        #[derive(Clone)]
         pub struct Client {
-            root: super::super::protocol::Client,
+            caller: super::super::protocol::Caller,
         }
 
         impl Client {
-            pub fn new(root: super::super::protocol::Client) -> Self {
-                Self { root }
+            pub fn new(caller: super::super::protocol::Caller) -> Self {
+                Self { caller }
             }
             pub fn get_cookies(&self, p: super::super::schema::get_cookies::Params) -> Result<super::super::schema::get_cookies::Results, ::lavish::Error> {
-                self.root.call(
+                self.caller.call(
                     super::super::protocol::Params::GetCookies(p),
                     |r| match r {
                         super::super::protocol::Results::GetCookies(r) => Some(r),
@@ -1445,7 +1432,7 @@ pub mod schema {
                 )
             }
             pub fn reverse(&self, p: super::super::schema::reverse::Params) -> Result<super::super::schema::reverse::Results, ::lavish::Error> {
-                self.root.call(
+                self.caller.call(
                     super::super::protocol::Params::Reverse(p),
                     |r| match r {
                         super::super::protocol::Results::Reverse(r) => Some(r),
@@ -1454,7 +1441,7 @@ pub mod schema {
                 )
             }
             pub fn ping(&self, p: super::super::schema::ping::Params) -> Result<super::super::schema::ping::Results, ::lavish::Error> {
-                self.root.call(
+                self.caller.call(
                     super::super::protocol::Params::Ping(p),
                     |r| match r {
                         super::super::protocol::Results::Ping(r) => Some(r),
@@ -1463,7 +1450,7 @@ pub mod schema {
                 )
             }
             pub fn new_york(&self, p: super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                self.root.call(
+                self.caller.call(
                     super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
                     |r| match r {
                         super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
@@ -1472,7 +1459,7 @@ pub mod schema {
                 )
             }
             pub fn login(&self, p: super::super::schema::session::login::Params) -> Result<super::super::schema::session::login::Results, ::lavish::Error> {
-                self.root.call(
+                self.caller.call(
                     super::super::protocol::Params::Session_Login(p),
                     |r| match r {
                         super::super::protocol::Results::Session_Login(r) => Some(r),
@@ -1481,7 +1468,7 @@ pub mod schema {
                 )
             }
         }
-        pub type Runtime<C> = ::lavish::Runtime<C, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results>;
+        pub type Runtime = ::lavish::Runtime<Client>;
         pub struct Call<T, P> {
             pub state: ::std::sync::Arc<T>,
             pub client: super::client::Client,
@@ -1498,6 +1485,9 @@ pub mod schema {
                     client: self.client,
                     params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                 })
+            }
+            pub fn shutdown_runtime(&self) {
+                self.client.caller.shutdown_runtime();
             }
         }
         pub type SlotReturn = Result<super::super::protocol::Results, ::lavish::Error>;
@@ -1521,14 +1511,6 @@ pub mod schema {
                     on_get_user_agent: None,
                 }
             }
-            pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-            where
-                Conn: ::lavish::Conn,
-            {
-                let runtime = ::lavish::spawn(self, conn)?;
-                let client = Client::new(runtime.client());
-                Ok((runtime, client))
-            }
             pub fn on_get_user_agent<F>(&mut self, f: F)
             where
                 F: Fn(Call<T, super::super::schema::get_user_agent::Params>) -> Result<super::super::schema::get_user_agent::Results, ::lavish::Error> + Send + Sync + 'static,
@@ -1544,11 +1526,11 @@ pub mod schema {
                 ));
             }
         }
-        impl<T> ::lavish::Handler<super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Handler<T>
+        impl<T> ::lavish::Handler<Client, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Handler<T>
         where
             T: Send + Sync + 'static,
         {
-            fn handle(&self, root: super::super::protocol::Client, params: super::super::protocol::Params) -> Result<super::super::protocol::Results, ::lavish::Error> {
+            fn handle(&self, caller: super::super::protocol::Caller, params: super::super::protocol::Params) -> Result<super::super::protocol::Results, ::lavish::Error> {
                 use ::lavish::Atom;
                 let slot = match params {
                     super::super::protocol::Params::GetUserAgent(_) => self.on_get_user_agent.as_ref(),
@@ -1556,25 +1538,29 @@ pub mod schema {
                 }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                 let call = Call {
                     state: self.state.clone(),
-                    client: super::client::Client { root },
+                    client: super::client::Client { caller },
                     params,
                 };
                 slot(call)
+            }
+            fn make_client(caller: super::super::protocol::Caller) -> Client {
+                Client { caller }
             }
         }
     }
 
     pub mod server {
+        #[derive(Clone)]
         pub struct Client {
-            root: super::super::protocol::Client,
+            caller: super::super::protocol::Caller,
         }
 
         impl Client {
-            pub fn new(root: super::super::protocol::Client) -> Self {
-                Self { root }
+            pub fn new(caller: super::super::protocol::Caller) -> Self {
+                Self { caller }
             }
             pub fn get_user_agent(&self, p: super::super::schema::get_user_agent::Params) -> Result<super::super::schema::get_user_agent::Results, ::lavish::Error> {
-                self.root.call(
+                self.caller.call(
                     super::super::protocol::Params::GetUserAgent(p),
                     |r| match r {
                         super::super::protocol::Results::GetUserAgent(r) => Some(r),
@@ -1583,7 +1569,7 @@ pub mod schema {
                 )
             }
         }
-        pub type Runtime<C> = ::lavish::Runtime<C, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results>;
+        pub type Runtime = ::lavish::Runtime<Client>;
         pub struct Call<T, P> {
             pub state: ::std::sync::Arc<T>,
             pub client: super::server::Client,
@@ -1600,6 +1586,9 @@ pub mod schema {
                     client: self.client,
                     params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
                 })
+            }
+            pub fn shutdown_runtime(&self) {
+                self.client.caller.shutdown_runtime();
             }
         }
         pub type SlotReturn = Result<super::super::protocol::Results, ::lavish::Error>;
@@ -1630,14 +1619,6 @@ pub mod schema {
                     on_universe__earth__country__city__new_york: None,
                     on_session__login: None,
                 }
-            }
-            pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
-            where
-                Conn: ::lavish::Conn,
-            {
-                let runtime = ::lavish::spawn(self, conn)?;
-                let client = Client::new(runtime.client());
-                Ok((runtime, client))
             }
             pub fn on_get_cookies<F>(&mut self, f: F)
             where
@@ -1710,11 +1691,11 @@ pub mod schema {
                 ));
             }
         }
-        impl<T> ::lavish::Handler<super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Handler<T>
+        impl<T> ::lavish::Handler<Client, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Handler<T>
         where
             T: Send + Sync + 'static,
         {
-            fn handle(&self, root: super::super::protocol::Client, params: super::super::protocol::Params) -> Result<super::super::protocol::Results, ::lavish::Error> {
+            fn handle(&self, caller: super::super::protocol::Caller, params: super::super::protocol::Params) -> Result<super::super::protocol::Results, ::lavish::Error> {
                 use ::lavish::Atom;
                 let slot = match params {
                     super::super::protocol::Params::GetCookies(_) => self.on_get_cookies.as_ref(),
@@ -1726,10 +1707,13 @@ pub mod schema {
                 }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                 let call = Call {
                     state: self.state.clone(),
-                    client: super::server::Client { root },
+                    client: super::server::Client { caller },
                     params,
                 };
                 slot(call)
+            }
+            fn make_client(caller: super::super::protocol::Caller) -> Client {
+                Client { caller }
             }
         }
     }

@@ -1,14 +1,10 @@
-use std::net::TcpStream;
+use super::services::sample;
 use std::sync::{Arc, Mutex};
 
-use super::services::sample;
-
-pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let conn = TcpStream::connect(super::ADDR)?;
-    let addr = conn.peer_addr()?;
-    println!("[client] -> {}", addr);
-
-    conn.set_nodelay(true)?;
+pub fn run<A>(addr: A) -> Result<(), Box<dyn std::error::Error + 'static>>
+where
+    A: std::net::ToSocketAddrs,
+{
     struct ClientState {
         user_agent: String,
         asked_for_user_agent: bool,
@@ -27,8 +23,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
             user_agent: state.user_agent.clone(),
         })
     });
-    let (_runtime, client) = h.spawn(conn)?;
 
+    let client = lavish::connect(h, addr)?.client();
     if let Ok(state) = state.lock() {
         println!("Asked for ua? = {:#?}", state.asked_for_user_agent);
     }
