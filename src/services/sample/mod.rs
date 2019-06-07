@@ -7,7 +7,6 @@
 pub use schema::*;
 
 pub mod protocol {
-    pub fn protocol() -> ::lavish::Protocol<super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results> { ::lavish::Protocol::new() }
     #[derive(Debug, ::lavish::serde_derive::Serialize)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
@@ -205,6 +204,7 @@ pub mod schema {
                     Self { root }
                 }
             }
+            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::client::Client,
@@ -244,13 +244,13 @@ pub mod schema {
                         on_ping__ping: None,
                     }
                 }
-                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                 where
                     Conn: ::lavish::Conn,
                 {
-                    let proto = super::super::super::protocol::protocol();
-                    let root = ::lavish::connect(proto, self, conn)?;
-                    Ok(Client::new(root))
+                    let runtime = ::lavish::spawn(self, conn)?;
+                    let client = Client::new(runtime.client());
+                    Ok((runtime, client))
                 }
                 pub fn on_ping__ping<F>(&mut self, f: F)
                 where
@@ -306,6 +306,7 @@ pub mod schema {
                     )
                 }
             }
+            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::server::Client,
@@ -343,13 +344,13 @@ pub mod schema {
                         state,
                     }
                 }
-                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                 where
                     Conn: ::lavish::Conn,
                 {
-                    let proto = super::super::super::protocol::protocol();
-                    let root = ::lavish::connect(proto, self, conn)?;
-                    Ok(Client::new(root))
+                    let runtime = ::lavish::spawn(self, conn)?;
+                    let client = Client::new(runtime.client());
+                    Ok((runtime, client))
                 }
             }
             impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
@@ -396,6 +397,7 @@ pub mod schema {
                                 )
                             }
                         }
+                        pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results>;
                         pub struct Call<T, P> {
                             pub state: ::std::sync::Arc<T>,
                             pub client: super::client::Client,
@@ -433,13 +435,13 @@ pub mod schema {
                                     state,
                                 }
                             }
-                            pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                            pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                             where
                                 Conn: ::lavish::Conn,
                             {
-                                let proto = super::super::super::super::super::super::protocol::protocol();
-                                let root = ::lavish::connect(proto, self, conn)?;
-                                Ok(Client::new(root))
+                                let runtime = ::lavish::spawn(self, conn)?;
+                                let client = Client::new(runtime.client());
+                                Ok((runtime, client))
                             }
                         }
                         impl<T> ::lavish::Handler<super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results> for Handler<T>
@@ -463,6 +465,7 @@ pub mod schema {
                                 Self { root }
                             }
                         }
+                        pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results>;
                         pub struct Call<T, P> {
                             pub state: ::std::sync::Arc<T>,
                             pub client: super::server::Client,
@@ -502,13 +505,13 @@ pub mod schema {
                                     on_universe__earth__country__city__new_york: None,
                                 }
                             }
-                            pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                            pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                             where
                                 Conn: ::lavish::Conn,
                             {
-                                let proto = super::super::super::super::super::super::protocol::protocol();
-                                let root = ::lavish::connect(proto, self, conn)?;
-                                Ok(Client::new(root))
+                                let runtime = ::lavish::spawn(self, conn)?;
+                                let client = Client::new(runtime.client());
+                                Ok((runtime, client))
                             }
                             pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                             where
@@ -565,6 +568,7 @@ pub mod schema {
                             )
                         }
                     }
+                    pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results>;
                     pub struct Call<T, P> {
                         pub state: ::std::sync::Arc<T>,
                         pub client: super::client::Client,
@@ -602,13 +606,13 @@ pub mod schema {
                                 state,
                             }
                         }
-                        pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                        pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                         where
                             Conn: ::lavish::Conn,
                         {
-                            let proto = super::super::super::super::super::protocol::protocol();
-                            let root = ::lavish::connect(proto, self, conn)?;
-                            Ok(Client::new(root))
+                            let runtime = ::lavish::spawn(self, conn)?;
+                            let client = Client::new(runtime.client());
+                            Ok((runtime, client))
                         }
                     }
                     impl<T> ::lavish::Handler<super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results> for Handler<T>
@@ -632,6 +636,7 @@ pub mod schema {
                             Self { root }
                         }
                     }
+                    pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results>;
                     pub struct Call<T, P> {
                         pub state: ::std::sync::Arc<T>,
                         pub client: super::server::Client,
@@ -671,13 +676,13 @@ pub mod schema {
                                 on_universe__earth__country__city__new_york: None,
                             }
                         }
-                        pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                        pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                         where
                             Conn: ::lavish::Conn,
                         {
-                            let proto = super::super::super::super::super::protocol::protocol();
-                            let root = ::lavish::connect(proto, self, conn)?;
-                            Ok(Client::new(root))
+                            let runtime = ::lavish::spawn(self, conn)?;
+                            let client = Client::new(runtime.client());
+                            Ok((runtime, client))
                         }
                         pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                         where
@@ -734,6 +739,7 @@ pub mod schema {
                         )
                     }
                 }
+                pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results>;
                 pub struct Call<T, P> {
                     pub state: ::std::sync::Arc<T>,
                     pub client: super::client::Client,
@@ -771,13 +777,13 @@ pub mod schema {
                             state,
                         }
                     }
-                    pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                    pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                     where
                         Conn: ::lavish::Conn,
                     {
-                        let proto = super::super::super::super::protocol::protocol();
-                        let root = ::lavish::connect(proto, self, conn)?;
-                        Ok(Client::new(root))
+                        let runtime = ::lavish::spawn(self, conn)?;
+                        let client = Client::new(runtime.client());
+                        Ok((runtime, client))
                     }
                 }
                 impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
@@ -801,6 +807,7 @@ pub mod schema {
                         Self { root }
                     }
                 }
+                pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results>;
                 pub struct Call<T, P> {
                     pub state: ::std::sync::Arc<T>,
                     pub client: super::server::Client,
@@ -840,13 +847,13 @@ pub mod schema {
                             on_universe__earth__country__city__new_york: None,
                         }
                     }
-                    pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                    pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                     where
                         Conn: ::lavish::Conn,
                     {
-                        let proto = super::super::super::super::protocol::protocol();
-                        let root = ::lavish::connect(proto, self, conn)?;
-                        Ok(Client::new(root))
+                        let runtime = ::lavish::spawn(self, conn)?;
+                        let client = Client::new(runtime.client());
+                        Ok((runtime, client))
                     }
                     pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                     where
@@ -903,6 +910,7 @@ pub mod schema {
                     )
                 }
             }
+            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::client::Client,
@@ -940,13 +948,13 @@ pub mod schema {
                         state,
                     }
                 }
-                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                 where
                     Conn: ::lavish::Conn,
                 {
-                    let proto = super::super::super::protocol::protocol();
-                    let root = ::lavish::connect(proto, self, conn)?;
-                    Ok(Client::new(root))
+                    let runtime = ::lavish::spawn(self, conn)?;
+                    let client = Client::new(runtime.client());
+                    Ok((runtime, client))
                 }
             }
             impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
@@ -970,6 +978,7 @@ pub mod schema {
                     Self { root }
                 }
             }
+            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::server::Client,
@@ -1009,13 +1018,13 @@ pub mod schema {
                         on_universe__earth__country__city__new_york: None,
                     }
                 }
-                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                 where
                     Conn: ::lavish::Conn,
                 {
-                    let proto = super::super::super::protocol::protocol();
-                    let root = ::lavish::connect(proto, self, conn)?;
-                    Ok(Client::new(root))
+                    let runtime = ::lavish::spawn(self, conn)?;
+                    let client = Client::new(runtime.client());
+                    Ok((runtime, client))
                 }
                 pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
                 where
@@ -1085,6 +1094,7 @@ pub mod schema {
                         Self { root }
                     }
                 }
+                pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results>;
                 pub struct Call<T, P> {
                     pub state: ::std::sync::Arc<T>,
                     pub client: super::client::Client,
@@ -1124,13 +1134,13 @@ pub mod schema {
                             on_session__login__solve_totp: None,
                         }
                     }
-                    pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                    pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                     where
                         Conn: ::lavish::Conn,
                     {
-                        let proto = super::super::super::super::protocol::protocol();
-                        let root = ::lavish::connect(proto, self, conn)?;
-                        Ok(Client::new(root))
+                        let runtime = ::lavish::spawn(self, conn)?;
+                        let client = Client::new(runtime.client());
+                        Ok((runtime, client))
                     }
                     pub fn on_session__login__solve_totp<F>(&mut self, f: F)
                     where
@@ -1186,6 +1196,7 @@ pub mod schema {
                         )
                     }
                 }
+                pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results>;
                 pub struct Call<T, P> {
                     pub state: ::std::sync::Arc<T>,
                     pub client: super::server::Client,
@@ -1223,13 +1234,13 @@ pub mod schema {
                             state,
                         }
                     }
-                    pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                    pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                     where
                         Conn: ::lavish::Conn,
                     {
-                        let proto = super::super::super::super::protocol::protocol();
-                        let root = ::lavish::connect(proto, self, conn)?;
-                        Ok(Client::new(root))
+                        let runtime = ::lavish::spawn(self, conn)?;
+                        let client = Client::new(runtime.client());
+                        Ok((runtime, client))
                     }
                 }
                 impl<T> ::lavish::Handler<super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
@@ -1263,6 +1274,7 @@ pub mod schema {
                     )
                 }
             }
+            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::client::Client,
@@ -1300,13 +1312,13 @@ pub mod schema {
                         state,
                     }
                 }
-                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                 where
                     Conn: ::lavish::Conn,
                 {
-                    let proto = super::super::super::protocol::protocol();
-                    let root = ::lavish::connect(proto, self, conn)?;
-                    Ok(Client::new(root))
+                    let runtime = ::lavish::spawn(self, conn)?;
+                    let client = Client::new(runtime.client());
+                    Ok((runtime, client))
                 }
             }
             impl<T> ::lavish::Handler<super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
@@ -1330,6 +1342,7 @@ pub mod schema {
                     Self { root }
                 }
             }
+            pub type Runtime<C> = ::lavish::Runtime<C, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results>;
             pub struct Call<T, P> {
                 pub state: ::std::sync::Arc<T>,
                 pub client: super::server::Client,
@@ -1369,13 +1382,13 @@ pub mod schema {
                         on_session__login: None,
                     }
                 }
-                pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+                pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
                 where
                     Conn: ::lavish::Conn,
                 {
-                    let proto = super::super::super::protocol::protocol();
-                    let root = ::lavish::connect(proto, self, conn)?;
-                    Ok(Client::new(root))
+                    let runtime = ::lavish::spawn(self, conn)?;
+                    let client = Client::new(runtime.client());
+                    Ok((runtime, client))
                 }
                 pub fn on_session__login<F>(&mut self, f: F)
                 where
@@ -1468,6 +1481,7 @@ pub mod schema {
                 )
             }
         }
+        pub type Runtime<C> = ::lavish::Runtime<C, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results>;
         pub struct Call<T, P> {
             pub state: ::std::sync::Arc<T>,
             pub client: super::client::Client,
@@ -1507,13 +1521,13 @@ pub mod schema {
                     on_get_user_agent: None,
                 }
             }
-            pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+            pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
             where
                 Conn: ::lavish::Conn,
             {
-                let proto = super::super::protocol::protocol();
-                let root = ::lavish::connect(proto, self, conn)?;
-                Ok(Client::new(root))
+                let runtime = ::lavish::spawn(self, conn)?;
+                let client = Client::new(runtime.client());
+                Ok((runtime, client))
             }
             pub fn on_get_user_agent<F>(&mut self, f: F)
             where
@@ -1569,6 +1583,7 @@ pub mod schema {
                 )
             }
         }
+        pub type Runtime<C> = ::lavish::Runtime<C, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results>;
         pub struct Call<T, P> {
             pub state: ::std::sync::Arc<T>,
             pub client: super::server::Client,
@@ -1616,13 +1631,13 @@ pub mod schema {
                     on_session__login: None,
                 }
             }
-            pub fn connect<Conn>(self, conn: Conn) -> Result<Client, ::lavish::Error>
+            pub fn spawn<Conn>(self, conn: Conn) -> Result<(Runtime<Conn>, Client), ::lavish::Error>
             where
                 Conn: ::lavish::Conn,
             {
-                let proto = super::super::protocol::protocol();
-                let root = ::lavish::connect(proto, self, conn)?;
-                Ok(Client::new(root))
+                let runtime = ::lavish::spawn(self, conn)?;
+                let client = Client::new(runtime.client());
+                Ok((runtime, client))
             }
             pub fn on_get_cookies<F>(&mut self, f: F)
             where

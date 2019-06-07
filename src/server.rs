@@ -45,7 +45,8 @@ pub fn run(listener: TcpListener) -> Result<(), Box<dyn std::error::Error + 'sta
         });
         // })?;
 
-        h.connect(conn)?;
+        let (runtime, _) = h.spawn(conn)?;
+        runtime.join().unwrap();
     }
     Ok(())
 }

@@ -27,7 +27,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error + 'static>> {
             user_agent: state.user_agent.clone(),
         })
     });
-    let client = h.connect(conn)?;
+    let (_runtime, client) = h.spawn(conn)?;
 
     if let Ok(state) = state.lock() {
         println!("Asked for ua? = {:#?}", state.asked_for_user_agent);

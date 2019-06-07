@@ -4,7 +4,8 @@
 all: run doc
 
 run: schema
-	cargo run
+	cargo build
+	RUST_LOG=debug ./target/debug/lavish-sample
 
 doc: schema
 	cargo doc --no-deps
