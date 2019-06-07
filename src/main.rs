@@ -11,5 +11,6 @@ fn main() {
 
     let server_handle = lavish::serve_once(server::handler(), addr).unwrap();
     client::run(addr).unwrap();
+    // this makes sure the server shuts down when the client disconnects
     server_handle.join().unwrap();
 }
