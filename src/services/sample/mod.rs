@@ -16,6 +16,7 @@ pub mod protocol {
         GetUserAgent(super::schema::get_user_agent::Params),
         Ping_Ping(super::schema::ping::ping::Params),
         Ping(super::schema::ping::Params),
+        Cookies_Get(super::schema::cookies::get::Params),
         Universe_Earth_Country_City_NewYork(super::schema::universe::earth::country::city::new_york::Params),
         Session_Login_SolveTotp(super::schema::session::login::solve_totp::Params),
         Session_Login(super::schema::session::login::Params),
@@ -28,6 +29,7 @@ pub mod protocol {
                 Params::GetUserAgent(_) => "get_user_agent",
                 Params::Ping_Ping(_) => "ping.ping",
                 Params::Ping(_) => "ping",
+                Params::Cookies_Get(_) => "cookies.get",
                 Params::Universe_Earth_Country_City_NewYork(_) => "universe.earth.country.city.new_york",
                 Params::Session_Login_SolveTotp(_) => "session.login.solve_totp",
                 Params::Session_Login(_) => "session.login",
@@ -48,6 +50,8 @@ pub mod protocol {
                     Ok(Params::Ping_Ping(__DS::<super::schema::ping::ping::Params>(de)?)),
                 "ping" => 
                     Ok(Params::Ping(__DS::<super::schema::ping::Params>(de)?)),
+                "cookies.get" => 
+                    Ok(Params::Cookies_Get(__DS::<super::schema::cookies::get::Params>(de)?)),
                 "universe.earth.country.city.new_york" => 
                     Ok(Params::Universe_Earth_Country_City_NewYork(__DS::<super::schema::universe::earth::country::city::new_york::Params>(de)?)),
                 "session.login.solve_totp" => 
@@ -69,6 +73,7 @@ pub mod protocol {
         GetUserAgent(super::schema::get_user_agent::Results),
         Ping_Ping(super::schema::ping::ping::Results),
         Ping(super::schema::ping::Results),
+        Cookies_Get(super::schema::cookies::get::Results),
         Universe_Earth_Country_City_NewYork(super::schema::universe::earth::country::city::new_york::Results),
         Session_Login_SolveTotp(super::schema::session::login::solve_totp::Results),
         Session_Login(super::schema::session::login::Results),
@@ -81,6 +86,7 @@ pub mod protocol {
                 Results::GetUserAgent(_) => "get_user_agent",
                 Results::Ping_Ping(_) => "ping.ping",
                 Results::Ping(_) => "ping",
+                Results::Cookies_Get(_) => "cookies.get",
                 Results::Universe_Earth_Country_City_NewYork(_) => "universe.earth.country.city.new_york",
                 Results::Session_Login_SolveTotp(_) => "session.login.solve_totp",
                 Results::Session_Login(_) => "session.login",
@@ -101,6 +107,8 @@ pub mod protocol {
                     Ok(Results::Ping_Ping(__DS::<super::schema::ping::ping::Results>(de)?)),
                 "ping" => 
                     Ok(Results::Ping(__DS::<super::schema::ping::Results>(de)?)),
+                "cookies.get" => 
+                    Ok(Results::Cookies_Get(__DS::<super::schema::cookies::get::Results>(de)?)),
                 "universe.earth.country.city.new_york" => 
                     Ok(Results::Universe_Earth_Country_City_NewYork(__DS::<super::schema::universe::earth::country::city::new_york::Results>(de)?)),
                 "session.login.solve_totp" => 
@@ -355,6 +363,186 @@ pub mod schema {
                 fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
                     use ::lavish::Atom;
                     Err(::lavish::Error::MethodUnimplemented(params.method()))
+                }
+                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
+                    Client { caller }
+                }
+            }
+        }
+
+    }
+    pub mod cookies {
+        pub mod get {
+            #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+            pub struct Params {
+            }
+
+            #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+            pub struct Results {
+                pub cookies: Vec<super::super::Cookie>,
+            }
+        }
+        pub mod client {
+            #[derive(Clone)]
+            pub struct Client {
+                caller: super::super::super::protocol::Caller,
+            }
+
+            impl Client {
+                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
+                    Self { caller }
+                }
+                pub fn get(&self, p: super::super::super::schema::cookies::get::Params) -> Result<super::super::super::schema::cookies::get::Results, ::lavish::Error> {
+                    self.caller.call(
+                        super::super::super::protocol::Params::Cookies_Get(p),
+                        |r| match r {
+                            super::super::super::protocol::Results::Cookies_Get(r) => Some(r),
+                            _ => None,
+                        }
+                    )
+                }
+            }
+            pub type Runtime = ::lavish::Runtime<Client>;
+            pub struct Call<T, P> {
+                pub state: ::std::sync::Arc<T>,
+                pub client: super::client::Client,
+                pub params: P,
+            }
+
+            impl<T, P> Call<T, P> {
+                fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
+                where
+                    F: Fn(P) -> Option<PP>,
+                {
+                    Ok(Call {
+                        state: self.state,
+                        client: self.client,
+                        params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
+                    })
+                }
+                pub fn shutdown_runtime(&self) {
+                    self.client.caller.shutdown_runtime();
+                }
+            }
+            pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
+            pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
+            pub type Slot<T> = Option<Box<SlotFn<T>>>;
+            pub struct Handler<T>
+            where
+                T: Send + Sync + 'static
+            {
+                state: std::sync::Arc<T>,
+            }
+
+            impl<T> Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
+                pub fn new(state: ::std::sync::Arc<T>) -> Self {
+                    Self {
+                        state,
+                    }
+                }
+            }
+            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
+                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
+                    use ::lavish::Atom;
+                    Err(::lavish::Error::MethodUnimplemented(params.method()))
+                }
+                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
+                    Client { caller }
+                }
+            }
+        }
+
+        pub mod server {
+            #[derive(Clone)]
+            pub struct Client {
+                caller: super::super::super::protocol::Caller,
+            }
+
+            impl Client {
+                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
+                    Self { caller }
+                }
+            }
+            pub type Runtime = ::lavish::Runtime<Client>;
+            pub struct Call<T, P> {
+                pub state: ::std::sync::Arc<T>,
+                pub client: super::server::Client,
+                pub params: P,
+            }
+
+            impl<T, P> Call<T, P> {
+                fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
+                where
+                    F: Fn(P) -> Option<PP>,
+                {
+                    Ok(Call {
+                        state: self.state,
+                        client: self.client,
+                        params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
+                    })
+                }
+                pub fn shutdown_runtime(&self) {
+                    self.client.caller.shutdown_runtime();
+                }
+            }
+            pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
+            pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
+            pub type Slot<T> = Option<Box<SlotFn<T>>>;
+            pub struct Handler<T>
+            where
+                T: Send + Sync + 'static
+            {
+                state: std::sync::Arc<T>,
+                on_cookies__get: Slot<T>,
+            }
+
+            impl<T> Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
+                pub fn new(state: ::std::sync::Arc<T>) -> Self {
+                    Self {
+                        state,
+                        on_cookies__get: None,
+                    }
+                }
+                pub fn on_cookies__get<F>(&mut self, f: F)
+                where
+                    F: Fn(Call<T, super::super::super::schema::cookies::get::Params>) -> Result<super::super::super::schema::cookies::get::Results, ::lavish::Error> + Send + Sync + 'static,
+                {
+                    self.on_cookies__get = Some(Box::new(
+                        move |call| {
+                            let call = call.downcast(|p| match p {
+                                super::super::super::protocol::Params::Cookies_Get(p) => Some(p),
+                                _ => None,
+                            })?;
+                            f(call).map(super::super::super::protocol::Results::Cookies_Get)
+                        }
+                    ));
+                }
+            }
+            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
+            where
+                T: Send + Sync + 'static,
+            {
+                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
+                    use ::lavish::Atom;
+                    let slot = match params {
+                        super::super::super::protocol::Params::Cookies_Get(_) => self.on_cookies__get.as_ref(),
+                        _ => None,
+                    }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
+                    let call = Call {
+                        state: self.state.clone(),
+                        client: super::server::Client { caller },
+                        params,
+                    };
+                    slot(call)
                 }
                 fn make_client(caller: super::super::super::protocol::Caller) -> Client {
                     Client { caller }
@@ -1449,6 +1637,15 @@ pub mod schema {
                     }
                 )
             }
+            pub fn get(&self, p: super::super::schema::cookies::get::Params) -> Result<super::super::schema::cookies::get::Results, ::lavish::Error> {
+                self.caller.call(
+                    super::super::protocol::Params::Cookies_Get(p),
+                    |r| match r {
+                        super::super::protocol::Results::Cookies_Get(r) => Some(r),
+                        _ => None,
+                    }
+                )
+            }
             pub fn new_york(&self, p: super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
                 self.caller.call(
                     super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
@@ -1602,6 +1799,7 @@ pub mod schema {
             on_get_cookies: Slot<T>,
             on_reverse: Slot<T>,
             on_ping: Slot<T>,
+            on_cookies__get: Slot<T>,
             on_universe__earth__country__city__new_york: Slot<T>,
             on_session__login: Slot<T>,
         }
@@ -1616,6 +1814,7 @@ pub mod schema {
                     on_get_cookies: None,
                     on_reverse: None,
                     on_ping: None,
+                    on_cookies__get: None,
                     on_universe__earth__country__city__new_york: None,
                     on_session__login: None,
                 }
@@ -1662,6 +1861,20 @@ pub mod schema {
                     }
                 ));
             }
+            pub fn on_cookies__get<F>(&mut self, f: F)
+            where
+                F: Fn(Call<T, super::super::schema::cookies::get::Params>) -> Result<super::super::schema::cookies::get::Results, ::lavish::Error> + Send + Sync + 'static,
+            {
+                self.on_cookies__get = Some(Box::new(
+                    move |call| {
+                        let call = call.downcast(|p| match p {
+                            super::super::protocol::Params::Cookies_Get(p) => Some(p),
+                            _ => None,
+                        })?;
+                        f(call).map(super::super::protocol::Results::Cookies_Get)
+                    }
+                ));
+            }
             pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
             where
                 F: Fn(Call<T, super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
@@ -1701,6 +1914,7 @@ pub mod schema {
                     super::super::protocol::Params::GetCookies(_) => self.on_get_cookies.as_ref(),
                     super::super::protocol::Params::Reverse(_) => self.on_reverse.as_ref(),
                     super::super::protocol::Params::Ping(_) => self.on_ping.as_ref(),
+                    super::super::protocol::Params::Cookies_Get(_) => self.on_cookies__get.as_ref(),
                     super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
                     super::super::protocol::Params::Session_Login(_) => self.on_session__login.as_ref(),
                     _ => None,

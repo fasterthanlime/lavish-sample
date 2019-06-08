@@ -10,6 +10,10 @@ struct Cookie {
     value: string,
 }
 
+namespace cookies {
+    server fn get() -> (cookies: Array<Cookie>)
+}
+
 // Ask for a list of cookies from the server.
 server fn get_cookies() -> (cookies: Array<Cookie>)
 
