@@ -147,6 +147,18 @@ pub mod protocol {
         fn upcast_params(self) -> Params;
         fn downcast_results(results: Results) -> Option<R>;
     }
+
+    pub trait Implementable<P> {
+        fn method() -> &'static str;
+        fn downcast_params(params: Params) -> Option<P>;
+        fn upcast_results(self) -> Results;
+    }
+
+    #[derive(Clone, Copy)]
+    pub struct Slottable<P, R>
+    where R: Implementable<P> {
+        pub phantom: std::marker::PhantomData<(P, R)>,
+    }
 }
 
 pub mod schema {
@@ -181,6 +193,23 @@ pub mod schema {
                 }
             }
         }
+
+        impl protocol::Implementable<Params> for Results {
+            fn upcast_results(self) -> protocol::Results {
+                protocol::Results::GetCookies(self)
+            }
+
+            fn downcast_params(params: protocol::Params) -> Option<Params> {
+                match params {
+                    protocol::Params::GetCookies(p) => Some(p),
+                    _ => None,
+                }
+            }
+
+            fn method() -> &'static str {
+                "get_cookies"
+            }
+        }
     }
     pub mod reverse {
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
@@ -193,6 +222,11 @@ pub mod schema {
             pub s: String,
         }
     }
+
+    use super::protocol;
+    pub fn get_user_agent() -> protocol::Slottable<get_user_agent::Params, get_user_agent::Results> {
+        protocol::Slottable { phantom: std::marker::PhantomData }
+    }
     pub mod get_user_agent {
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
         pub struct Params {
@@ -201,6 +235,24 @@ pub mod schema {
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
         pub struct Results {
             pub user_agent: String,
+        }
+
+        use super::super::protocol;
+        impl protocol::Implementable<Params> for Results {
+            fn upcast_results(self) -> protocol::Results {
+                protocol::Results::GetUserAgent(self)
+            }
+
+            fn downcast_params(params: protocol::Params) -> Option<Params> {
+                match params {
+                    protocol::Params::GetUserAgent(p) => Some(p),
+                    _ => None,
+                }
+            }
+
+            fn method() -> &'static str {
+                "get_user_agent"
+            }
         }
     }
     pub mod ping {
@@ -1290,7 +1342,7 @@ pub mod schema {
             caller: super::super::protocol::Caller,
         }
 
-        use super::super::protocol::Callable;
+        use super::super::protocol::{Callable, Slottable, Implementable};
         impl Client {
             pub fn new(caller: super::super::protocol::Caller) -> Self {
                 Self { caller }
@@ -1379,6 +1431,7 @@ pub mod schema {
                 self.client.caller.shutdown_runtime();
             }
         }
+        use std::collections::HashMap;
         pub type SlotReturn = Result<super::super::protocol::Results, ::lavish::Error>;
         pub type SlotFn<T> = Fn(Call<T, super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
         pub type Slot<T> = Option<Box<SlotFn<T>>>;
@@ -1387,6 +1440,7 @@ pub mod schema {
             T: Send + Sync + 'static
         {
             state: std::sync::Arc<T>,
+            slots: HashMap<&'static str, Box<SlotFn<T>>>,
             on_get_user_agent: Slot<T>,
         }
 
@@ -1397,6 +1451,7 @@ pub mod schema {
             pub fn new(state: ::std::sync::Arc<T>) -> Self {
                 Self {
                     state,
+                    slots: HashMap::new(),
                     on_get_user_agent: None,
                 }
             }
@@ -1414,6 +1469,18 @@ pub mod schema {
                     }
                 ));
             }
+
+            pub fn register<S, P, R, F>(&mut self, s: S, f: F)
+            where
+                S: Fn() -> Slottable<P, R>,
+                R: Implementable<P>,
+                F: Fn(Call<T, P>) -> Result<R, lavish::Error> + Send + Sync + 'static
+            {
+                self.slots.insert(R::method(), Box::new(move |call| {
+                    let call = call.downcast(R::downcast_params)?;
+                    f(call).map(|r| r.upcast_results())
+                }));
+            }
         }
         impl<T> ::lavish::Handler<Client, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Handler<T>
         where
@@ -1421,10 +1488,11 @@ pub mod schema {
         {
             fn handle(&self, caller: super::super::protocol::Caller, params: super::super::protocol::Params) -> Result<super::super::protocol::Results, ::lavish::Error> {
                 use ::lavish::Atom;
-                let slot = match params {
-                    super::super::protocol::Params::GetUserAgent(_) => self.on_get_user_agent.as_ref(),
-                    _ => None,
-                }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
+                // let slot = match params {
+                //     super::super::protocol::Params::GetUserAgent(_) => self.on_get_user_agent.as_ref(),
+                //     _ => None,
+                // }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
+                let slot = self.slots.get(params.method()).ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                 let call = Call {
                     state: self.state.clone(),
                     client: super::client::Client { caller },

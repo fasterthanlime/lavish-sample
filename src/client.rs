@@ -23,6 +23,13 @@ where
             user_agent: state.user_agent.clone(),
         })
     });
+    h.register(sample::get_user_agent, |call| {
+        let mut state = call.state.lock()?;
+        state.asked_for_user_agent = true;
+        Ok(sample::get_user_agent::Results {
+            user_agent: format!("via hashmap, {}", state.user_agent.clone()),
+        })
+    });
 
     let client = lavish::connect(h, addr)?.client();
     if let Ok(state) = state.lock() {
