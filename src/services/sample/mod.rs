@@ -174,10 +174,11 @@ pub mod schema {
         /// Although it's typed as a string, it can be anything underneath.
         pub value: String,
     }
-    pub fn get_cookies() -> super::protocol::Slottable<get_cookies::Params, get_cookies::Results> {
-        super::protocol::Slottable { phantom: std::marker::PhantomData }
-    }
+    pub use get_cookies::method as get_cookies;
     pub mod get_cookies {
+        pub fn method() -> super::super::protocol::Slottable<Params, Results> {
+            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+        }
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
         pub struct Params {
         }
@@ -214,10 +215,11 @@ pub mod schema {
             }
         }
     }
-    pub fn reverse() -> super::protocol::Slottable<reverse::Params, reverse::Results> {
-        super::protocol::Slottable { phantom: std::marker::PhantomData }
-    }
+    pub use reverse::method as reverse;
     pub mod reverse {
+        pub fn method() -> super::super::protocol::Slottable<Params, Results> {
+            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+        }
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
         pub struct Params {
             pub s: String,
@@ -255,10 +257,11 @@ pub mod schema {
             }
         }
     }
-    pub fn get_user_agent() -> super::protocol::Slottable<get_user_agent::Params, get_user_agent::Results> {
-        super::protocol::Slottable { phantom: std::marker::PhantomData }
-    }
+    pub use get_user_agent::method as get_user_agent;
     pub mod get_user_agent {
+        pub fn method() -> super::super::protocol::Slottable<Params, Results> {
+            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+        }
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
         pub struct Params {
         }
@@ -295,10 +298,11 @@ pub mod schema {
             }
         }
     }
-    pub fn ping() -> super::protocol::Slottable<ping::Params, ping::Results> {
-        super::protocol::Slottable { phantom: std::marker::PhantomData }
-    }
+    pub use ping::method as ping;
     pub mod ping {
+        pub fn method() -> super::super::protocol::Slottable<Params, Results> {
+            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+        }
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
         pub struct Params {
         }
@@ -334,10 +338,11 @@ pub mod schema {
             }
         }
 
-        pub fn ping() -> super::super::protocol::Slottable<ping::Params, ping::Results> {
-            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
-        }
+        pub use ping::method as ping;
         pub mod ping {
+            pub fn method() -> super::super::super::protocol::Slottable<Params, Results> {
+                super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+            }
             #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
             pub struct Params {
             }
@@ -375,10 +380,11 @@ pub mod schema {
         }
     }
     pub mod cookies {
-        pub fn get() -> super::super::protocol::Slottable<get::Params, get::Results> {
-            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
-        }
+        pub use get::method as get;
         pub mod get {
+            pub fn method() -> super::super::super::protocol::Slottable<Params, Results> {
+                super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+            }
             #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
             pub struct Params {
             }
@@ -420,10 +426,11 @@ pub mod schema {
         pub mod earth {
             pub mod country {
                 pub mod city {
-                    pub fn new_york() -> super::super::super::super::super::protocol::Slottable<new_york::Params, new_york::Results> {
-                        super::super::super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
-                    }
+                    pub use new_york::method as new_york;
                     pub mod new_york {
+                        pub fn method() -> super::super::super::super::super::super::protocol::Slottable<Params, Results> {
+                            super::super::super::super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+                        }
                         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
                         pub struct Params {
                         }
@@ -464,10 +471,11 @@ pub mod schema {
         }
     }
     pub mod session {
-        pub fn login() -> super::super::protocol::Slottable<login::Params, login::Results> {
-            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
-        }
+        pub use login::method as login;
         pub mod login {
+            pub fn method() -> super::super::super::protocol::Slottable<Params, Results> {
+                super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+            }
             #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
             pub struct Params {
                 pub username: String,
@@ -505,10 +513,11 @@ pub mod schema {
                 }
             }
 
-            pub fn solve_totp() -> super::super::super::protocol::Slottable<solve_totp::Params, solve_totp::Results> {
-                super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
-            }
+            pub use solve_totp::method as solve_totp;
             pub mod solve_totp {
+                pub fn method() -> super::super::super::super::protocol::Slottable<Params, Results> {
+                    super::super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+                }
                 #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
                 pub struct Params {
                 }
