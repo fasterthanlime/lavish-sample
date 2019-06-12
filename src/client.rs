@@ -32,6 +32,9 @@ where
     let cookies = client.get_cookies(sample::get_cookies::Params {})?.cookies;
     println!("Cookies = {:?}", cookies);
 
+    let cookies = client.call(sample::get_cookies::Params {})?.cookies;
+    println!("Cookies = {:?}", cookies);
+
     if let Ok(state) = state.lock() {
         println!("Asked for ua? = {:#?}", state.asked_for_user_agent);
     }
