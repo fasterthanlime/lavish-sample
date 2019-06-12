@@ -142,13 +142,14 @@ pub mod protocol {
 
     pub type Caller = ::lavish::Caller<super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
     pub type Handler<CL> = ::lavish::Handler<CL, super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
-
-    pub trait Callable<R> {
+    pub trait Callable<R>
+    {
         fn upcast_params(self) -> Params;
         fn downcast_results(results: Results) -> Option<R>;
     }
 
-    pub trait Implementable<P> {
+    pub trait Implementable<P>
+    {
         fn method() -> &'static str;
         fn downcast_params(params: Params) -> Option<P>;
         fn upcast_results(self) -> Results;
@@ -156,9 +157,12 @@ pub mod protocol {
 
     #[derive(Clone, Copy)]
     pub struct Slottable<P, R>
-    where R: Implementable<P> {
+    where
+        R: Implementable<P>,
+    {
         pub phantom: std::marker::PhantomData<(P, R)>,
     }
+
 }
 
 pub mod schema {
@@ -170,6 +174,9 @@ pub mod schema {
         /// Although it's typed as a string, it can be anything underneath.
         pub value: String,
     }
+    pub fn get_cookies() -> super::protocol::Slottable<get_cookies::Params, get_cookies::Results> {
+        super::protocol::Slottable { phantom: std::marker::PhantomData }
+    }
     pub mod get_cookies {
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
         pub struct Params {
@@ -180,36 +187,35 @@ pub mod schema {
             pub cookies: Vec<super::Cookie>,
         }
 
-        use super::super::protocol;
-        impl protocol::Callable<Results> for Params {
-            fn upcast_params(self) -> protocol::Params {
-                protocol::Params::GetCookies(self)
+        impl super::super::protocol::Callable<Results> for Params {
+            fn upcast_params(self) -> super::super::protocol::Params {
+                super::super::protocol::Params::GetCookies(self)
             }
-
-            fn downcast_results(results: protocol::Results) -> Option<Results> {
+            fn downcast_results(results: super::super::protocol::Results) -> Option<Results> {
                 match results {
-                    protocol::Results::GetCookies(r) => Some(r),
+                    super::super::protocol::Results::GetCookies(r) => Some(r),
                     _ => None,
                 }
             }
         }
 
-        impl protocol::Implementable<Params> for Results {
-            fn upcast_results(self) -> protocol::Results {
-                protocol::Results::GetCookies(self)
-            }
-
-            fn downcast_params(params: protocol::Params) -> Option<Params> {
-                match params {
-                    protocol::Params::GetCookies(p) => Some(p),
-                    _ => None,
-                }
-            }
-
+        impl super::super::protocol::Implementable<Params> for Results {
             fn method() -> &'static str {
                 "get_cookies"
             }
+            fn upcast_results(self) -> super::super::protocol::Results {
+                super::super::protocol::Results::GetCookies(self)
+            }
+            fn downcast_params(params: super::super::protocol::Params) -> Option<Params> {
+                match params {
+                    super::super::protocol::Params::GetCookies(p) => Some(p),
+                    _ => None,
+                }
+            }
         }
+    }
+    pub fn reverse() -> super::protocol::Slottable<reverse::Params, reverse::Results> {
+        super::protocol::Slottable { phantom: std::marker::PhantomData }
     }
     pub mod reverse {
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
@@ -221,11 +227,36 @@ pub mod schema {
         pub struct Results {
             pub s: String,
         }
-    }
 
-    use super::protocol;
-    pub fn get_user_agent() -> protocol::Slottable<get_user_agent::Params, get_user_agent::Results> {
-        protocol::Slottable { phantom: std::marker::PhantomData }
+        impl super::super::protocol::Callable<Results> for Params {
+            fn upcast_params(self) -> super::super::protocol::Params {
+                super::super::protocol::Params::Reverse(self)
+            }
+            fn downcast_results(results: super::super::protocol::Results) -> Option<Results> {
+                match results {
+                    super::super::protocol::Results::Reverse(r) => Some(r),
+                    _ => None,
+                }
+            }
+        }
+
+        impl super::super::protocol::Implementable<Params> for Results {
+            fn method() -> &'static str {
+                "reverse"
+            }
+            fn upcast_results(self) -> super::super::protocol::Results {
+                super::super::protocol::Results::Reverse(self)
+            }
+            fn downcast_params(params: super::super::protocol::Params) -> Option<Params> {
+                match params {
+                    super::super::protocol::Params::Reverse(p) => Some(p),
+                    _ => None,
+                }
+            }
+        }
+    }
+    pub fn get_user_agent() -> super::protocol::Slottable<get_user_agent::Params, get_user_agent::Results> {
+        super::protocol::Slottable { phantom: std::marker::PhantomData }
     }
     pub mod get_user_agent {
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
@@ -237,23 +268,35 @@ pub mod schema {
             pub user_agent: String,
         }
 
-        use super::super::protocol;
-        impl protocol::Implementable<Params> for Results {
-            fn upcast_results(self) -> protocol::Results {
-                protocol::Results::GetUserAgent(self)
+        impl super::super::protocol::Callable<Results> for Params {
+            fn upcast_params(self) -> super::super::protocol::Params {
+                super::super::protocol::Params::GetUserAgent(self)
             }
-
-            fn downcast_params(params: protocol::Params) -> Option<Params> {
-                match params {
-                    protocol::Params::GetUserAgent(p) => Some(p),
+            fn downcast_results(results: super::super::protocol::Results) -> Option<Results> {
+                match results {
+                    super::super::protocol::Results::GetUserAgent(r) => Some(r),
                     _ => None,
                 }
             }
+        }
 
+        impl super::super::protocol::Implementable<Params> for Results {
             fn method() -> &'static str {
                 "get_user_agent"
             }
+            fn upcast_results(self) -> super::super::protocol::Results {
+                super::super::protocol::Results::GetUserAgent(self)
+            }
+            fn downcast_params(params: super::super::protocol::Params) -> Option<Params> {
+                match params {
+                    super::super::protocol::Params::GetUserAgent(p) => Some(p),
+                    _ => None,
+                }
+            }
         }
+    }
+    pub fn ping() -> super::protocol::Slottable<ping::Params, ping::Results> {
+        super::protocol::Slottable { phantom: std::marker::PhantomData }
     }
     pub mod ping {
         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
@@ -264,6 +307,36 @@ pub mod schema {
         pub struct Results {
         }
 
+        impl super::super::protocol::Callable<Results> for Params {
+            fn upcast_params(self) -> super::super::protocol::Params {
+                super::super::protocol::Params::Ping(self)
+            }
+            fn downcast_results(results: super::super::protocol::Results) -> Option<Results> {
+                match results {
+                    super::super::protocol::Results::Ping(r) => Some(r),
+                    _ => None,
+                }
+            }
+        }
+
+        impl super::super::protocol::Implementable<Params> for Results {
+            fn method() -> &'static str {
+                "ping"
+            }
+            fn upcast_results(self) -> super::super::protocol::Results {
+                super::super::protocol::Results::Ping(self)
+            }
+            fn downcast_params(params: super::super::protocol::Params) -> Option<Params> {
+                match params {
+                    super::super::protocol::Params::Ping(p) => Some(p),
+                    _ => None,
+                }
+            }
+        }
+
+        pub fn ping() -> super::super::protocol::Slottable<ping::Params, ping::Results> {
+            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+        }
         pub mod ping {
             #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
             pub struct Params {
@@ -272,9 +345,39 @@ pub mod schema {
             #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
             pub struct Results {
             }
+
+            impl super::super::super::protocol::Callable<Results> for Params {
+                fn upcast_params(self) -> super::super::super::protocol::Params {
+                    super::super::super::protocol::Params::Ping_Ping(self)
+                }
+                fn downcast_results(results: super::super::super::protocol::Results) -> Option<Results> {
+                    match results {
+                        super::super::super::protocol::Results::Ping_Ping(r) => Some(r),
+                        _ => None,
+                    }
+                }
+            }
+
+            impl super::super::super::protocol::Implementable<Params> for Results {
+                fn method() -> &'static str {
+                    "ping.ping"
+                }
+                fn upcast_results(self) -> super::super::super::protocol::Results {
+                    super::super::super::protocol::Results::Ping_Ping(self)
+                }
+                fn downcast_params(params: super::super::super::protocol::Params) -> Option<Params> {
+                    match params {
+                        super::super::super::protocol::Params::Ping_Ping(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
         }
     }
     pub mod cookies {
+        pub fn get() -> super::super::protocol::Slottable<get::Params, get::Results> {
+            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+        }
         pub mod get {
             #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
             pub struct Params {
@@ -284,181 +387,42 @@ pub mod schema {
             pub struct Results {
                 pub cookies: Vec<super::super::Cookie>,
             }
-        }
-        pub mod client {
-            #[derive(Clone)]
-            pub struct Client {
-                caller: super::super::super::protocol::Caller,
-            }
 
-            use super::super::super::protocol::Callable;
-            impl Client {
-                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
-                    Self { caller }
+            impl super::super::super::protocol::Callable<Results> for Params {
+                fn upcast_params(self) -> super::super::super::protocol::Params {
+                    super::super::super::protocol::Params::Cookies_Get(self)
                 }
-                pub fn cookies__get(&self, p: super::super::super::schema::cookies::get::Params) -> Result<super::super::super::schema::cookies::get::Results, ::lavish::Error> {
-                    self.caller.call(
-                        super::super::super::protocol::Params::Cookies_Get(p),
-                        |r| match r {
-                            super::super::super::protocol::Results::Cookies_Get(r) => Some(r),
-                            _ => None,
-                        }
-                    )
-                }
-            }
-            pub type Runtime = ::lavish::Runtime<Client>;
-            pub struct Call<T, P> {
-                pub state: ::std::sync::Arc<T>,
-                pub client: super::client::Client,
-                pub params: P,
-            }
-
-            impl<T, P> Call<T, P> {
-                fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                where
-                    F: Fn(P) -> Option<PP>,
-                {
-                    Ok(Call {
-                        state: self.state,
-                        client: self.client,
-                        params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                    })
-                }
-                pub fn shutdown_runtime(&self) {
-                    self.client.caller.shutdown_runtime();
-                }
-            }
-            pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
-            pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-            pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T>
-            where
-                T: Send + Sync + 'static
-            {
-                state: std::sync::Arc<T>,
-            }
-
-            impl<T> Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                    Self {
-                        state,
-                    }
-                }
-            }
-            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
-                    use ::lavish::Atom;
-                    Err(::lavish::Error::MethodUnimplemented(params.method()))
-                }
-                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
-                    Client { caller }
-                }
-            }
-        }
-
-        pub mod server {
-            #[derive(Clone)]
-            pub struct Client {
-                caller: super::super::super::protocol::Caller,
-            }
-
-            impl Client {
-                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
-                    Self { caller }
-                }
-            }
-            pub type Runtime = ::lavish::Runtime<Client>;
-            pub struct Call<T, P> {
-                pub state: ::std::sync::Arc<T>,
-                pub client: super::server::Client,
-                pub params: P,
-            }
-
-            impl<T, P> Call<T, P> {
-                fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                where
-                    F: Fn(P) -> Option<PP>,
-                {
-                    Ok(Call {
-                        state: self.state,
-                        client: self.client,
-                        params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                    })
-                }
-                pub fn shutdown_runtime(&self) {
-                    self.client.caller.shutdown_runtime();
-                }
-            }
-            pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
-            pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-            pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T>
-            where
-                T: Send + Sync + 'static
-            {
-                state: std::sync::Arc<T>,
-                on_cookies__get: Slot<T>,
-            }
-
-            impl<T> Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                    Self {
-                        state,
-                        on_cookies__get: None,
-                    }
-                }
-                pub fn on_cookies__get<F>(&mut self, f: F)
-                where
-                    F: Fn(Call<T, super::super::super::schema::cookies::get::Params>) -> Result<super::super::super::schema::cookies::get::Results, ::lavish::Error> + Send + Sync + 'static,
-                {
-                    self.on_cookies__get = Some(Box::new(
-                        move |call| {
-                            let call = call.downcast(|p| match p {
-                                super::super::super::protocol::Params::Cookies_Get(p) => Some(p),
-                                _ => None,
-                            })?;
-                            f(call).map(super::super::super::protocol::Results::Cookies_Get)
-                        }
-                    ));
-                }
-            }
-            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
-                    use ::lavish::Atom;
-                    let slot = match params {
-                        super::super::super::protocol::Params::Cookies_Get(_) => self.on_cookies__get.as_ref(),
+                fn downcast_results(results: super::super::super::protocol::Results) -> Option<Results> {
+                    match results {
+                        super::super::super::protocol::Results::Cookies_Get(r) => Some(r),
                         _ => None,
-                    }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
-                    let call = Call {
-                        state: self.state.clone(),
-                        client: super::server::Client { caller },
-                        params,
-                    };
-                    slot(call)
+                    }
                 }
-                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
-                    Client { caller }
+            }
+
+            impl super::super::super::protocol::Implementable<Params> for Results {
+                fn method() -> &'static str {
+                    "cookies.get"
+                }
+                fn upcast_results(self) -> super::super::super::protocol::Results {
+                    super::super::super::protocol::Results::Cookies_Get(self)
+                }
+                fn downcast_params(params: super::super::super::protocol::Params) -> Option<Params> {
+                    match params {
+                        super::super::super::protocol::Params::Cookies_Get(p) => Some(p),
+                        _ => None,
+                    }
                 }
             }
         }
-
     }
     pub mod universe {
         pub mod earth {
             pub mod country {
                 pub mod city {
+                    pub fn new_york() -> super::super::super::super::super::protocol::Slottable<new_york::Params, new_york::Results> {
+                        super::super::super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+                    }
                     pub mod new_york {
                         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
                         pub struct Params {
@@ -467,684 +431,42 @@ pub mod schema {
                         #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
                         pub struct Results {
                         }
-                    }
-                    pub mod client {
-                        #[derive(Clone)]
-                        pub struct Client {
-                            caller: super::super::super::super::super::super::protocol::Caller,
-                        }
 
-                        impl Client {
-                            pub fn new(caller: super::super::super::super::super::super::protocol::Caller) -> Self {
-                                Self { caller }
+                        impl super::super::super::super::super::super::protocol::Callable<Results> for Params {
+                            fn upcast_params(self) -> super::super::super::super::super::super::protocol::Params {
+                                super::super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(self)
                             }
-                            pub fn universe__earth__country__city__new_york(&self, p: super::super::super::super::super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                                self.caller.call(
-                                    super::super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
-                                    |r| match r {
-                                        super::super::super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
-                                        _ => None,
-                                    }
-                                )
-                            }
-                        }
-                        pub type Runtime = ::lavish::Runtime<Client>;
-                        pub struct Call<T, P> {
-                            pub state: ::std::sync::Arc<T>,
-                            pub client: super::client::Client,
-                            pub params: P,
-                        }
-
-                        impl<T, P> Call<T, P> {
-                            fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                            where
-                                F: Fn(P) -> Option<PP>,
-                            {
-                                Ok(Call {
-                                    state: self.state,
-                                    client: self.client,
-                                    params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                                })
-                            }
-                            pub fn shutdown_runtime(&self) {
-                                self.client.caller.shutdown_runtime();
-                            }
-                        }
-                        pub type SlotReturn = Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error>;
-                        pub type SlotFn<T> = Fn(Call<T, super::super::super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-                        pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                        pub struct Handler<T>
-                        where
-                            T: Send + Sync + 'static
-                        {
-                            state: std::sync::Arc<T>,
-                        }
-
-                        impl<T> Handler<T>
-                        where
-                            T: Send + Sync + 'static,
-                        {
-                            pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                                Self {
-                                    state,
-                                }
-                            }
-                        }
-                        impl<T> ::lavish::Handler<Client, super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results> for Handler<T>
-                        where
-                            T: Send + Sync + 'static,
-                        {
-                            fn handle(&self, caller: super::super::super::super::super::super::protocol::Caller, params: super::super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error> {
-                                use ::lavish::Atom;
-                                Err(::lavish::Error::MethodUnimplemented(params.method()))
-                            }
-                            fn make_client(caller: super::super::super::super::super::super::protocol::Caller) -> Client {
-                                Client { caller }
-                            }
-                        }
-                    }
-
-                    pub mod server {
-                        #[derive(Clone)]
-                        pub struct Client {
-                            caller: super::super::super::super::super::super::protocol::Caller,
-                        }
-
-                        impl Client {
-                            pub fn new(caller: super::super::super::super::super::super::protocol::Caller) -> Self {
-                                Self { caller }
-                            }
-                        }
-                        pub type Runtime = ::lavish::Runtime<Client>;
-                        pub struct Call<T, P> {
-                            pub state: ::std::sync::Arc<T>,
-                            pub client: super::server::Client,
-                            pub params: P,
-                        }
-
-                        impl<T, P> Call<T, P> {
-                            fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                            where
-                                F: Fn(P) -> Option<PP>,
-                            {
-                                Ok(Call {
-                                    state: self.state,
-                                    client: self.client,
-                                    params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                                })
-                            }
-                            pub fn shutdown_runtime(&self) {
-                                self.client.caller.shutdown_runtime();
-                            }
-                        }
-                        pub type SlotReturn = Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error>;
-                        pub type SlotFn<T> = Fn(Call<T, super::super::super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-                        pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                        pub struct Handler<T>
-                        where
-                            T: Send + Sync + 'static
-                        {
-                            state: std::sync::Arc<T>,
-                            on_universe__earth__country__city__new_york: Slot<T>,
-                        }
-
-                        impl<T> Handler<T>
-                        where
-                            T: Send + Sync + 'static,
-                        {
-                            pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                                Self {
-                                    state,
-                                    on_universe__earth__country__city__new_york: None,
-                                }
-                            }
-                            pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
-                            where
-                                F: Fn(Call<T, super::super::super::super::super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
-                            {
-                                self.on_universe__earth__country__city__new_york = Some(Box::new(
-                                    move |call| {
-                                        let call = call.downcast(|p| match p {
-                                            super::super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p) => Some(p),
-                                            _ => None,
-                                        })?;
-                                        f(call).map(super::super::super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork)
-                                    }
-                                ));
-                            }
-                        }
-                        impl<T> ::lavish::Handler<Client, super::super::super::super::super::super::protocol::Params, super::super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::super::protocol::Results> for Handler<T>
-                        where
-                            T: Send + Sync + 'static,
-                        {
-                            fn handle(&self, caller: super::super::super::super::super::super::protocol::Caller, params: super::super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::super::protocol::Results, ::lavish::Error> {
-                                use ::lavish::Atom;
-                                let slot = match params {
-                                    super::super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
-                                    _ => None,
-                                }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
-                                let call = Call {
-                                    state: self.state.clone(),
-                                    client: super::server::Client { caller },
-                                    params,
-                                };
-                                slot(call)
-                            }
-                            fn make_client(caller: super::super::super::super::super::super::protocol::Caller) -> Client {
-                                Client { caller }
-                            }
-                        }
-                    }
-
-                }
-                pub mod client {
-                    #[derive(Clone)]
-                    pub struct Client {
-                        caller: super::super::super::super::super::protocol::Caller,
-                    }
-
-                    impl Client {
-                        pub fn new(caller: super::super::super::super::super::protocol::Caller) -> Self {
-                            Self { caller }
-                        }
-                        pub fn universe__earth__country__city__new_york(&self, p: super::super::super::super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                            self.caller.call(
-                                super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
-                                |r| match r {
-                                    super::super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
+                            fn downcast_results(results: super::super::super::super::super::super::protocol::Results) -> Option<Results> {
+                                match results {
+                                    super::super::super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
                                     _ => None,
                                 }
-                            )
-                        }
-                    }
-                    pub type Runtime = ::lavish::Runtime<Client>;
-                    pub struct Call<T, P> {
-                        pub state: ::std::sync::Arc<T>,
-                        pub client: super::client::Client,
-                        pub params: P,
-                    }
-
-                    impl<T, P> Call<T, P> {
-                        fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                        where
-                            F: Fn(P) -> Option<PP>,
-                        {
-                            Ok(Call {
-                                state: self.state,
-                                client: self.client,
-                                params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                            })
-                        }
-                        pub fn shutdown_runtime(&self) {
-                            self.client.caller.shutdown_runtime();
-                        }
-                    }
-                    pub type SlotReturn = Result<super::super::super::super::super::protocol::Results, ::lavish::Error>;
-                    pub type SlotFn<T> = Fn(Call<T, super::super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-                    pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                    pub struct Handler<T>
-                    where
-                        T: Send + Sync + 'static
-                    {
-                        state: std::sync::Arc<T>,
-                    }
-
-                    impl<T> Handler<T>
-                    where
-                        T: Send + Sync + 'static,
-                    {
-                        pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                            Self {
-                                state,
                             }
                         }
-                    }
-                    impl<T> ::lavish::Handler<Client, super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results> for Handler<T>
-                    where
-                        T: Send + Sync + 'static,
-                    {
-                        fn handle(&self, caller: super::super::super::super::super::protocol::Caller, params: super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::protocol::Results, ::lavish::Error> {
-                            use ::lavish::Atom;
-                            Err(::lavish::Error::MethodUnimplemented(params.method()))
-                        }
-                        fn make_client(caller: super::super::super::super::super::protocol::Caller) -> Client {
-                            Client { caller }
-                        }
-                    }
-                }
 
-                pub mod server {
-                    #[derive(Clone)]
-                    pub struct Client {
-                        caller: super::super::super::super::super::protocol::Caller,
-                    }
-
-                    impl Client {
-                        pub fn new(caller: super::super::super::super::super::protocol::Caller) -> Self {
-                            Self { caller }
-                        }
-                    }
-                    pub type Runtime = ::lavish::Runtime<Client>;
-                    pub struct Call<T, P> {
-                        pub state: ::std::sync::Arc<T>,
-                        pub client: super::server::Client,
-                        pub params: P,
-                    }
-
-                    impl<T, P> Call<T, P> {
-                        fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                        where
-                            F: Fn(P) -> Option<PP>,
-                        {
-                            Ok(Call {
-                                state: self.state,
-                                client: self.client,
-                                params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                            })
-                        }
-                        pub fn shutdown_runtime(&self) {
-                            self.client.caller.shutdown_runtime();
-                        }
-                    }
-                    pub type SlotReturn = Result<super::super::super::super::super::protocol::Results, ::lavish::Error>;
-                    pub type SlotFn<T> = Fn(Call<T, super::super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-                    pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                    pub struct Handler<T>
-                    where
-                        T: Send + Sync + 'static
-                    {
-                        state: std::sync::Arc<T>,
-                        on_universe__earth__country__city__new_york: Slot<T>,
-                    }
-
-                    impl<T> Handler<T>
-                    where
-                        T: Send + Sync + 'static,
-                    {
-                        pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                            Self {
-                                state,
-                                on_universe__earth__country__city__new_york: None,
+                        impl super::super::super::super::super::super::protocol::Implementable<Params> for Results {
+                            fn method() -> &'static str {
+                                "universe.earth.country.city.new_york"
                             }
-                        }
-                        pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
-                        where
-                            F: Fn(Call<T, super::super::super::super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
-                        {
-                            self.on_universe__earth__country__city__new_york = Some(Box::new(
-                                move |call| {
-                                    let call = call.downcast(|p| match p {
-                                        super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p) => Some(p),
-                                        _ => None,
-                                    })?;
-                                    f(call).map(super::super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork)
-                                }
-                            ));
-                        }
-                    }
-                    impl<T> ::lavish::Handler<Client, super::super::super::super::super::protocol::Params, super::super::super::super::super::protocol::NotificationParams, super::super::super::super::super::protocol::Results> for Handler<T>
-                    where
-                        T: Send + Sync + 'static,
-                    {
-                        fn handle(&self, caller: super::super::super::super::super::protocol::Caller, params: super::super::super::super::super::protocol::Params) -> Result<super::super::super::super::super::protocol::Results, ::lavish::Error> {
-                            use ::lavish::Atom;
-                            let slot = match params {
-                                super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
-                                _ => None,
-                            }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
-                            let call = Call {
-                                state: self.state.clone(),
-                                client: super::server::Client { caller },
-                                params,
-                            };
-                            slot(call)
-                        }
-                        fn make_client(caller: super::super::super::super::super::protocol::Caller) -> Client {
-                            Client { caller }
-                        }
-                    }
-                }
-
-            }
-            pub mod client {
-                #[derive(Clone)]
-                pub struct Client {
-                    caller: super::super::super::super::protocol::Caller,
-                }
-
-                impl Client {
-                    pub fn new(caller: super::super::super::super::protocol::Caller) -> Self {
-                        Self { caller }
-                    }
-                    pub fn universe__earth__country__city__new_york(&self, p: super::super::super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                        self.caller.call(
-                            super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
-                            |r| match r {
-                                super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
-                                _ => None,
+                            fn upcast_results(self) -> super::super::super::super::super::super::protocol::Results {
+                                super::super::super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(self)
                             }
-                        )
-                    }
-                }
-                pub type Runtime = ::lavish::Runtime<Client>;
-                pub struct Call<T, P> {
-                    pub state: ::std::sync::Arc<T>,
-                    pub client: super::client::Client,
-                    pub params: P,
-                }
-
-                impl<T, P> Call<T, P> {
-                    fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                    where
-                        F: Fn(P) -> Option<PP>,
-                    {
-                        Ok(Call {
-                            state: self.state,
-                            client: self.client,
-                            params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                        })
-                    }
-                    pub fn shutdown_runtime(&self) {
-                        self.client.caller.shutdown_runtime();
-                    }
-                }
-                pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
-                pub type SlotFn<T> = Fn(Call<T, super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-                pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                pub struct Handler<T>
-                where
-                    T: Send + Sync + 'static
-                {
-                    state: std::sync::Arc<T>,
-                }
-
-                impl<T> Handler<T>
-                where
-                    T: Send + Sync + 'static,
-                {
-                    pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                        Self {
-                            state,
-                        }
-                    }
-                }
-                impl<T> ::lavish::Handler<Client, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
-                where
-                    T: Send + Sync + 'static,
-                {
-                    fn handle(&self, caller: super::super::super::super::protocol::Caller, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
-                        use ::lavish::Atom;
-                        Err(::lavish::Error::MethodUnimplemented(params.method()))
-                    }
-                    fn make_client(caller: super::super::super::super::protocol::Caller) -> Client {
-                        Client { caller }
-                    }
-                }
-            }
-
-            pub mod server {
-                #[derive(Clone)]
-                pub struct Client {
-                    caller: super::super::super::super::protocol::Caller,
-                }
-
-                impl Client {
-                    pub fn new(caller: super::super::super::super::protocol::Caller) -> Self {
-                        Self { caller }
-                    }
-                }
-                pub type Runtime = ::lavish::Runtime<Client>;
-                pub struct Call<T, P> {
-                    pub state: ::std::sync::Arc<T>,
-                    pub client: super::server::Client,
-                    pub params: P,
-                }
-
-                impl<T, P> Call<T, P> {
-                    fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                    where
-                        F: Fn(P) -> Option<PP>,
-                    {
-                        Ok(Call {
-                            state: self.state,
-                            client: self.client,
-                            params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                        })
-                    }
-                    pub fn shutdown_runtime(&self) {
-                        self.client.caller.shutdown_runtime();
-                    }
-                }
-                pub type SlotReturn = Result<super::super::super::super::protocol::Results, ::lavish::Error>;
-                pub type SlotFn<T> = Fn(Call<T, super::super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-                pub type Slot<T> = Option<Box<SlotFn<T>>>;
-                pub struct Handler<T>
-                where
-                    T: Send + Sync + 'static
-                {
-                    state: std::sync::Arc<T>,
-                    on_universe__earth__country__city__new_york: Slot<T>,
-                }
-
-                impl<T> Handler<T>
-                where
-                    T: Send + Sync + 'static,
-                {
-                    pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                        Self {
-                            state,
-                            on_universe__earth__country__city__new_york: None,
-                        }
-                    }
-                    pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
-                    where
-                        F: Fn(Call<T, super::super::super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
-                    {
-                        self.on_universe__earth__country__city__new_york = Some(Box::new(
-                            move |call| {
-                                let call = call.downcast(|p| match p {
-                                    super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p) => Some(p),
+                            fn downcast_params(params: super::super::super::super::super::super::protocol::Params) -> Option<Params> {
+                                match params {
+                                    super::super::super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p) => Some(p),
                                     _ => None,
-                                })?;
-                                f(call).map(super::super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork)
+                                }
                             }
-                        ));
-                    }
-                }
-                impl<T> ::lavish::Handler<Client, super::super::super::super::protocol::Params, super::super::super::super::protocol::NotificationParams, super::super::super::super::protocol::Results> for Handler<T>
-                where
-                    T: Send + Sync + 'static,
-                {
-                    fn handle(&self, caller: super::super::super::super::protocol::Caller, params: super::super::super::super::protocol::Params) -> Result<super::super::super::super::protocol::Results, ::lavish::Error> {
-                        use ::lavish::Atom;
-                        let slot = match params {
-                            super::super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
-                            _ => None,
-                        }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
-                        let call = Call {
-                            state: self.state.clone(),
-                            client: super::server::Client { caller },
-                            params,
-                        };
-                        slot(call)
-                    }
-                    fn make_client(caller: super::super::super::super::protocol::Caller) -> Client {
-                        Client { caller }
-                    }
-                }
-            }
-
-        }
-        pub mod client {
-            #[derive(Clone)]
-            pub struct Client {
-                caller: super::super::super::protocol::Caller,
-            }
-
-            impl Client {
-                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
-                    Self { caller }
-                }
-                pub fn universe__earth__country__city__new_york(&self, p: super::super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                    self.caller.call(
-                        super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
-                        |r| match r {
-                            super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
-                            _ => None,
                         }
-                    )
-                }
-            }
-            pub type Runtime = ::lavish::Runtime<Client>;
-            pub struct Call<T, P> {
-                pub state: ::std::sync::Arc<T>,
-                pub client: super::client::Client,
-                pub params: P,
-            }
-
-            impl<T, P> Call<T, P> {
-                fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                where
-                    F: Fn(P) -> Option<PP>,
-                {
-                    Ok(Call {
-                        state: self.state,
-                        client: self.client,
-                        params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                    })
-                }
-                pub fn shutdown_runtime(&self) {
-                    self.client.caller.shutdown_runtime();
-                }
-            }
-            pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
-            pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-            pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T>
-            where
-                T: Send + Sync + 'static
-            {
-                state: std::sync::Arc<T>,
-            }
-
-            impl<T> Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                    Self {
-                        state,
                     }
-                }
-            }
-            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
-                    use ::lavish::Atom;
-                    Err(::lavish::Error::MethodUnimplemented(params.method()))
-                }
-                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
-                    Client { caller }
                 }
             }
         }
-
-        pub mod server {
-            #[derive(Clone)]
-            pub struct Client {
-                caller: super::super::super::protocol::Caller,
-            }
-
-            impl Client {
-                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
-                    Self { caller }
-                }
-            }
-            pub type Runtime = ::lavish::Runtime<Client>;
-            pub struct Call<T, P> {
-                pub state: ::std::sync::Arc<T>,
-                pub client: super::server::Client,
-                pub params: P,
-            }
-
-            impl<T, P> Call<T, P> {
-                fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                where
-                    F: Fn(P) -> Option<PP>,
-                {
-                    Ok(Call {
-                        state: self.state,
-                        client: self.client,
-                        params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                    })
-                }
-                pub fn shutdown_runtime(&self) {
-                    self.client.caller.shutdown_runtime();
-                }
-            }
-            pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
-            pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-            pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T>
-            where
-                T: Send + Sync + 'static
-            {
-                state: std::sync::Arc<T>,
-                on_universe__earth__country__city__new_york: Slot<T>,
-            }
-
-            impl<T> Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                    Self {
-                        state,
-                        on_universe__earth__country__city__new_york: None,
-                    }
-                }
-                pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
-                where
-                    F: Fn(Call<T, super::super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
-                {
-                    self.on_universe__earth__country__city__new_york = Some(Box::new(
-                        move |call| {
-                            let call = call.downcast(|p| match p {
-                                super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p) => Some(p),
-                                _ => None,
-                            })?;
-                            f(call).map(super::super::super::protocol::Results::Universe_Earth_Country_City_NewYork)
-                        }
-                    ));
-                }
-            }
-            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
-                    use ::lavish::Atom;
-                    let slot = match params {
-                        super::super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
-                        _ => None,
-                    }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
-                    let call = Call {
-                        state: self.state.clone(),
-                        client: super::server::Client { caller },
-                        params,
-                    };
-                    slot(call)
-                }
-                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
-                    Client { caller }
-                }
-            }
-        }
-
     }
     pub mod session {
+        pub fn login() -> super::super::protocol::Slottable<login::Params, login::Results> {
+            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+        }
         pub mod login {
             #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
             pub struct Params {
@@ -1156,6 +478,36 @@ pub mod schema {
             pub struct Results {
             }
 
+            impl super::super::super::protocol::Callable<Results> for Params {
+                fn upcast_params(self) -> super::super::super::protocol::Params {
+                    super::super::super::protocol::Params::Session_Login(self)
+                }
+                fn downcast_results(results: super::super::super::protocol::Results) -> Option<Results> {
+                    match results {
+                        super::super::super::protocol::Results::Session_Login(r) => Some(r),
+                        _ => None,
+                    }
+                }
+            }
+
+            impl super::super::super::protocol::Implementable<Params> for Results {
+                fn method() -> &'static str {
+                    "session.login"
+                }
+                fn upcast_results(self) -> super::super::super::protocol::Results {
+                    super::super::super::protocol::Results::Session_Login(self)
+                }
+                fn downcast_params(params: super::super::super::protocol::Params) -> Option<Params> {
+                    match params {
+                        super::super::super::protocol::Params::Session_Login(p) => Some(p),
+                        _ => None,
+                    }
+                }
+            }
+
+            pub fn solve_totp() -> super::super::super::protocol::Slottable<solve_totp::Params, solve_totp::Results> {
+                super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+            }
             pub mod solve_totp {
                 #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
                 pub struct Params {
@@ -1165,176 +517,35 @@ pub mod schema {
                 pub struct Results {
                     pub result: String,
                 }
-            }
-        }
-        pub mod client {
-            #[derive(Clone)]
-            pub struct Client {
-                caller: super::super::super::protocol::Caller,
-            }
 
-            impl Client {
-                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
-                    Self { caller }
-                }
-                pub fn session__login(&self, p: super::super::super::schema::session::login::Params) -> Result<super::super::super::schema::session::login::Results, ::lavish::Error> {
-                    self.caller.call(
-                        super::super::super::protocol::Params::Session_Login(p),
-                        |r| match r {
-                            super::super::super::protocol::Results::Session_Login(r) => Some(r),
+                impl super::super::super::super::protocol::Callable<Results> for Params {
+                    fn upcast_params(self) -> super::super::super::super::protocol::Params {
+                        super::super::super::super::protocol::Params::Session_Login_SolveTotp(self)
+                    }
+                    fn downcast_results(results: super::super::super::super::protocol::Results) -> Option<Results> {
+                        match results {
+                            super::super::super::super::protocol::Results::Session_Login_SolveTotp(r) => Some(r),
                             _ => None,
                         }
-                    )
-                }
-            }
-            pub type Runtime = ::lavish::Runtime<Client>;
-            pub struct Call<T, P> {
-                pub state: ::std::sync::Arc<T>,
-                pub client: super::client::Client,
-                pub params: P,
-            }
-
-            impl<T, P> Call<T, P> {
-                fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                where
-                    F: Fn(P) -> Option<PP>,
-                {
-                    Ok(Call {
-                        state: self.state,
-                        client: self.client,
-                        params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                    })
-                }
-                pub fn shutdown_runtime(&self) {
-                    self.client.caller.shutdown_runtime();
-                }
-            }
-            pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
-            pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-            pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T>
-            where
-                T: Send + Sync + 'static
-            {
-                state: std::sync::Arc<T>,
-            }
-
-            impl<T> Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                    Self {
-                        state,
                     }
                 }
-            }
-            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
-                    use ::lavish::Atom;
-                    Err(::lavish::Error::MethodUnimplemented(params.method()))
-                }
-                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
-                    Client { caller }
-                }
-            }
-        }
 
-        pub mod server {
-            #[derive(Clone)]
-            pub struct Client {
-                caller: super::super::super::protocol::Caller,
-            }
-
-            impl Client {
-                pub fn new(caller: super::super::super::protocol::Caller) -> Self {
-                    Self { caller }
-                }
-            }
-            pub type Runtime = ::lavish::Runtime<Client>;
-            pub struct Call<T, P> {
-                pub state: ::std::sync::Arc<T>,
-                pub client: super::server::Client,
-                pub params: P,
-            }
-
-            impl<T, P> Call<T, P> {
-                fn downcast<PP, F>(self, f: F) -> Result<Call<T, PP>, ::lavish::Error>
-                where
-                    F: Fn(P) -> Option<PP>,
-                {
-                    Ok(Call {
-                        state: self.state,
-                        client: self.client,
-                        params: f(self.params).ok_or_else(|| ::lavish::Error::WrongParams)?,
-                    })
-                }
-                pub fn shutdown_runtime(&self) {
-                    self.client.caller.shutdown_runtime();
-                }
-            }
-            pub type SlotReturn = Result<super::super::super::protocol::Results, ::lavish::Error>;
-            pub type SlotFn<T> = Fn(Call<T, super::super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-            pub type Slot<T> = Option<Box<SlotFn<T>>>;
-            pub struct Handler<T>
-            where
-                T: Send + Sync + 'static
-            {
-                state: std::sync::Arc<T>,
-                on_session__login: Slot<T>,
-            }
-
-            impl<T> Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                pub fn new(state: ::std::sync::Arc<T>) -> Self {
-                    Self {
-                        state,
-                        on_session__login: None,
+                impl super::super::super::super::protocol::Implementable<Params> for Results {
+                    fn method() -> &'static str {
+                        "session.login.solve_totp"
                     }
-                }
-                pub fn on_session__login<F>(&mut self, f: F)
-                where
-                    F: Fn(Call<T, super::super::super::schema::session::login::Params>) -> Result<super::super::super::schema::session::login::Results, ::lavish::Error> + Send + Sync + 'static,
-                {
-                    self.on_session__login = Some(Box::new(
-                        move |call| {
-                            let call = call.downcast(|p| match p {
-                                super::super::super::protocol::Params::Session_Login(p) => Some(p),
-                                _ => None,
-                            })?;
-                            f(call).map(super::super::super::protocol::Results::Session_Login)
+                    fn upcast_results(self) -> super::super::super::super::protocol::Results {
+                        super::super::super::super::protocol::Results::Session_Login_SolveTotp(self)
+                    }
+                    fn downcast_params(params: super::super::super::super::protocol::Params) -> Option<Params> {
+                        match params {
+                            super::super::super::super::protocol::Params::Session_Login_SolveTotp(p) => Some(p),
+                            _ => None,
                         }
-                    ));
-                }
-            }
-            impl<T> ::lavish::Handler<Client, super::super::super::protocol::Params, super::super::super::protocol::NotificationParams, super::super::super::protocol::Results> for Handler<T>
-            where
-                T: Send + Sync + 'static,
-            {
-                fn handle(&self, caller: super::super::super::protocol::Caller, params: super::super::super::protocol::Params) -> Result<super::super::super::protocol::Results, ::lavish::Error> {
-                    use ::lavish::Atom;
-                    let slot = match params {
-                        super::super::super::protocol::Params::Session_Login(_) => self.on_session__login.as_ref(),
-                        _ => None,
-                    }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
-                    let call = Call {
-                        state: self.state.clone(),
-                        client: super::server::Client { caller },
-                        params,
-                    };
-                    slot(call)
-                }
-                fn make_client(caller: super::super::super::protocol::Caller) -> Client {
-                    Client { caller }
+                    }
                 }
             }
         }
-
     }
     pub mod client {
         #[derive(Clone)]
@@ -1342,70 +553,17 @@ pub mod schema {
             caller: super::super::protocol::Caller,
         }
 
-        use super::super::protocol::{Callable, Slottable, Implementable};
         impl Client {
             pub fn new(caller: super::super::protocol::Caller) -> Self {
                 Self { caller }
             }
-            pub fn call<P, R>(&self, p: P) -> Result<R, lavish::Error>
-            where P: Callable<R> {
+            pub fn call<P, R>(&self, p: P) -> Result<R, ::lavish::Error>
+            where
+                P: super::super::protocol::Callable<R>,
+            {
                 self.caller.call(
                     p.upcast_params(),
                     P::downcast_results,
-                )
-            }
-            pub fn get_cookies(&self, p: super::super::schema::get_cookies::Params) -> Result<super::super::schema::get_cookies::Results, ::lavish::Error> {
-                self.caller.call(
-                    super::super::protocol::Params::GetCookies(p),
-                    |r| match r {
-                        super::super::protocol::Results::GetCookies(r) => Some(r),
-                        _ => None,
-                    }
-                )
-            }
-            pub fn reverse(&self, p: super::super::schema::reverse::Params) -> Result<super::super::schema::reverse::Results, ::lavish::Error> {
-                self.caller.call(
-                    super::super::protocol::Params::Reverse(p),
-                    |r| match r {
-                        super::super::protocol::Results::Reverse(r) => Some(r),
-                        _ => None,
-                    }
-                )
-            }
-            pub fn ping(&self, p: super::super::schema::ping::Params) -> Result<super::super::schema::ping::Results, ::lavish::Error> {
-                self.caller.call(
-                    super::super::protocol::Params::Ping(p),
-                    |r| match r {
-                        super::super::protocol::Results::Ping(r) => Some(r),
-                        _ => None,
-                    }
-                )
-            }
-            pub fn cookies__get(&self, p: super::super::schema::cookies::get::Params) -> Result<super::super::schema::cookies::get::Results, ::lavish::Error> {
-                self.caller.call(
-                    super::super::protocol::Params::Cookies_Get(p),
-                    |r| match r {
-                        super::super::protocol::Results::Cookies_Get(r) => Some(r),
-                        _ => None,
-                    }
-                )
-            }
-            pub fn universe__earth__country__city__new_york(&self, p: super::super::schema::universe::earth::country::city::new_york::Params) -> Result<super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> {
-                self.caller.call(
-                    super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p),
-                    |r| match r {
-                        super::super::protocol::Results::Universe_Earth_Country_City_NewYork(r) => Some(r),
-                        _ => None,
-                    }
-                )
-            }
-            pub fn session__login(&self, p: super::super::schema::session::login::Params) -> Result<super::super::schema::session::login::Results, ::lavish::Error> {
-                self.caller.call(
-                    super::super::protocol::Params::Session_Login(p),
-                    |r| match r {
-                        super::super::protocol::Results::Session_Login(r) => Some(r),
-                        _ => None,
-                    }
                 )
             }
         }
@@ -1431,50 +589,31 @@ pub mod schema {
                 self.client.caller.shutdown_runtime();
             }
         }
-        use std::collections::HashMap;
         pub type SlotReturn = Result<super::super::protocol::Results, ::lavish::Error>;
         pub type SlotFn<T> = Fn(Call<T, super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-        pub type Slot<T> = Option<Box<SlotFn<T>>>;
-        pub struct Handler<T>
+        pub struct Router<T>
         where
             T: Send + Sync + 'static
         {
             state: std::sync::Arc<T>,
-            slots: HashMap<&'static str, Box<SlotFn<T>>>,
-            on_get_user_agent: Slot<T>,
+            slots: ::std::collections::HashMap<&'static str, Box<SlotFn<T>>>,
         }
 
-        impl<T> Handler<T>
+        impl<T> Router<T>
         where
             T: Send + Sync + 'static,
         {
             pub fn new(state: ::std::sync::Arc<T>) -> Self {
                 Self {
                     state,
-                    slots: HashMap::new(),
-                    on_get_user_agent: None,
+                    slots: ::std::collections::HashMap::new(),
                 }
             }
-            pub fn on_get_user_agent<F>(&mut self, f: F)
+            pub fn handle<S, P, R, F>(&mut self, s: S, f: F)
             where
-                F: Fn(Call<T, super::super::schema::get_user_agent::Params>) -> Result<super::super::schema::get_user_agent::Results, ::lavish::Error> + Send + Sync + 'static,
-            {
-                self.on_get_user_agent = Some(Box::new(
-                    move |call| {
-                        let call = call.downcast(|p| match p {
-                            super::super::protocol::Params::GetUserAgent(p) => Some(p),
-                            _ => None,
-                        })?;
-                        f(call).map(super::super::protocol::Results::GetUserAgent)
-                    }
-                ));
-            }
-
-            pub fn register<S, P, R, F>(&mut self, s: S, f: F)
-            where
-                S: Fn() -> Slottable<P, R>,
-                R: Implementable<P>,
-                F: Fn(Call<T, P>) -> Result<R, lavish::Error> + Send + Sync + 'static
+                S: Fn() -> super::super::protocol::Slottable<P, R>,
+                R: super::super::protocol::Implementable<P>,
+                F: Fn(Call<T, P>) -> Result<R, ::lavish::Error> + 'static + Send + Sync,
             {
                 self.slots.insert(R::method(), Box::new(move |call| {
                     let call = call.downcast(R::downcast_params)?;
@@ -1482,17 +621,14 @@ pub mod schema {
                 }));
             }
         }
-        impl<T> ::lavish::Handler<Client, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Handler<T>
+        impl<T> ::lavish::Handler<Client, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Router<T>
         where
             T: Send + Sync + 'static,
         {
             fn handle(&self, caller: super::super::protocol::Caller, params: super::super::protocol::Params) -> Result<super::super::protocol::Results, ::lavish::Error> {
                 use ::lavish::Atom;
-                // let slot = match params {
-                //     super::super::protocol::Params::GetUserAgent(_) => self.on_get_user_agent.as_ref(),
-                //     _ => None,
-                // }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
-                let slot = self.slots.get(params.method()).ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
+                let slot = self.slots.get(params.method())
+                    .ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                 let call = Call {
                     state: self.state.clone(),
                     client: super::client::Client { caller },
@@ -1516,13 +652,13 @@ pub mod schema {
             pub fn new(caller: super::super::protocol::Caller) -> Self {
                 Self { caller }
             }
-            pub fn get_user_agent(&self, p: super::super::schema::get_user_agent::Params) -> Result<super::super::schema::get_user_agent::Results, ::lavish::Error> {
+            pub fn call<P, R>(&self, p: P) -> Result<R, ::lavish::Error>
+            where
+                P: super::super::protocol::Callable<R>,
+            {
                 self.caller.call(
-                    super::super::protocol::Params::GetUserAgent(p),
-                    |r| match r {
-                        super::super::protocol::Results::GetUserAgent(r) => Some(r),
-                        _ => None,
-                    }
+                    p.upcast_params(),
+                    P::downcast_results,
                 )
             }
         }
@@ -1550,135 +686,44 @@ pub mod schema {
         }
         pub type SlotReturn = Result<super::super::protocol::Results, ::lavish::Error>;
         pub type SlotFn<T> = Fn(Call<T, super::super::protocol::Params>) -> SlotReturn + 'static + Send + Sync;
-        pub type Slot<T> = Option<Box<SlotFn<T>>>;
-        pub struct Handler<T>
+        pub struct Router<T>
         where
             T: Send + Sync + 'static
         {
             state: std::sync::Arc<T>,
-            on_get_cookies: Slot<T>,
-            on_reverse: Slot<T>,
-            on_ping: Slot<T>,
-            on_cookies__get: Slot<T>,
-            on_universe__earth__country__city__new_york: Slot<T>,
-            on_session__login: Slot<T>,
+            slots: ::std::collections::HashMap<&'static str, Box<SlotFn<T>>>,
         }
 
-        impl<T> Handler<T>
+        impl<T> Router<T>
         where
             T: Send + Sync + 'static,
         {
             pub fn new(state: ::std::sync::Arc<T>) -> Self {
                 Self {
                     state,
-                    on_get_cookies: None,
-                    on_reverse: None,
-                    on_ping: None,
-                    on_cookies__get: None,
-                    on_universe__earth__country__city__new_york: None,
-                    on_session__login: None,
+                    slots: ::std::collections::HashMap::new(),
                 }
             }
-            pub fn on_get_cookies<F>(&mut self, f: F)
+            pub fn handle<S, P, R, F>(&mut self, s: S, f: F)
             where
-                F: Fn(Call<T, super::super::schema::get_cookies::Params>) -> Result<super::super::schema::get_cookies::Results, ::lavish::Error> + Send + Sync + 'static,
+                S: Fn() -> super::super::protocol::Slottable<P, R>,
+                R: super::super::protocol::Implementable<P>,
+                F: Fn(Call<T, P>) -> Result<R, ::lavish::Error> + 'static + Send + Sync,
             {
-                self.on_get_cookies = Some(Box::new(
-                    move |call| {
-                        let call = call.downcast(|p| match p {
-                            super::super::protocol::Params::GetCookies(p) => Some(p),
-                            _ => None,
-                        })?;
-                        f(call).map(super::super::protocol::Results::GetCookies)
-                    }
-                ));
-            }
-            pub fn on_reverse<F>(&mut self, f: F)
-            where
-                F: Fn(Call<T, super::super::schema::reverse::Params>) -> Result<super::super::schema::reverse::Results, ::lavish::Error> + Send + Sync + 'static,
-            {
-                self.on_reverse = Some(Box::new(
-                    move |call| {
-                        let call = call.downcast(|p| match p {
-                            super::super::protocol::Params::Reverse(p) => Some(p),
-                            _ => None,
-                        })?;
-                        f(call).map(super::super::protocol::Results::Reverse)
-                    }
-                ));
-            }
-            pub fn on_ping<F>(&mut self, f: F)
-            where
-                F: Fn(Call<T, super::super::schema::ping::Params>) -> Result<super::super::schema::ping::Results, ::lavish::Error> + Send + Sync + 'static,
-            {
-                self.on_ping = Some(Box::new(
-                    move |call| {
-                        let call = call.downcast(|p| match p {
-                            super::super::protocol::Params::Ping(p) => Some(p),
-                            _ => None,
-                        })?;
-                        f(call).map(super::super::protocol::Results::Ping)
-                    }
-                ));
-            }
-            pub fn on_cookies__get<F>(&mut self, f: F)
-            where
-                F: Fn(Call<T, super::super::schema::cookies::get::Params>) -> Result<super::super::schema::cookies::get::Results, ::lavish::Error> + Send + Sync + 'static,
-            {
-                self.on_cookies__get = Some(Box::new(
-                    move |call| {
-                        let call = call.downcast(|p| match p {
-                            super::super::protocol::Params::Cookies_Get(p) => Some(p),
-                            _ => None,
-                        })?;
-                        f(call).map(super::super::protocol::Results::Cookies_Get)
-                    }
-                ));
-            }
-            pub fn on_universe__earth__country__city__new_york<F>(&mut self, f: F)
-            where
-                F: Fn(Call<T, super::super::schema::universe::earth::country::city::new_york::Params>) -> Result<super::super::schema::universe::earth::country::city::new_york::Results, ::lavish::Error> + Send + Sync + 'static,
-            {
-                self.on_universe__earth__country__city__new_york = Some(Box::new(
-                    move |call| {
-                        let call = call.downcast(|p| match p {
-                            super::super::protocol::Params::Universe_Earth_Country_City_NewYork(p) => Some(p),
-                            _ => None,
-                        })?;
-                        f(call).map(super::super::protocol::Results::Universe_Earth_Country_City_NewYork)
-                    }
-                ));
-            }
-            pub fn on_session__login<F>(&mut self, f: F)
-            where
-                F: Fn(Call<T, super::super::schema::session::login::Params>) -> Result<super::super::schema::session::login::Results, ::lavish::Error> + Send + Sync + 'static,
-            {
-                self.on_session__login = Some(Box::new(
-                    move |call| {
-                        let call = call.downcast(|p| match p {
-                            super::super::protocol::Params::Session_Login(p) => Some(p),
-                            _ => None,
-                        })?;
-                        f(call).map(super::super::protocol::Results::Session_Login)
-                    }
-                ));
+                self.slots.insert(R::method(), Box::new(move |call| {
+                    let call = call.downcast(R::downcast_params)?;
+                    f(call).map(|r| r.upcast_results())
+                }));
             }
         }
-        impl<T> ::lavish::Handler<Client, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Handler<T>
+        impl<T> ::lavish::Handler<Client, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Router<T>
         where
             T: Send + Sync + 'static,
         {
             fn handle(&self, caller: super::super::protocol::Caller, params: super::super::protocol::Params) -> Result<super::super::protocol::Results, ::lavish::Error> {
                 use ::lavish::Atom;
-                let slot = match params {
-                    super::super::protocol::Params::GetCookies(_) => self.on_get_cookies.as_ref(),
-                    super::super::protocol::Params::Reverse(_) => self.on_reverse.as_ref(),
-                    super::super::protocol::Params::Ping(_) => self.on_ping.as_ref(),
-                    super::super::protocol::Params::Cookies_Get(_) => self.on_cookies__get.as_ref(),
-                    super::super::protocol::Params::Universe_Earth_Country_City_NewYork(_) => self.on_universe__earth__country__city__new_york.as_ref(),
-                    super::super::protocol::Params::Session_Login(_) => self.on_session__login.as_ref(),
-                    _ => None,
-                }.ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
+                let slot = self.slots.get(params.method())
+                    .ok_or_else(|| ::lavish::Error::MethodUnimplemented(params.method()))?;
                 let call = Call {
                     state: self.state.clone(),
                     client: super::server::Client { caller },
@@ -1693,3 +738,4 @@ pub mod schema {
     }
 
 }
+

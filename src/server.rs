@@ -1,9 +1,9 @@
 use super::services::sample;
 use std::sync::Arc;
 
-pub fn handler() -> sample::server::Handler<()> {
-    let mut h = sample::server::Handler::new(Arc::new(()));
-    h.on_get_cookies(|call| {
+pub fn router() -> sample::server::Router<()> {
+    let mut r = sample::server::Router::new(Arc::new(()));
+    r.handle(sample::get_cookies, |call| {
         let mut cookies: Vec<sample::Cookie> = Vec::new();
         cookies.push(sample::Cookie {
             key: "ads".into(),
@@ -14,22 +14,21 @@ pub fn handler() -> sample::server::Handler<()> {
             key: "user-agent".into(),
             value: call
                 .client
-                .get_user_agent(sample::get_user_agent::Params {})?
+                .call(sample::get_user_agent::Params {})?
                 .user_agent,
         });
 
         Ok(sample::get_cookies::Results { cookies })
     });
 
-    h.on_reverse(|call| {
+    r.handle(sample::reverse, |call| {
         Ok(sample::reverse::Results {
             s: call.params.s.chars().rev().collect(),
         })
     });
 
-    h.on_ping(move |call| {
-        // FIXME: this should be call.handle.ping
-        // call.client.ping__ping()?;
+    r.handle(sample::ping, move |call| {
+        call.client.call(sample::ping::ping::Params {})?;
 
         if let Some(val) = std::env::var("SAMPLE_SHUTDOWN").ok() {
             if val == "1" {
@@ -39,5 +38,5 @@ pub fn handler() -> sample::server::Handler<()> {
 
         Ok(sample::ping::Results {})
     });
-    h
+    r
 }

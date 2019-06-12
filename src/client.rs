@@ -15,29 +15,24 @@ where
         asked_for_user_agent: false,
     }));
 
-    let mut h = sample::client::Handler::new(state.clone());
-    h.on_get_user_agent(move |call| {
+    let mut r = sample::client::Router::new(state.clone());
+    r.handle(sample::get_user_agent, |call| {
         let mut state = call.state.lock()?;
         state.asked_for_user_agent = true;
         Ok(sample::get_user_agent::Results {
             user_agent: state.user_agent.clone(),
         })
     });
-    h.register(sample::get_user_agent, |call| {
-        let mut state = call.state.lock()?;
-        state.asked_for_user_agent = true;
-        Ok(sample::get_user_agent::Results {
-            user_agent: format!("via hashmap, {}", state.user_agent.clone()),
-        })
+
+    r.handle(sample::ping::ping, |_call| {
+        println!("Server just pinged us");
+        Ok(sample::ping::ping::Results {})
     });
 
-    let client = lavish::connect(h, addr)?.client();
+    let client = lavish::connect(r, addr)?.client();
     if let Ok(state) = state.lock() {
         println!("Asked for ua? = {:#?}", state.asked_for_user_agent);
     }
-
-    let cookies = client.get_cookies(sample::get_cookies::Params {})?.cookies;
-    println!("Cookies = {:?}", cookies);
 
     let cookies = client.call(sample::get_cookies::Params {})?.cookies;
     println!("Cookies = {:?}", cookies);
@@ -48,15 +43,11 @@ where
 
     let s = "rust";
     println!("s (original) = {}", s);
-    let s = client.reverse(sample::reverse::Params { s: s.into() })?.s;
+    let s = client.call(sample::reverse::Params { s: s.into() })?.s;
     println!("s (reversed) = {}", s);
 
-    for _ in 0..2 {
-        println!("Pinging server");
-        // Wrong! We don't define `ping.ping`, so the server's call to us
-        // is going to fail.
-        client.ping(sample::ping::Params {})?;
-    }
+    println!("Pinging server");
+    client.call(sample::ping::Params {})?;
 
     Ok(())
 }

@@ -10,7 +10,7 @@ fn main() {
 
     // binds synchronously, serves in the background
     // `serve_once` only accepts one connection, then quits
-    let server = lavish::serve_once(server::handler(), "localhost:0").unwrap();
+    let server = lavish::serve_once(server::router(), "localhost:0").unwrap();
 
     // do a few test calls;
     client::run(server.local_addr()).unwrap();
