@@ -11,11 +11,11 @@ struct Cookie {
 }
 
 namespace cookies {
-    server fn get() -> (cookies: Array<Cookie>)
+    server fn get() -> (cookies: array<Cookie>)
 }
 
 // Ask for a list of cookies from the server.
-server fn get_cookies() -> (cookies: Array<Cookie>)
+server fn get_cookies() -> (cookies: array<Cookie>)
 
 // Reverse a string
 server fn reverse(s: string) -> (s: string)
