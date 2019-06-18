@@ -8,6 +8,8 @@ struct Cookie {
     // The value of the cookie.
     // Although it's typed as a string, it can be anything underneath.
     value: string,
+    // just adding something
+    comment: option<string>,
 }
 
 namespace cookies {

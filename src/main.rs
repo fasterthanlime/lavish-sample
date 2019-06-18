@@ -24,12 +24,64 @@ trait LavishObject {
     fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError>;
 }
 
+struct OptionOf<T>(pub Option<T>)
+where
+    T: LavishObject;
+
+impl<'a, T> LavishObject for OptionOf<T>
+where
+    T: LavishObject,
+{
+    fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError> {
+        match &self.0 {
+            Some(v) => v.serialize(wr)?,
+            None => wr
+                .write_all(&[rmp::Marker::Null.to_u8()])
+                .map_err(ValueWriteError::InvalidMarkerWrite)?,
+        };
+
+        Ok(())
+    }
+}
+
+struct StringOf<'a>(pub &'a str);
+
+impl<'a> LavishObject for StringOf<'a> {
+    fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError> {
+        use rmp::encode::*;
+        write_str(wr, self.0)?;
+
+        Ok(())
+    }
+}
+
+
+struct ArrayOf<'a, T>(pub &'a [T])
+where
+    T: LavishObject;
+
+impl<'a, T> LavishObject for ArrayOf<'a, T>
+where
+    T: LavishObject,
+{
+    fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError> {
+        use rmp::encode::*;
+        write_array_len(wr, self.0.len() as u32)?;
+        for item in self.0 {
+            item.serialize(wr)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl LavishObject for services::sample::Cookie {
     fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError> {
         use rmp::encode::*;
-        write_array_len(wr, 2)?;
-        write_str(wr, &self.key)?;
-        write_str(wr, &self.value)?;
+        write_array_len(wr, 3)?;
+        StringOf(&self.key).serialize(wr)?;
+        StringOf(&self.value).serialize(wr)?;
+        OptionOf(self.comment.as_ref().map(|x| StringOf(&x))).serialize(wr)?;
 
         Ok(())
     }
@@ -43,21 +95,44 @@ fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
         println!("=========================================================================");
     }
 
-    let cookie = services::sample::Cookie {
-        key: "model".into(),
-        value: "Ford".into(),
-    };
+    let cookies = vec![
+        services::sample::Cookie {
+            key: "title".into(),
+            value: "Knytt Underground".into(),
+            comment: Some("Open for collabs".into()),
+        },
+        services::sample::Cookie {
+            key: "title".into(),
+            value: "Super Mario Maker".into(),
+            comment: None,
+        },
+        services::sample::Cookie {
+            key: "title".into(),
+            value: "Overland".into(),
+            comment: None,
+        },
+        services::sample::Cookie {
+            key: "title".into(),
+            value: "XCOM 2".into(),
+            comment: None,
+        },
+        services::sample::Cookie {
+            key: "title".into(),
+            value: "Civilization V".into(),
+            comment: None,
+        },
+    ];
 
     {
         let mut buf = Buf::new();
-        cookie.serialize(&mut buf)?;
+        ArrayOf(&cookies[..]).serialize(&mut buf)?;
         print_payload(&buf[..]);
     }
 
     {
         let mut buf = Buf::new();
         let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
-        serde::Serialize::serialize(&cookie, &mut ser)?;
+        serde::Serialize::serialize(&cookies, &mut ser)?;
         print_payload(&buf[..]);
     }
 

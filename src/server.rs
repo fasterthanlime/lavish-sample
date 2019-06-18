@@ -8,6 +8,7 @@ pub fn router() -> sample::server::Router<()> {
         cookies.push(sample::Cookie {
             key: "ads".into(),
             value: "no".into(),
+            comment: None,
         });
 
         cookies.push(sample::Cookie {
@@ -16,6 +17,7 @@ pub fn router() -> sample::server::Router<()> {
                 .client
                 .call(sample::get_user_agent::Params {})?
                 .user_agent,
+            comment: None,
         });
 
         Ok(sample::get_cookies::Results { cookies })
