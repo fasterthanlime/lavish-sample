@@ -138,6 +138,25 @@ where
     }
 }
 
+impl<'a, T, TT> Factual<TT> for Vec<T>
+where
+    T: Factual<TT>,
+{
+    fn write<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
+        use rmp::encode::*;
+        write_array_len(wr, self.len() as u32)?;
+        for item in self {
+            item.write(tt, wr)?;
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(rd: &mut R) -> Result<Self, Error> {
+        unimplemented!()
+    }
+}
+
 /**********************************************************************
  * Helpers
  **********************************************************************/
