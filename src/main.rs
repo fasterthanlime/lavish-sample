@@ -14,76 +14,13 @@ fn main() {
     // network_sample().unwrap();
 }
 
+mod facts;
+use facts::Factual;
 use pretty_hex::PrettyHex;
 
-use std::io::Write;
-
-use rmp::encode::ValueWriteError;
-
-trait LavishObject {
-    fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError>;
-}
-
-struct OptionOf<T>(pub Option<T>)
-where
-    T: LavishObject;
-
-impl<'a, T> LavishObject for OptionOf<T>
-where
-    T: LavishObject,
-{
-    fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError> {
-        match &self.0 {
-            Some(v) => v.serialize(wr)?,
-            None => wr
-                .write_all(&[rmp::Marker::Null.to_u8()])
-                .map_err(ValueWriteError::InvalidMarkerWrite)?,
-        };
-
-        Ok(())
-    }
-}
-
-struct StringOf<'a>(pub &'a str);
-
-impl<'a> LavishObject for StringOf<'a> {
-    fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError> {
-        use rmp::encode::*;
-        write_str(wr, self.0)?;
-
-        Ok(())
-    }
-}
-
-
-struct ArrayOf<'a, T>(pub &'a [T])
-where
-    T: LavishObject;
-
-impl<'a, T> LavishObject for ArrayOf<'a, T>
-where
-    T: LavishObject,
-{
-    fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError> {
-        use rmp::encode::*;
-        write_array_len(wr, self.0.len() as u32)?;
-        for item in self.0 {
-            item.serialize(wr)?;
-        }
-
-        Ok(())
-    }
-}
-
-impl LavishObject for services::sample::Cookie {
-    fn serialize<W: Write>(&self, wr: &mut W) -> Result<(), ValueWriteError> {
-        use rmp::encode::*;
-        write_array_len(wr, 3)?;
-        StringOf(&self.key).serialize(wr)?;
-        StringOf(&self.value).serialize(wr)?;
-        OptionOf(self.comment.as_ref().map(|x| StringOf(&x))).serialize(wr)?;
-
-        Ok(())
+fn get_translation_tables() -> facts::TranslationTables {
+    facts::TranslationTables {
+        sample__Cookie: vec![Some(0), Some(1), Some(2)],
     }
 }
 
@@ -98,7 +35,8 @@ fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
 
     {
         let mut buf = Buf::new();
-        ArrayOf(&cookies[..]).serialize(&mut buf)?;
+        let tt = get_translation_tables();
+        facts::array_of(&cookies[..]).serialize(&tt, &mut buf)?;
         print_payload(&buf[..]);
     }
 
@@ -153,10 +91,13 @@ mod benchmarks {
 
     fn compact_serialize(bench: &mut Bencher) {
         let mut buf = Buf::new();
+        let tt = get_translation_tables();
         let cookies = get_cookies();
         bench.iter(|| {
             buf.consume(buf.len());
-            ArrayOf(&cookies[..]).serialize(&mut buf).unwrap();
+            facts::array_of(&cookies[..])
+                .serialize(&tt, &mut buf)
+                .unwrap();
         });
     }
 
@@ -180,7 +121,12 @@ mod benchmarks {
         });
     }
 
-    benchmark_group!(serialize, compact_serialize, serde_compact_serialize, serde_named_serialize);
+    benchmark_group!(
+        serialize,
+        compact_serialize,
+        serde_compact_serialize,
+        serde_named_serialize
+    );
     benchmark_main!(serialize);
 
     pub fn run() {
