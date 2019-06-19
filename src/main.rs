@@ -160,7 +160,17 @@ mod benchmarks {
         });
     }
 
-    fn serde_serialize(bench: &mut Bencher) {
+    fn serde_compact_serialize(bench: &mut Bencher) {
+        let mut buf = Buf::new();
+        let cookies = get_cookies();
+        bench.iter(|| {
+            buf.consume(buf.len());
+            let mut ser = rmp_serde::encode::Serializer::new(&mut buf);
+            serde::Serialize::serialize(&cookies, &mut ser).unwrap();
+        });
+    }
+
+    fn serde_named_serialize(bench: &mut Bencher) {
         let mut buf = Buf::new();
         let cookies = get_cookies();
         bench.iter(|| {
@@ -170,7 +180,7 @@ mod benchmarks {
         });
     }
 
-    benchmark_group!(serialize, compact_serialize, serde_serialize);
+    benchmark_group!(serialize, compact_serialize, serde_compact_serialize, serde_named_serialize);
     benchmark_main!(serialize);
 
     pub fn run() {
