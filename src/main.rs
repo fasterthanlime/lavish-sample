@@ -36,7 +36,7 @@ fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
     {
         let mut buf = Buf::new();
         let tt = get_translation_tables();
-        facts::array_of(&cookies[..]).serialize(&tt, &mut buf)?;
+        facts::array_of(&cookies[..]).write(&tt, &mut buf)?;
         print_payload(&buf[..]);
     }
 
@@ -95,9 +95,7 @@ mod benchmarks {
         let cookies = get_cookies();
         bench.iter(|| {
             buf.consume(buf.len());
-            facts::array_of(&cookies[..])
-                .serialize(&tt, &mut buf)
-                .unwrap();
+            facts::array_of(&cookies[..]).write(&tt, &mut buf).unwrap();
         });
     }
 

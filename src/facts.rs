@@ -52,9 +52,9 @@ fn write_null<W: Write>(wr: &mut W) -> Result<(), Error> {
  **********************************************************************/
 
 pub trait Factual<TT> {
-    fn serialize<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error>;
+    fn write<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error>;
 
-    fn deserialize<R: Read>(rd: &mut R) -> Result<Self, Error>
+    fn read<R: Read>(rd: &mut R) -> Result<Self, Error>
     where
         Self: Sized;
 }
@@ -67,16 +67,16 @@ impl<T, TT> Factual<TT> for OptionOf<T, TT>
 where
     T: Factual<TT>,
 {
-    fn serialize<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
+    fn write<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
         match &self.0 {
-            Some(v) => v.serialize(tt, wr)?,
+            Some(v) => v.write(tt, wr)?,
             None => write_null(wr)?,
         };
 
         Ok(())
     }
 
-    fn deserialize<R: Read>(rd: &mut R) -> Result<Self, Error> {
+    fn read<R: Read>(rd: &mut R) -> Result<Self, Error> {
         unimplemented!()
     }
 }
@@ -84,14 +84,14 @@ where
 pub struct StringOf<'a>(pub &'a str);
 
 impl<'a, TT> Factual<TT> for StringOf<'a> {
-    fn serialize<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
+    fn write<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
         use rmp::encode::*;
         write_str(wr, self.0)?;
 
         Ok(())
     }
 
-    fn deserialize<R: Read>(rd: &mut R) -> Result<Self, Error> {
+    fn read<R: Read>(rd: &mut R) -> Result<Self, Error> {
         unimplemented!()
     }
 }
@@ -104,17 +104,36 @@ impl<'a, T, TT> Factual<TT> for ArrayOf<'a, T, TT>
 where
     T: Factual<TT>,
 {
-    fn serialize<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
+    fn write<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
         use rmp::encode::*;
         write_array_len(wr, self.0.len() as u32)?;
         for item in self.0 {
-            item.serialize(tt, wr)?;
+            item.write(tt, wr)?;
         }
 
         Ok(())
     }
 
-    fn deserialize<R: Read>(rd: &mut R) -> Result<Self, Error> {
+    fn read<R: Read>(rd: &mut R) -> Result<Self, Error> {
+        unimplemented!()
+    }
+}
+
+impl<'a, T, TT> Factual<TT> for &'a [T]
+where
+    T: Factual<TT>,
+{
+    fn write<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
+        use rmp::encode::*;
+        write_array_len(wr, self.len() as u32)?;
+        for item in *self {
+            item.write(tt, wr)?;
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(rd: &mut R) -> Result<Self, Error> {
         unimplemented!()
     }
 }
@@ -135,19 +154,19 @@ where
  **********************************************************************/
 
 impl Factual<TranslationTables> for sample::Cookie {
-    fn serialize<W: Write>(&self, tt: &TranslationTables, wr: &mut W) -> Result<(), Error> {
+    fn write<W: Write>(&self, tt: &TranslationTables, wr: &mut W) -> Result<(), Error> {
         use rmp::encode::*;
         write_array_len(wr, 3)?;
 
         for slot in &tt.sample__Cookie {
             match slot {
                 Some(index) => match index {
-                    0 => StringOf(&self.key).serialize(tt, wr)?,
-                    1 => StringOf(&self.value).serialize(tt, wr)?,
+                    0 => StringOf(&self.key).write(tt, wr)?,
+                    1 => StringOf(&self.value).write(tt, wr)?,
                     2 => OptionOf(self.comment.as_ref().map(|x| StringOf(&x)), PhantomData)
-                        .serialize(tt, wr)?,
+                        .write(tt, wr)?,
                     _ => panic!(
-                        "sample::Cookie::serialize: don't have field with index {index} to write",
+                        "sample::Cookie::write: don't have field with index {index} to write",
                         index = index
                     ),
                 },
@@ -158,7 +177,7 @@ impl Factual<TranslationTables> for sample::Cookie {
         Ok(())
     }
 
-    fn deserialize<R: Read>(rd: &mut R) -> Result<Self, Error> {
+    fn read<R: Read>(rd: &mut R) -> Result<Self, Error> {
         unimplemented!()
     }
 }
