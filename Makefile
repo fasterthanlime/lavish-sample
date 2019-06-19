@@ -9,6 +9,10 @@ debug: build
 run: build
 	./target/debug/lavish-sample
 
+bench: schema
+	cargo build --release
+	./target/release/lavish-sample
+
 build: schema
 	cargo build
 

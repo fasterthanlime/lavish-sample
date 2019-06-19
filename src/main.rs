@@ -88,14 +88,34 @@ impl LavishObject for services::sample::Cookie {
 }
 
 fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
-    use netbuf::Buf;
     fn print_payload(slice: &[u8]) {
         println!("================================ payload ================================");
         println!("{:?}", slice.hex_dump());
         println!("=========================================================================");
     }
 
-    let cookies = vec![
+    let cookies = get_cookies();
+
+    {
+        let mut buf = Buf::new();
+        ArrayOf(&cookies[..]).serialize(&mut buf)?;
+        print_payload(&buf[..]);
+    }
+
+    {
+        let mut buf = Buf::new();
+        let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
+        serde::Serialize::serialize(&cookies, &mut ser)?;
+        print_payload(&buf[..]);
+    }
+
+    benchmarks::run();
+
+    Ok(())
+}
+
+fn get_cookies() -> Vec<services::sample::Cookie> {
+    return vec![
         services::sample::Cookie {
             key: "title".into(),
             value: "Knytt Underground".into(),
@@ -122,21 +142,40 @@ fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
             comment: None,
         },
     ];
+}
 
-    {
+use netbuf::Buf;
+
+mod benchmarks {
+    use bencher::*;
+
+    use super::*;
+
+    fn compact_serialize(bench: &mut Bencher) {
         let mut buf = Buf::new();
-        ArrayOf(&cookies[..]).serialize(&mut buf)?;
-        print_payload(&buf[..]);
+        let cookies = get_cookies();
+        bench.iter(|| {
+            buf.consume(buf.len());
+            ArrayOf(&cookies[..]).serialize(&mut buf).unwrap();
+        });
     }
 
-    {
+    fn serde_serialize(bench: &mut Bencher) {
         let mut buf = Buf::new();
-        let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
-        serde::Serialize::serialize(&cookies, &mut ser)?;
-        print_payload(&buf[..]);
+        let cookies = get_cookies();
+        bench.iter(|| {
+            buf.consume(buf.len());
+            let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
+            serde::Serialize::serialize(&cookies, &mut ser).unwrap();
+        });
     }
 
-    Ok(())
+    benchmark_group!(serialize, compact_serialize, serde_serialize);
+    benchmark_main!(serialize);
+
+    pub fn run() {
+        main();
+    }
 }
 
 fn network_sample() -> Result<(), Box<dyn Error + 'static>> {
