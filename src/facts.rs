@@ -85,7 +85,6 @@ pub trait Factual<TT> {
     where
         Self: Sized;
 
-    #[inline(always)]
     fn subread<R: Read, T>(rd: &mut Reader<R>) -> Result<T, Error>
     where
         Self: Sized,
@@ -117,10 +116,11 @@ where
     }
 
     fn fetch_marker(&mut self) -> Result<Marker, Error> {
-        match self.marker.take() {
+        let marker = match self.marker.take() {
             Some(marker) => Ok(marker),
             None => Ok(rmp::decode::read_marker(&mut self.rd)?),
-        }
+        };
+        marker
     }
 
     fn read_slice(&mut self, len: usize) -> Result<&[u8], Error> {
@@ -131,23 +131,25 @@ where
 
     fn read_array_len(&mut self) -> Result<usize, Error> {
         let marker = self.fetch_marker()?;
-        match marker {
+        let len = match marker {
             Marker::FixArray(len) => Ok(len as usize),
-            Marker::Array16 => Ok(rmp::decode::read_u16(self)? as usize),
-            Marker::Array32 => Ok(rmp::decode::read_u32(self)? as usize),
+            Marker::Array16 => Ok(rmp::decode::read_data_u16(self)? as usize),
+            Marker::Array32 => Ok(rmp::decode::read_data_u32(self)? as usize),
             _ => Err(ValueReadError::TypeMismatch(marker).into()),
-        }
+        };
+        len
     }
 
     fn read_str_len(&mut self) -> Result<usize, Error> {
         let marker = self.fetch_marker()?;
-        match marker {
+        let len = match marker {
             Marker::FixStr(len) => Ok(len as usize),
-            Marker::Str8 => Ok(rmp::decode::read_u8(self)? as usize),
-            Marker::Str16 => Ok(rmp::decode::read_u16(self)? as usize),
-            Marker::Str32 => Ok(rmp::decode::read_u32(self)? as usize),
+            Marker::Str8 => Ok(rmp::decode::read_data_u8(self)? as usize),
+            Marker::Str16 => Ok(rmp::decode::read_data_u16(self)? as usize),
+            Marker::Str32 => Ok(rmp::decode::read_data_u32(self)? as usize),
             _ => Err(ValueReadError::TypeMismatch(marker).into()),
-        }
+        };
+        len
     }
 }
 
@@ -302,6 +304,48 @@ impl Factual<TranslationTables> for sample::Cookie {
     }
 }
 
+/**********************************************************************
+ * Manual implementation for sample::Emoji
+ **********************************************************************/
+
+impl Factual<TranslationTables> for sample::Emoji {
+    fn write<W: Write>(&self, tt: &TranslationTables, wr: &mut W) -> Result<(), Error> {
+        use rmp::encode::*;
+        write_array_len(wr, tt.sample__Emoji.len() as u32)?;
+
+        for slot in &tt.sample__Emoji {
+            match slot {
+                Some(index) => match index {
+                    0 => self.shortcode.write(tt, wr)?,
+                    1 => self.image_url.write(tt, wr)?,
+                    _ => unreachable!(),
+                },
+                None => write_nil(wr)?,
+            }
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(rd: &mut Reader<R>) -> Result<Self, Error> {
+        let len = rd.read_array_len()?;
+        if len != 2 {
+            return Err(Error::InvalidStructLength {
+                expected: 2,
+                actual: len,
+            });
+        }
+
+        // this must be in order
+        use TranslationTables as TT;
+        let res = sample::Emoji {
+            shortcode: Self::subread(rd)?,
+            image_url: Self::subread(rd)?,
+        };
+        Ok(res)
+    }
+}
+
 /*
 
 ~~ Case A ~~
@@ -367,4 +411,5 @@ where
 #[allow(non_snake_case)]
 pub struct TranslationTables {
     pub sample__Cookie: Vec<Option<u32>>,
+    pub sample__Emoji: Vec<Option<u32>>,
 }

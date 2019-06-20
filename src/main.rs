@@ -23,6 +23,7 @@ use pretty_hex::PrettyHex;
 fn get_translation_tables() -> facts::TranslationTables {
     facts::TranslationTables {
         sample__Cookie: vec![Some(0), Some(1), Some(2)],
+        sample__Emoji: vec![Some(0), Some(1)],
     }
 }
 
@@ -89,6 +90,27 @@ fn get_cookies() -> Vec<services::sample::Cookie> {
     ];
 }
 
+lazy_static::lazy_static! {
+    static ref EMOJIS: Vec<services::sample::Emoji> = {
+        let payload = std::fs::read_to_string("emojis.json").unwrap();
+        let emojis = json::parse(&payload).unwrap();
+
+        match emojis {
+            json::JsonValue::Object(obj) => {
+                let mut res = Vec::<services::sample::Emoji>::new();
+                for entry in obj.iter() {
+                    res.push(services::sample::Emoji {
+                        shortcode: entry.0.to_string(),
+                        image_url: entry.1.to_string(),
+                    });
+                }
+                res
+            }
+            val => panic!("emojis.json should bean object, but is {:#?}", val),
+        }
+    };
+}
+
 use netbuf::Buf;
 
 mod benchmarks {
@@ -99,74 +121,67 @@ mod benchmarks {
     fn ser_facts(bench: &mut Bencher) {
         let mut buf = Buf::new();
         let tt = get_translation_tables();
-        let cookies = get_cookies();
         bench.iter(|| {
             buf.consume(buf.len());
-            cookies.write(&tt, &mut buf).unwrap();
+            EMOJIS.write(&tt, &mut buf).unwrap();
         });
     }
 
     fn deser_facts(bench: &mut Bencher) {
         let mut buf = Buf::new();
         let tt = get_translation_tables();
-        let cookies = get_cookies();
-        cookies.write(&tt, &mut buf).unwrap();
+        EMOJIS.write(&tt, &mut buf).unwrap();
 
         bench.iter(|| {
             let mut slice = &buf[..];
             let mut r = facts::Reader::new(&mut slice);
-            Vec::<services::sample::Cookie>::read(&mut r).unwrap();
+            Vec::<services::sample::Emoji>::read(&mut r).unwrap();
         });
     }
 
     fn ser_serde_index(bench: &mut Bencher) {
         let mut buf = Buf::new();
-        let cookies = get_cookies();
         bench.iter(|| {
             buf.consume(buf.len());
             let mut ser = rmp_serde::encode::Serializer::new(&mut buf);
-            serde::Serialize::serialize(&cookies, &mut ser).unwrap()
+            serde::Serialize::serialize(&*EMOJIS, &mut ser).unwrap()
         });
     }
 
     fn deser_serde_index(bench: &mut Bencher) {
         let mut buf = Buf::new();
-        let tt = get_translation_tables();
-        let cookies = get_cookies();
         {
             let mut ser = rmp_serde::encode::Serializer::new(&mut buf);
-            serde::Serialize::serialize(&cookies, &mut ser).unwrap();
+            serde::Serialize::serialize(&*EMOJIS, &mut ser).unwrap();
         }
 
         bench.iter(|| {
             use serde::Deserialize;
             let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
-            Vec::<services::sample::Cookie>::deserialize(&mut deser).unwrap();
+            Vec::<services::sample::Emoji>::deserialize(&mut deser).unwrap();
         });
     }
 
     fn ser_serde_named(bench: &mut Bencher) {
         let mut buf = Buf::new();
-        let cookies = get_cookies();
         bench.iter(|| {
             buf.consume(buf.len());
             let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
-            serde::Serialize::serialize(&cookies, &mut ser).unwrap();
+            serde::Serialize::serialize(&*EMOJIS, &mut ser).unwrap();
         });
     }
 
     fn deser_serde_named(bench: &mut Bencher) {
         let mut buf = Buf::new();
-        let cookies = get_cookies();
         {
             let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
-            serde::Serialize::serialize(&cookies, &mut ser).unwrap();
+            serde::Serialize::serialize(&*EMOJIS, &mut ser).unwrap();
         }
 
         bench.iter(|| {
             use serde::Deserialize;
             let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
-            Vec::<services::sample::Cookie>::deserialize(&mut deser).unwrap();
+            Vec::<services::sample::Emoji>::deserialize(&mut deser).unwrap();
         });
     }
 
