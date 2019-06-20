@@ -121,11 +121,10 @@ where
 
     #[inline]
     fn fetch_marker(&mut self) -> Result<Marker, Error> {
-        let marker = match self.marker.take() {
+        match self.marker.take() {
             Some(marker) => Ok(marker),
             None => Ok(rmp::decode::read_marker(&mut self.rd)?),
-        };
-        marker
+        }
     }
 
     #[inline]
