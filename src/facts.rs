@@ -85,6 +85,7 @@ pub trait Factual<TT> {
     where
         Self: Sized;
 
+    #[inline]
     fn subread<R: Read, T>(rd: &mut Reader<R>) -> Result<T, Error>
     where
         Self: Sized,
@@ -115,6 +116,7 @@ where
         }
     }
 
+    #[inline]
     fn fetch_marker(&mut self) -> Result<Marker, Error> {
         let marker = match self.marker.take() {
             Some(marker) => Ok(marker),
@@ -123,12 +125,14 @@ where
         marker
     }
 
+    #[inline]
     fn read_slice(&mut self, len: usize) -> Result<&[u8], Error> {
         self.buf.resize(len, 0u8);
         self.rd.read_exact(&mut self.buf[..])?;
         Ok(&self.buf[..])
     }
 
+    #[inline]
     fn read_array_len(&mut self) -> Result<usize, Error> {
         let marker = self.fetch_marker()?;
         let len = match marker {
@@ -140,6 +144,7 @@ where
         len
     }
 
+    #[inline]
     fn read_str_len(&mut self) -> Result<usize, Error> {
         let marker = self.fetch_marker()?;
         let len = match marker {
@@ -157,8 +162,14 @@ impl<R> Read for Reader<R>
 where
     R: Read,
 {
+    #[inline]
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         self.rd.read(buf)
+    }
+
+    #[inline]
+    fn read_exact(&mut self, buf: &mut [u8]) -> std::io::Result<()> {
+        self.rd.read_exact(buf)
     }
 }
 
