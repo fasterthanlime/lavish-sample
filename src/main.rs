@@ -22,8 +22,8 @@ use pretty_hex::PrettyHex;
 
 fn get_translation_tables() -> facts::TranslationTables {
     facts::TranslationTables {
-        sample__Cookie: vec![Some(0), Some(1), Some(2)],
-        sample__Emoji: vec![Some(0), Some(1)],
+        sample__Cookie: facts::TranslationTable::Mapped(facts::OffsetList(vec![0, 1, 2])),
+        sample__Emoji: facts::TranslationTable::Mapped(facts::OffsetList(vec![0, 1])),
     }
 }
 

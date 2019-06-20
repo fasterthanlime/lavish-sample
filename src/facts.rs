@@ -2,8 +2,10 @@
 
 use super::services::sample;
 
-use std::io::{Read, Write};
+use std::collections::HashMap;
 use std::marker::{PhantomData, Sized};
+
+use std::io::{Read, Write};
 
 use rmp::decode::{DecodeStringError, MarkerReadError, ValueReadError};
 use rmp::encode::ValueWriteError;
@@ -17,6 +19,7 @@ use rmp::Marker;
 pub enum Error {
     IO(std::io::Error),
     InvalidStructLength { expected: usize, actual: usize },
+    IncompatibleSchema(String),
     DecodeStringError(),
     ValueWriteError(ValueWriteError),
     ValueReadError(ValueReadError),
@@ -135,26 +138,33 @@ where
     #[inline]
     fn read_array_len(&mut self) -> Result<usize, Error> {
         let marker = self.fetch_marker()?;
-        let len = match marker {
-            Marker::FixArray(len) => Ok(len as usize),
-            Marker::Array16 => Ok(rmp::decode::read_data_u16(self)? as usize),
-            Marker::Array32 => Ok(rmp::decode::read_data_u32(self)? as usize),
-            _ => Err(ValueReadError::TypeMismatch(marker).into()),
-        };
-        len
+        Ok(match marker {
+            Marker::FixArray(len) => len as usize,
+            Marker::Array16 => rmp::decode::read_data_u16(self)? as usize,
+            Marker::Array32 => rmp::decode::read_data_u32(self)? as usize,
+            _ => return Err(ValueReadError::TypeMismatch(marker).into()),
+        })
+    }
+
+    #[inline]
+    fn expect_array_len(&mut self, expected: usize) -> Result<(), Error> {
+        let actual = self.read_array_len()?;
+        if expected != actual {
+            return Err(Error::InvalidStructLength { expected, actual });
+        }
+        Ok(())
     }
 
     #[inline]
     fn read_str_len(&mut self) -> Result<usize, Error> {
         let marker = self.fetch_marker()?;
-        let len = match marker {
-            Marker::FixStr(len) => Ok(len as usize),
-            Marker::Str8 => Ok(rmp::decode::read_data_u8(self)? as usize),
-            Marker::Str16 => Ok(rmp::decode::read_data_u16(self)? as usize),
-            Marker::Str32 => Ok(rmp::decode::read_data_u32(self)? as usize),
-            _ => Err(ValueReadError::TypeMismatch(marker).into()),
-        };
-        len
+        Ok(match marker {
+            Marker::FixStr(len) => len as usize,
+            Marker::Str8 => rmp::decode::read_data_u8(self)? as usize,
+            Marker::Str16 => rmp::decode::read_data_u16(self)? as usize,
+            Marker::Str32 => rmp::decode::read_data_u32(self)? as usize,
+            _ => return Err(ValueReadError::TypeMismatch(marker).into()),
+        })
     }
 }
 
@@ -178,10 +188,9 @@ where
     T: Factual<TT>,
 {
     fn write<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
-        use rmp::encode::*;
         match self {
             Some(v) => v.write(tt, wr)?,
-            None => write_nil(wr)?,
+            None => rmp::encode::write_nil(wr)?,
         };
 
         Ok(())
@@ -200,9 +209,7 @@ where
 
 impl<'a, TT> Factual<TT> for &'a str {
     fn write<W: Write>(&self, _tt: &TT, wr: &mut W) -> Result<(), Error> {
-        use rmp::encode::*;
-        write_str(wr, self)?;
-
+        rmp::encode::write_str(wr, self)?;
         Ok(())
     }
 
@@ -213,9 +220,7 @@ impl<'a, TT> Factual<TT> for &'a str {
 
 impl<'a, TT> Factual<TT> for String {
     fn write<W: Write>(&self, _tt: &TT, wr: &mut W) -> Result<(), Error> {
-        use rmp::encode::*;
-        write_str(wr, self)?;
-
+        rmp::encode::write_str(wr, self)?;
         Ok(())
     }
 
@@ -232,8 +237,7 @@ where
     T: Factual<TT>,
 {
     fn write<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
-        use rmp::encode::*;
-        write_array_len(wr, self.len() as u32)?;
+        rmp::encode::write_array_len(wr, self.len() as u32)?;
         for item in *self {
             item.write(tt, wr)?;
         }
@@ -251,8 +255,7 @@ where
     T: Factual<TT>,
 {
     fn write<W: Write>(&self, tt: &TT, wr: &mut W) -> Result<(), Error> {
-        use rmp::encode::*;
-        write_array_len(wr, self.len() as u32)?;
+        rmp::encode::write_array_len(wr, self.len() as u32)?;
         for item in self {
             item.write(tt, wr)?;
         }
@@ -277,41 +280,21 @@ where
 
 impl Factual<TranslationTables> for sample::Cookie {
     fn write<W: Write>(&self, tt: &TranslationTables, wr: &mut W) -> Result<(), Error> {
-        use rmp::encode::*;
-        write_array_len(wr, tt.sample__Cookie.len() as u32)?;
-
-        for slot in &tt.sample__Cookie {
-            match slot {
-                Some(index) => match index {
-                    0 => self.key.write(tt, wr)?,
-                    1 => self.value.write(tt, wr)?,
-                    2 => self.comment.write(tt, wr)?,
-                    _ => unreachable!(),
-                },
-                None => write_nil(wr)?,
-            }
-        }
-
-        Ok(())
+        tt.sample__Cookie.write(wr, |wr, i| match i {
+            0 => self.key.write(tt, wr),
+            1 => self.value.write(tt, wr),
+            2 => self.comment.write(tt, wr),
+            _ => unreachable!(),
+        })
     }
 
     fn read<R: Read>(rd: &mut Reader<R>) -> Result<Self, Error> {
-        let len = rd.read_array_len()?;
-        if len != 3 {
-            return Err(Error::InvalidStructLength {
-                expected: 3,
-                actual: len,
-            });
-        }
-
-        // this must be in order
-        use TranslationTables as TT;
-        let res = sample::Cookie {
+        rd.expect_array_len(3)?;
+        Ok(sample::Cookie {
             key: Self::subread(rd)?,
             value: Self::subread(rd)?,
             comment: Self::subread(rd)?,
-        };
-        Ok(res)
+        })
     }
 }
 
@@ -321,39 +304,19 @@ impl Factual<TranslationTables> for sample::Cookie {
 
 impl Factual<TranslationTables> for sample::Emoji {
     fn write<W: Write>(&self, tt: &TranslationTables, wr: &mut W) -> Result<(), Error> {
-        use rmp::encode::*;
-        write_array_len(wr, tt.sample__Emoji.len() as u32)?;
-
-        for slot in &tt.sample__Emoji {
-            match slot {
-                Some(index) => match index {
-                    0 => self.shortcode.write(tt, wr)?,
-                    1 => self.image_url.write(tt, wr)?,
-                    _ => unreachable!(),
-                },
-                None => write_nil(wr)?,
-            }
-        }
-
-        Ok(())
+        tt.sample__Emoji.write(wr, |wr, i| match i {
+            0 => self.shortcode.write(tt, wr),
+            1 => self.image_url.write(tt, wr),
+            _ => unreachable!(),
+        })
     }
 
     fn read<R: Read>(rd: &mut Reader<R>) -> Result<Self, Error> {
-        let len = rd.read_array_len()?;
-        if len != 2 {
-            return Err(Error::InvalidStructLength {
-                expected: 2,
-                actual: len,
-            });
-        }
-
-        // this must be in order
-        use TranslationTables as TT;
-        let res = sample::Emoji {
+        rd.expect_array_len(2)?;
+        Ok(sample::Emoji {
             shortcode: Self::subread(rd)?,
             image_url: Self::subread(rd)?,
-        };
-        Ok(res)
+        })
     }
 }
 
@@ -419,8 +382,82 @@ where
     t.write(tt, wr)
 }
 
+pub struct OffsetList(pub Vec<i32>);
+
+pub enum TranslationTable {
+    Mapped(OffsetList),
+    Incompatible(String),
+}
+
+impl TranslationTable {
+    fn validate(&self) -> Result<&OffsetList, Error> {
+        use TranslationTable::*;
+
+        match self {
+            Mapped(list) => Ok(&list),
+            Incompatible(reason) => Err(Error::IncompatibleSchema(reason.to_owned())),
+        }
+    }
+
+    fn write<F, W>(&self, wr: &mut W, f: F) -> Result<(), Error>
+    where
+        F: Fn(&mut W, u32) -> Result<(), Error>,
+        W: Write,
+    {
+        let offsets = self.validate()?;
+        rmp::encode::write_array_len(wr, offsets.0.len() as u32)?;
+
+        for &i in &offsets.0 {
+            if i < 0 {
+                rmp::encode::write_nil(wr)?;
+            } else {
+                f(wr, i as u32)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[allow(non_snake_case)]
 pub struct TranslationTables {
-    pub sample__Cookie: Vec<Option<u32>>,
-    pub sample__Emoji: Vec<Option<u32>>,
+    pub sample__Cookie: TranslationTable,
+    pub sample__Emoji: TranslationTable,
+}
+
+pub struct SchemaInfo {
+    pub structs: HashMap<String, StructInfo>,
+}
+
+pub struct StructInfo {
+    pub fields: Vec<FieldInfo>,
+}
+
+pub struct FieldInfo {
+    pub name: String,
+    pub typ: FieldType,
+}
+
+pub enum FieldType {
+    Base(BaseType),
+    Option(Box<FieldType>),
+    List(Box<FieldType>),
+    Map(Box<FieldType>, Box<FieldType>),
+}
+
+pub enum BaseType {
+    I8,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
+    F32,
+    F64,
+    Bool,
+    String,
+    Data,
+    Timestamp,
 }
