@@ -157,7 +157,11 @@ mod benchmarks {
 
         bench.iter(|| {
             use serde::Deserialize;
-            let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
+            // !!!!! This is cheating !!!!!
+            // let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
+            let mut slice = &buf[..];
+            let mut deser = rmp_serde::decode::Deserializer::from_read(&mut slice);
+
             Vec::<services::sample::Emoji>::deserialize(&mut deser).unwrap();
         });
     }
@@ -180,7 +184,12 @@ mod benchmarks {
 
         bench.iter(|| {
             use serde::Deserialize;
-            let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
+
+            // !!!!! This is cheating !!!!!
+            // let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
+            let mut slice = &buf[..];
+            let mut deser = rmp_serde::decode::Deserializer::from_read(&mut slice);
+
             Vec::<services::sample::Emoji>::deserialize(&mut deser).unwrap();
         });
     }
