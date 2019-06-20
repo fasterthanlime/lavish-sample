@@ -8,9 +8,11 @@ mod server;
 use std::error::Error;
 
 fn main() {
+    color_backtrace::install();
     env_logger::init();
 
-    serialize_sample().unwrap();
+    benchmarks::run();
+    // serialize_sample().unwrap();
     // network_sample().unwrap();
 }
 
@@ -42,12 +44,17 @@ fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
 
     {
         let mut buf = Buf::new();
-        let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
+        let mut ser = rmp_serde::encode::Serializer::new(&mut buf);
         serde::Serialize::serialize(&cookies, &mut ser)?;
         print_payload(&buf[..]);
     }
 
-    benchmarks::run();
+    {
+        let mut buf = Buf::new();
+        let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
+        serde::Serialize::serialize(&cookies, &mut ser)?;
+        print_payload(&buf[..]);
+    }
 
     Ok(())
 }
@@ -55,27 +62,27 @@ fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
 fn get_cookies() -> Vec<services::sample::Cookie> {
     return vec![
         services::sample::Cookie {
-            key: "title".into(),
+            key: "name".into(),
             value: "Knytt Underground".into(),
             comment: Some("Open for collabs".into()),
         },
         services::sample::Cookie {
-            key: "title".into(),
+            key: "name".into(),
             value: "Super Mario Maker".into(),
             comment: None,
         },
         services::sample::Cookie {
-            key: "title".into(),
+            key: "name".into(),
             value: "Overland".into(),
             comment: None,
         },
         services::sample::Cookie {
-            key: "title".into(),
+            key: "name".into(),
             value: "XCOM 2".into(),
             comment: None,
         },
         services::sample::Cookie {
-            key: "title".into(),
+            key: "name".into(),
             value: "Civilization V".into(),
             comment: None,
         },
@@ -89,7 +96,7 @@ mod benchmarks {
 
     use super::*;
 
-    fn compact_serialize(bench: &mut Bencher) {
+    fn ser_facts(bench: &mut Bencher) {
         let mut buf = Buf::new();
         let tt = get_translation_tables();
         let cookies = get_cookies();
@@ -99,17 +106,46 @@ mod benchmarks {
         });
     }
 
-    fn serde_compact_serialize(bench: &mut Bencher) {
+    fn deser_facts(bench: &mut Bencher) {
+        let mut buf = Buf::new();
+        let tt = get_translation_tables();
+        let cookies = get_cookies();
+        cookies.write(&tt, &mut buf).unwrap();
+
+        bench.iter(|| {
+            let mut slice = &buf[..];
+            let mut r = facts::Reader::new(&mut slice);
+            Vec::<services::sample::Cookie>::read(&mut r).unwrap();
+        });
+    }
+
+    fn ser_serde_index(bench: &mut Bencher) {
         let mut buf = Buf::new();
         let cookies = get_cookies();
         bench.iter(|| {
             buf.consume(buf.len());
             let mut ser = rmp_serde::encode::Serializer::new(&mut buf);
-            serde::Serialize::serialize(&cookies, &mut ser).unwrap();
+            serde::Serialize::serialize(&cookies, &mut ser).unwrap()
         });
     }
 
-    fn serde_named_serialize(bench: &mut Bencher) {
+    fn deser_serde_index(bench: &mut Bencher) {
+        let mut buf = Buf::new();
+        let tt = get_translation_tables();
+        let cookies = get_cookies();
+        {
+            let mut ser = rmp_serde::encode::Serializer::new(&mut buf);
+            serde::Serialize::serialize(&cookies, &mut ser).unwrap();
+        }
+
+        bench.iter(|| {
+            use serde::Deserialize;
+            let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
+            Vec::<services::sample::Cookie>::deserialize(&mut deser).unwrap();
+        });
+    }
+
+    fn ser_serde_named(bench: &mut Bencher) {
         let mut buf = Buf::new();
         let cookies = get_cookies();
         bench.iter(|| {
@@ -119,13 +155,24 @@ mod benchmarks {
         });
     }
 
-    benchmark_group!(
-        serialize,
-        compact_serialize,
-        serde_compact_serialize,
-        serde_named_serialize
-    );
-    benchmark_main!(serialize);
+    fn deser_serde_named(bench: &mut Bencher) {
+        let mut buf = Buf::new();
+        let cookies = get_cookies();
+        {
+            let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
+            serde::Serialize::serialize(&cookies, &mut ser).unwrap();
+        }
+
+        bench.iter(|| {
+            use serde::Deserialize;
+            let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
+            Vec::<services::sample::Cookie>::deserialize(&mut deser).unwrap();
+        });
+    }
+
+    benchmark_group!(ser, ser_facts, ser_serde_index, ser_serde_named);
+    benchmark_group!(deser, deser_facts, deser_serde_index, deser_serde_named,);
+    benchmark_main!(ser, deser);
 
     pub fn run() {
         main();

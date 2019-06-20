@@ -11,7 +11,7 @@ run: build
 
 bench: schema
 	cargo build --release
-	./target/release/lavish-sample
+	RUST_BACKTRACE=full ./target/release/lavish-sample
 
 build: schema
 	cargo build

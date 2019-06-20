@@ -12,6 +12,11 @@ struct Cookie {
     comment: option<string>,
 }
 
+struct Emoji {
+    shortcode: string,
+    image_url: string,
+}
+
 namespace cookies {
     server fn get() -> (cookies: array<Cookie>)
 }
