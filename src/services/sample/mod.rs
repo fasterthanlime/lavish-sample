@@ -7,7 +7,7 @@
 pub use schema::*;
 
 pub mod protocol {
-    #[derive(Debug, Clone, ::lavish::serde_derive::Serialize)]
+    #[derive(::lavish::serde_derive::Serialize, Clone, Debug)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
     pub enum Params {
@@ -64,7 +64,7 @@ pub mod protocol {
         }
     }
 
-    #[derive(Debug, ::lavish::serde_derive::Serialize, Clone)]
+    #[derive(::lavish::serde_derive::Serialize, Clone, Debug)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
     pub enum Results {
@@ -121,7 +121,7 @@ pub mod protocol {
         }
     }
 
-    #[derive(Debug, Clone, ::lavish::serde_derive::Serialize)]
+    #[derive(::lavish::serde_derive::Serialize, Clone, Debug)]
     #[allow(non_camel_case_types, unused)]
     #[serde(untagged)]
     pub enum NotificationParams {}
@@ -163,10 +163,60 @@ pub mod protocol {
         pub phantom: std::marker::PhantomData<(P, R)>,
     }
 
+    use ::lavish::facts::{OffsetList, TranslationTable};
+    pub struct TranslationTables {
+        Cookie: TranslationTable,
+        Emoji: TranslationTable,
+        GetCookies_Params: TranslationTable,
+        GetCookies_Results: TranslationTable,
+        Reverse_Params: TranslationTable,
+        Reverse_Results: TranslationTable,
+        GetUserAgent_Params: TranslationTable,
+        GetUserAgent_Results: TranslationTable,
+        Ping_Params: TranslationTable,
+        Ping_Results: TranslationTable,
+        Ping_Ping_Params: TranslationTable,
+        Ping_Ping_Results: TranslationTable,
+        Cookies_Get_Params: TranslationTable,
+        Cookies_Get_Results: TranslationTable,
+        Universe_Earth_Country_City_NewYork_Params: TranslationTable,
+        Universe_Earth_Country_City_NewYork_Results: TranslationTable,
+        Session_Login_Params: TranslationTable,
+        Session_Login_Results: TranslationTable,
+        Session_Login_SolveTotp_Params: TranslationTable,
+        Session_Login_SolveTotp_Results: TranslationTable,
+    }
+
+    impl TranslationTables {
+        fn identity() -> Self {
+            Self {
+                Cookie: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
+                Emoji: TranslationTable::Mapped(OffsetList(vec![0, 1])),
+                GetCookies_Params: TranslationTable::Mapped(OffsetList(vec![])),
+                GetCookies_Results: TranslationTable::Mapped(OffsetList(vec![0])),
+                Reverse_Params: TranslationTable::Mapped(OffsetList(vec![0])),
+                Reverse_Results: TranslationTable::Mapped(OffsetList(vec![0])),
+                GetUserAgent_Params: TranslationTable::Mapped(OffsetList(vec![])),
+                GetUserAgent_Results: TranslationTable::Mapped(OffsetList(vec![0])),
+                Ping_Params: TranslationTable::Mapped(OffsetList(vec![])),
+                Ping_Results: TranslationTable::Mapped(OffsetList(vec![])),
+                Ping_Ping_Params: TranslationTable::Mapped(OffsetList(vec![])),
+                Ping_Ping_Results: TranslationTable::Mapped(OffsetList(vec![])),
+                Cookies_Get_Params: TranslationTable::Mapped(OffsetList(vec![])),
+                Cookies_Get_Results: TranslationTable::Mapped(OffsetList(vec![0])),
+                Universe_Earth_Country_City_NewYork_Params: TranslationTable::Mapped(OffsetList(vec![])),
+                Universe_Earth_Country_City_NewYork_Results: TranslationTable::Mapped(OffsetList(vec![])),
+                Session_Login_Params: TranslationTable::Mapped(OffsetList(vec![0, 1])),
+                Session_Login_Results: TranslationTable::Mapped(OffsetList(vec![])),
+                Session_Login_SolveTotp_Params: TranslationTable::Mapped(OffsetList(vec![])),
+                Session_Login_SolveTotp_Results: TranslationTable::Mapped(OffsetList(vec![0])),
+            }
+        }
+    }
 }
 
 pub mod schema {
-    #[derive(Clone, ::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Debug)]
+    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
     pub struct Cookie {
         /// The key of the cookie
         pub key: String,
@@ -176,7 +226,7 @@ pub mod schema {
         /// just adding something
         pub comment: Option<String>,
     }
-    #[derive(Debug, Clone, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
     pub struct Emoji {
         pub shortcode: String,
         pub image_url: String,
@@ -189,8 +239,7 @@ pub mod schema {
         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Params {
         }
-
-        #[derive(Clone, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize, Debug)]
+        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Results {
             pub cookies: Vec<super::Cookie>,
         }
@@ -227,12 +276,11 @@ pub mod schema {
         pub fn method() -> super::super::protocol::Slottable<Params, Results> {
             super::super::protocol::Slottable { phantom: std::marker::PhantomData }
         }
-        #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize, Clone)]
+        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Params {
             pub s: String,
         }
-
-        #[derive(Clone, ::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Debug)]
+        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Results {
             pub s: String,
         }
@@ -269,11 +317,10 @@ pub mod schema {
         pub fn method() -> super::super::protocol::Slottable<Params, Results> {
             super::super::protocol::Slottable { phantom: std::marker::PhantomData }
         }
-        #[derive(::lavish::serde_derive::Deserialize, Clone, Debug, ::lavish::serde_derive::Serialize)]
+        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Params {
         }
-
-        #[derive(::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize, Debug, Clone)]
+        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Results {
             pub user_agent: String,
         }
@@ -310,11 +357,10 @@ pub mod schema {
         pub fn method() -> super::super::protocol::Slottable<Params, Results> {
             super::super::protocol::Slottable { phantom: std::marker::PhantomData }
         }
-        #[derive(Clone, Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Params {
         }
-
-        #[derive(Clone, Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Results {
         }
 
@@ -350,11 +396,10 @@ pub mod schema {
             pub fn method() -> super::super::super::protocol::Slottable<Params, Results> {
                 super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
             }
-            #[derive(Clone, Debug, ::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize)]
+            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Params {
             }
-
-            #[derive(Clone, Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize)]
+            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Results {
             }
 
@@ -392,11 +437,10 @@ pub mod schema {
             pub fn method() -> super::super::super::protocol::Slottable<Params, Results> {
                 super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
             }
-            #[derive(Debug, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize, Clone)]
+            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Params {
             }
-
-            #[derive(::lavish::serde_derive::Serialize, Debug, ::lavish::serde_derive::Deserialize, Clone)]
+            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Results {
                 pub cookies: Vec<super::super::Cookie>,
             }
@@ -438,11 +482,10 @@ pub mod schema {
                         pub fn method() -> super::super::super::super::super::super::protocol::Slottable<Params, Results> {
                             super::super::super::super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
                         }
-                        #[derive(Clone, ::lavish::serde_derive::Deserialize, Debug, ::lavish::serde_derive::Serialize)]
+                        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
                         pub struct Params {
                         }
-
-                        #[derive(Clone, Debug, ::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize)]
+                        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
                         pub struct Results {
                         }
 
@@ -483,13 +526,12 @@ pub mod schema {
             pub fn method() -> super::super::super::protocol::Slottable<Params, Results> {
                 super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
             }
-            #[derive(Debug, ::lavish::serde_derive::Deserialize, Clone, ::lavish::serde_derive::Serialize)]
+            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Params {
                 pub username: String,
                 pub password: String,
             }
-
-            #[derive(Debug, Clone, ::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize)]
+            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Results {
             }
 
@@ -525,11 +567,10 @@ pub mod schema {
                 pub fn method() -> super::super::super::super::protocol::Slottable<Params, Results> {
                     super::super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
                 }
-                #[derive(::lavish::serde_derive::Deserialize, Clone, Debug, ::lavish::serde_derive::Serialize)]
+                #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
                 pub struct Params {
                 }
-
-                #[derive(Clone, ::lavish::serde_derive::Serialize, ::lavish::serde_derive::Deserialize, Debug)]
+                #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
                 pub struct Results {
                     pub result: String,
                 }

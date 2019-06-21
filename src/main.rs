@@ -11,9 +11,9 @@ fn main() {
     color_backtrace::install();
     env_logger::init();
 
+    serialize_sample().unwrap();
+    network_sample().unwrap();
     benchmarks::run();
-    // serialize_sample().unwrap();
-    // network_sample().unwrap();
 }
 
 mod facts;
