@@ -188,7 +188,7 @@ pub mod protocol {
     }
 
     impl TranslationTables {
-        fn identity() -> Self {
+        pub fn identity() -> Self {
             Self {
                 Cookie: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
                 Emoji: TranslationTable::Mapped(OffsetList(vec![0, 1])),

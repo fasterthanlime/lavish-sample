@@ -16,15 +16,12 @@ fn main() {
     benchmarks::run();
 }
 
-mod facts;
-use facts::Factual;
+use lavish::facts::{self, Factual};
 use pretty_hex::PrettyHex;
+use services::sample::protocol::TranslationTables;
 
-fn get_translation_tables() -> facts::TranslationTables {
-    facts::TranslationTables {
-        sample__Cookie: facts::TranslationTable::Mapped(facts::OffsetList(vec![0, 1, 2])),
-        sample__Emoji: facts::TranslationTable::Mapped(facts::OffsetList(vec![0, 1])),
-    }
+fn get_translation_tables() -> TranslationTables {
+    TranslationTables::identity()
 }
 
 fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
