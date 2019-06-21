@@ -165,26 +165,26 @@ pub mod protocol {
 
     use ::lavish::facts::{OffsetList, TranslationTable};
     pub struct TranslationTables {
-        Cookie: TranslationTable,
-        Emoji: TranslationTable,
-        GetCookies_Params: TranslationTable,
-        GetCookies_Results: TranslationTable,
-        Reverse_Params: TranslationTable,
-        Reverse_Results: TranslationTable,
-        GetUserAgent_Params: TranslationTable,
-        GetUserAgent_Results: TranslationTable,
-        Ping_Params: TranslationTable,
-        Ping_Results: TranslationTable,
-        Ping_Ping_Params: TranslationTable,
-        Ping_Ping_Results: TranslationTable,
-        Cookies_Get_Params: TranslationTable,
-        Cookies_Get_Results: TranslationTable,
-        Universe_Earth_Country_City_NewYork_Params: TranslationTable,
-        Universe_Earth_Country_City_NewYork_Results: TranslationTable,
-        Session_Login_Params: TranslationTable,
-        Session_Login_Results: TranslationTable,
-        Session_Login_SolveTotp_Params: TranslationTable,
-        Session_Login_SolveTotp_Results: TranslationTable,
+        pub Cookie: TranslationTable,
+        pub Emoji: TranslationTable,
+        pub GetCookies_Params: TranslationTable,
+        pub GetCookies_Results: TranslationTable,
+        pub Reverse_Params: TranslationTable,
+        pub Reverse_Results: TranslationTable,
+        pub GetUserAgent_Params: TranslationTable,
+        pub GetUserAgent_Results: TranslationTable,
+        pub Ping_Params: TranslationTable,
+        pub Ping_Results: TranslationTable,
+        pub Ping_Ping_Params: TranslationTable,
+        pub Ping_Ping_Results: TranslationTable,
+        pub Cookies_Get_Params: TranslationTable,
+        pub Cookies_Get_Results: TranslationTable,
+        pub Universe_Earth_Country_City_NewYork_Params: TranslationTable,
+        pub Universe_Earth_Country_City_NewYork_Results: TranslationTable,
+        pub Session_Login_Params: TranslationTable,
+        pub Session_Login_Results: TranslationTable,
+        pub Session_Login_SolveTotp_Params: TranslationTable,
+        pub Session_Login_SolveTotp_Results: TranslationTable,
     }
 
     impl TranslationTables {
@@ -226,10 +226,64 @@ pub mod schema {
         /// just adding something
         pub comment: Option<String>,
     }
+
+    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Cookie {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            rd.expect_array_len(3)?;
+            Ok(Self {
+                key: Self::subread(rd)?,
+                value: Self::subread(rd)?,
+                comment: Self::subread(rd)?,
+            })
+        }
+
+        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            Self: Sized,
+            W: ::std::io::Write,
+        {
+            tt.Cookie.write(wr, |wr, i| match i {
+                0 => self.key.write(tt, wr),
+                1 => self.value.write(tt, wr),
+                2 => self.comment.write(tt, wr),
+                _ => unreachable!(),
+            })
+        }
+    }
     #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
     pub struct Emoji {
         pub shortcode: String,
         pub image_url: String,
+    }
+
+    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Emoji {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            rd.expect_array_len(2)?;
+            Ok(Self {
+                shortcode: Self::subread(rd)?,
+                image_url: Self::subread(rd)?,
+            })
+        }
+
+        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            Self: Sized,
+            W: ::std::io::Write,
+        {
+            tt.Emoji.write(wr, |wr, i| match i {
+                0 => self.shortcode.write(tt, wr),
+                1 => self.image_url.write(tt, wr),
+                _ => unreachable!(),
+            })
+        }
     }
     pub use get_cookies::method as get_cookies;
     pub mod get_cookies {
@@ -239,9 +293,55 @@ pub mod schema {
         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Params {
         }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(0)?;
+                Ok(Self {
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.GetCookies_Params.write(wr, |wr, i| match i {
+                    _ => unreachable!(),
+                })
+            }
+        }
         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Results {
             pub cookies: Vec<super::Cookie>,
+        }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(1)?;
+                Ok(Self {
+                    cookies: Self::subread(rd)?,
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.GetCookies_Results.write(wr, |wr, i| match i {
+                    0 => self.cookies.write(tt, wr),
+                    _ => unreachable!(),
+                })
+            }
         }
 
         impl super::super::protocol::Callable<Results> for Params {
@@ -280,9 +380,57 @@ pub mod schema {
         pub struct Params {
             pub s: String,
         }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(1)?;
+                Ok(Self {
+                    s: Self::subread(rd)?,
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.Reverse_Params.write(wr, |wr, i| match i {
+                    0 => self.s.write(tt, wr),
+                    _ => unreachable!(),
+                })
+            }
+        }
         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Results {
             pub s: String,
+        }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(1)?;
+                Ok(Self {
+                    s: Self::subread(rd)?,
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.Reverse_Results.write(wr, |wr, i| match i {
+                    0 => self.s.write(tt, wr),
+                    _ => unreachable!(),
+                })
+            }
         }
 
         impl super::super::protocol::Callable<Results> for Params {
@@ -320,9 +468,55 @@ pub mod schema {
         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Params {
         }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(0)?;
+                Ok(Self {
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.GetUserAgent_Params.write(wr, |wr, i| match i {
+                    _ => unreachable!(),
+                })
+            }
+        }
         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Results {
             pub user_agent: String,
+        }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(1)?;
+                Ok(Self {
+                    user_agent: Self::subread(rd)?,
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.GetUserAgent_Results.write(wr, |wr, i| match i {
+                    0 => self.user_agent.write(tt, wr),
+                    _ => unreachable!(),
+                })
+            }
         }
 
         impl super::super::protocol::Callable<Results> for Params {
@@ -360,8 +554,52 @@ pub mod schema {
         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Params {
         }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(0)?;
+                Ok(Self {
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.Ping_Params.write(wr, |wr, i| match i {
+                    _ => unreachable!(),
+                })
+            }
+        }
         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
         pub struct Results {
+        }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(0)?;
+                Ok(Self {
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.Ping_Results.write(wr, |wr, i| match i {
+                    _ => unreachable!(),
+                })
+            }
         }
 
         impl super::super::protocol::Callable<Results> for Params {
@@ -399,8 +637,52 @@ pub mod schema {
             #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Params {
             }
+
+            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Params {
+                fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    R: ::std::io::Read,
+                {
+                    rd.expect_array_len(0)?;
+                    Ok(Self {
+                    })
+                }
+
+                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    W: ::std::io::Write,
+                {
+                    tt.Ping_Ping_Params.write(wr, |wr, i| match i {
+                        _ => unreachable!(),
+                    })
+                }
+            }
             #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Results {
+            }
+
+            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Results {
+                fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    R: ::std::io::Read,
+                {
+                    rd.expect_array_len(0)?;
+                    Ok(Self {
+                    })
+                }
+
+                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    W: ::std::io::Write,
+                {
+                    tt.Ping_Ping_Results.write(wr, |wr, i| match i {
+                        _ => unreachable!(),
+                    })
+                }
             }
 
             impl super::super::super::protocol::Callable<Results> for Params {
@@ -440,9 +722,55 @@ pub mod schema {
             #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Params {
             }
+
+            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Params {
+                fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    R: ::std::io::Read,
+                {
+                    rd.expect_array_len(0)?;
+                    Ok(Self {
+                    })
+                }
+
+                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    W: ::std::io::Write,
+                {
+                    tt.Cookies_Get_Params.write(wr, |wr, i| match i {
+                        _ => unreachable!(),
+                    })
+                }
+            }
             #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Results {
                 pub cookies: Vec<super::super::Cookie>,
+            }
+
+            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Results {
+                fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    R: ::std::io::Read,
+                {
+                    rd.expect_array_len(1)?;
+                    Ok(Self {
+                        cookies: Self::subread(rd)?,
+                    })
+                }
+
+                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    W: ::std::io::Write,
+                {
+                    tt.Cookies_Get_Results.write(wr, |wr, i| match i {
+                        0 => self.cookies.write(tt, wr),
+                        _ => unreachable!(),
+                    })
+                }
             }
 
             impl super::super::super::protocol::Callable<Results> for Params {
@@ -485,8 +813,52 @@ pub mod schema {
                         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
                         pub struct Params {
                         }
+
+                        impl ::lavish::facts::Factual<super::super::super::super::super::super::protocol::TranslationTables> for Params {
+                            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                            where
+                                Self: Sized,
+                                R: ::std::io::Read,
+                            {
+                                rd.expect_array_len(0)?;
+                                Ok(Self {
+                                })
+                            }
+
+                            fn write<W>(&self, tt: &super::super::super::super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                            where
+                                Self: Sized,
+                                W: ::std::io::Write,
+                            {
+                                tt.Universe_Earth_Country_City_NewYork_Params.write(wr, |wr, i| match i {
+                                    _ => unreachable!(),
+                                })
+                            }
+                        }
                         #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
                         pub struct Results {
+                        }
+
+                        impl ::lavish::facts::Factual<super::super::super::super::super::super::protocol::TranslationTables> for Results {
+                            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                            where
+                                Self: Sized,
+                                R: ::std::io::Read,
+                            {
+                                rd.expect_array_len(0)?;
+                                Ok(Self {
+                                })
+                            }
+
+                            fn write<W>(&self, tt: &super::super::super::super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                            where
+                                Self: Sized,
+                                W: ::std::io::Write,
+                            {
+                                tt.Universe_Earth_Country_City_NewYork_Results.write(wr, |wr, i| match i {
+                                    _ => unreachable!(),
+                                })
+                            }
                         }
 
                         impl super::super::super::super::super::super::protocol::Callable<Results> for Params {
@@ -531,8 +903,56 @@ pub mod schema {
                 pub username: String,
                 pub password: String,
             }
+
+            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Params {
+                fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    R: ::std::io::Read,
+                {
+                    rd.expect_array_len(2)?;
+                    Ok(Self {
+                        username: Self::subread(rd)?,
+                        password: Self::subread(rd)?,
+                    })
+                }
+
+                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    W: ::std::io::Write,
+                {
+                    tt.Session_Login_Params.write(wr, |wr, i| match i {
+                        0 => self.username.write(tt, wr),
+                        1 => self.password.write(tt, wr),
+                        _ => unreachable!(),
+                    })
+                }
+            }
             #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
             pub struct Results {
+            }
+
+            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Results {
+                fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    R: ::std::io::Read,
+                {
+                    rd.expect_array_len(0)?;
+                    Ok(Self {
+                    })
+                }
+
+                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                where
+                    Self: Sized,
+                    W: ::std::io::Write,
+                {
+                    tt.Session_Login_Results.write(wr, |wr, i| match i {
+                        _ => unreachable!(),
+                    })
+                }
             }
 
             impl super::super::super::protocol::Callable<Results> for Params {
@@ -570,9 +990,55 @@ pub mod schema {
                 #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
                 pub struct Params {
                 }
+
+                impl ::lavish::facts::Factual<super::super::super::super::protocol::TranslationTables> for Params {
+                    fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                    where
+                        Self: Sized,
+                        R: ::std::io::Read,
+                    {
+                        rd.expect_array_len(0)?;
+                        Ok(Self {
+                        })
+                    }
+
+                    fn write<W>(&self, tt: &super::super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                    where
+                        Self: Sized,
+                        W: ::std::io::Write,
+                    {
+                        tt.Session_Login_SolveTotp_Params.write(wr, |wr, i| match i {
+                            _ => unreachable!(),
+                        })
+                    }
+                }
                 #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
                 pub struct Results {
                     pub result: String,
+                }
+
+                impl ::lavish::facts::Factual<super::super::super::super::protocol::TranslationTables> for Results {
+                    fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+                    where
+                        Self: Sized,
+                        R: ::std::io::Read,
+                    {
+                        rd.expect_array_len(1)?;
+                        Ok(Self {
+                            result: Self::subread(rd)?,
+                        })
+                    }
+
+                    fn write<W>(&self, tt: &super::super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                    where
+                        Self: Sized,
+                        W: ::std::io::Write,
+                    {
+                        tt.Session_Login_SolveTotp_Results.write(wr, |wr, i| match i {
+                            0 => self.result.write(tt, wr),
+                            _ => unreachable!(),
+                        })
+                    }
                 }
 
                 impl super::super::super::super::protocol::Callable<Results> for Params {
