@@ -17,6 +17,27 @@ struct Emoji {
     image_url: string,
 }
 
+struct Container {
+    left: Containee,
+    right: Containee,
+}
+
+struct Containee {
+    name: string,
+    scores: array<i64>,
+}
+
+struct AllIntegers {
+    field_i8: i8,
+    field_i16: i16,
+    field_i32: i32,
+    field_i64: i64,
+    field_u8: u8,
+    field_u16: u16,
+    field_u32: u32,
+    field_u64: u64,
+}
+
 namespace cookies {
     server fn get() -> (cookies: array<Cookie>)
 }

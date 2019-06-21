@@ -167,6 +167,9 @@ pub mod protocol {
     pub struct TranslationTables {
         pub Cookie: TranslationTable,
         pub Emoji: TranslationTable,
+        pub Container: TranslationTable,
+        pub Containee: TranslationTable,
+        pub AllIntegers: TranslationTable,
         pub GetCookies_Params: TranslationTable,
         pub GetCookies_Results: TranslationTable,
         pub Reverse_Params: TranslationTable,
@@ -192,6 +195,9 @@ pub mod protocol {
             Self {
                 Cookie: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
                 Emoji: TranslationTable::Mapped(OffsetList(vec![0, 1])),
+                Container: TranslationTable::Mapped(OffsetList(vec![0, 1])),
+                Containee: TranslationTable::Mapped(OffsetList(vec![0, 1])),
+                AllIntegers: TranslationTable::Mapped(OffsetList(vec![0, 1, 2, 3, 4, 5, 6, 7])),
                 GetCookies_Params: TranslationTable::Mapped(OffsetList(vec![])),
                 GetCookies_Results: TranslationTable::Mapped(OffsetList(vec![0])),
                 Reverse_Params: TranslationTable::Mapped(OffsetList(vec![0])),
@@ -281,6 +287,117 @@ pub mod schema {
             tt.Emoji.write(wr, |wr, i| match i {
                 0 => self.shortcode.write(tt, wr),
                 1 => self.image_url.write(tt, wr),
+                _ => unreachable!(),
+            })
+        }
+    }
+    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    pub struct Container {
+        pub left: Containee,
+        pub right: Containee,
+    }
+
+    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Container {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            rd.expect_array_len(2)?;
+            Ok(Self {
+                left: Self::subread(rd)?,
+                right: Self::subread(rd)?,
+            })
+        }
+
+        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            Self: Sized,
+            W: ::std::io::Write,
+        {
+            tt.Container.write(wr, |wr, i| match i {
+                0 => self.left.write(tt, wr),
+                1 => self.right.write(tt, wr),
+                _ => unreachable!(),
+            })
+        }
+    }
+    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    pub struct Containee {
+        pub name: String,
+        pub scores: Vec<i64>,
+    }
+
+    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Containee {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            rd.expect_array_len(2)?;
+            Ok(Self {
+                name: Self::subread(rd)?,
+                scores: Self::subread(rd)?,
+            })
+        }
+
+        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            Self: Sized,
+            W: ::std::io::Write,
+        {
+            tt.Containee.write(wr, |wr, i| match i {
+                0 => self.name.write(tt, wr),
+                1 => self.scores.write(tt, wr),
+                _ => unreachable!(),
+            })
+        }
+    }
+    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    pub struct AllIntegers {
+        pub field_i8: i8,
+        pub field_i16: i16,
+        pub field_i32: i32,
+        pub field_i64: i64,
+        pub field_u8: u8,
+        pub field_u16: u16,
+        pub field_u32: u32,
+        pub field_u64: u64,
+    }
+
+    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for AllIntegers {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            rd.expect_array_len(8)?;
+            Ok(Self {
+                field_i8: Self::subread(rd)?,
+                field_i16: Self::subread(rd)?,
+                field_i32: Self::subread(rd)?,
+                field_i64: Self::subread(rd)?,
+                field_u8: Self::subread(rd)?,
+                field_u16: Self::subread(rd)?,
+                field_u32: Self::subread(rd)?,
+                field_u64: Self::subread(rd)?,
+            })
+        }
+
+        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            Self: Sized,
+            W: ::std::io::Write,
+        {
+            tt.AllIntegers.write(wr, |wr, i| match i {
+                0 => self.field_i8.write(tt, wr),
+                1 => self.field_i16.write(tt, wr),
+                2 => self.field_i32.write(tt, wr),
+                3 => self.field_i64.write(tt, wr),
+                4 => self.field_u8.write(tt, wr),
+                5 => self.field_u16.write(tt, wr),
+                6 => self.field_u32.write(tt, wr),
+                7 => self.field_u64.write(tt, wr),
                 _ => unreachable!(),
             })
         }
