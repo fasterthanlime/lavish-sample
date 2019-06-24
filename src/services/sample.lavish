@@ -27,6 +27,17 @@ struct Containee {
     scores: array<i64>,
 }
 
+enum Mood {
+    Good,
+    Meh,
+    Bad,
+}
+
+struct MoodRecord {
+    day: timestamp,
+    mood: Mood,
+}
+
 struct AllIntegers {
     field_i8: i8,
     field_i16: i16,

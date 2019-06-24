@@ -7,11 +7,6 @@ mod server;
 
 use std::error::Error;
 
-#[derive(Debug, Clone)]
-pub struct Dumb {}
-
-impl lavish::Atom for Dumb {}
-
 fn main() {
     color_backtrace::install();
     env_logger::init();
@@ -19,10 +14,6 @@ fn main() {
     serialize_sample().unwrap();
     network_sample().unwrap();
     benchmarks::run();
-
-    let s: std::net::TcpStream = std::mem::uninitialized();
-    let encoder = lavish::Encoder::<(), (), (), std::net::TcpStream>::new(s);
-    let s = encoder.into_inner();
 }
 
 use lavish::facts::{self, Factual};

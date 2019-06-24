@@ -165,10 +165,12 @@ pub mod protocol {
 
     use ::lavish::facts::{OffsetList, TranslationTable};
     pub struct TranslationTables {
+        // structs
         pub Cookie: TranslationTable,
         pub Emoji: TranslationTable,
         pub Container: TranslationTable,
         pub Containee: TranslationTable,
+        pub MoodRecord: TranslationTable,
         pub AllIntegers: TranslationTable,
         pub Bools: TranslationTable,
         pub AllComplex: TranslationTable,
@@ -190,15 +192,19 @@ pub mod protocol {
         pub Session_Login_Results: TranslationTable,
         pub Session_Login_SolveTotp_Params: TranslationTable,
         pub Session_Login_SolveTotp_Results: TranslationTable,
+        // enums
+        pub Mood: TranslationTable,
     }
 
     impl TranslationTables {
         pub fn identity() -> Self {
             Self {
+                // structs
                 Cookie: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
                 Emoji: TranslationTable::Mapped(OffsetList(vec![0, 1])),
                 Container: TranslationTable::Mapped(OffsetList(vec![0, 1])),
                 Containee: TranslationTable::Mapped(OffsetList(vec![0, 1])),
+                MoodRecord: TranslationTable::Mapped(OffsetList(vec![0, 1])),
                 AllIntegers: TranslationTable::Mapped(OffsetList(vec![0, 1, 2, 3, 4, 5, 6, 7])),
                 Bools: TranslationTable::Mapped(OffsetList(vec![0])),
                 AllComplex: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
@@ -220,6 +226,8 @@ pub mod protocol {
                 Session_Login_Results: TranslationTable::Mapped(OffsetList(vec![])),
                 Session_Login_SolveTotp_Params: TranslationTable::Mapped(OffsetList(vec![])),
                 Session_Login_SolveTotp_Results: TranslationTable::Mapped(OffsetList(vec![0])),
+                // enums
+                Mood: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
             }
         }
     }
@@ -358,6 +366,37 @@ pub mod schema {
         }
     }
     #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    pub struct MoodRecord {
+        pub day: ::lavish::chrono::DateTime<::lavish::chrono::offset::Utc>,
+        pub mood: Mood,
+    }
+
+    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for MoodRecord {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            rd.expect_array_len(2)?;
+            Ok(Self {
+                day: Self::subread(rd)?,
+                mood: Self::subread(rd)?,
+            })
+        }
+
+        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            Self: Sized,
+            W: ::std::io::Write,
+        {
+            tt.MoodRecord.write(wr, |wr, i| match i {
+                0 => self.day.write(tt, wr),
+                1 => self.mood.write(tt, wr),
+                _ => unreachable!(),
+            })
+        }
+    }
+    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
     pub struct AllIntegers {
         pub field_i8: i8,
         pub field_i16: i16,
@@ -466,6 +505,43 @@ pub mod schema {
                 2 => self.field_map.write(tt, wr),
                 _ => unreachable!(),
             })
+        }
+    }
+    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Copy, Debug)]
+    #[repr(u32)]
+    pub enum Mood {
+        Good = 0,
+        Meh = 1,
+        Bad = 2,
+    }
+
+    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Mood {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            let value: u32 = rd.read_int()?;
+            use Mood as E;
+            Ok(match value {
+                0 => E::Good,
+                1 => E::Meh,
+                2 => E::Bad,
+                _ => return Err(::lavish::facts::Error::IncompatibleSchema(format!("Received unrecognized enum variant for Mood: {:#?}", value))),
+            })
+        }
+
+        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            Self: Sized,
+            W: ::std::io::Write,
+        {
+            let offsets = tt.Mood.validate()?;
+            match offsets.get(*self as usize)
+            {
+                Some(value) => value.write(tt, wr),
+                None => Err(::lavish::facts::Error::IncompatibleSchema(format!("Enum variant for Mood not known by the peer: {:#?}", self))),
+            }
         }
     }
     pub use get_cookies::method as get_cookies;
