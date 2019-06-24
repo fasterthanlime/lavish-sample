@@ -7,9 +7,8 @@
 pub use schema::*;
 
 pub mod protocol {
-    #[derive(::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     #[allow(non_camel_case_types, unused)]
-    #[serde(untagged)]
     pub enum Params {
         GetCookies(super::schema::get_cookies::Params),
         Reverse(super::schema::reverse::Params),
@@ -37,40 +36,53 @@ pub mod protocol {
                 Params::Session_Login(_) => "session.login",
             }
         }
-        fn deserialize(method: &str, de: &mut ::lavish::erased_serde::Deserializer) -> ::lavish::erased_serde::Result<Self> {
-            use ::lavish::erased_serde::deserialize as __DS;
-            use ::lavish::serde::de::Error;
-
-            match method {
-                "get_cookies" => 
-                    Ok(Params::GetCookies(__DS::<super::schema::get_cookies::Params>(de)?)),
-                "reverse" => 
-                    Ok(Params::Reverse(__DS::<super::schema::reverse::Params>(de)?)),
-                "get_user_agent" => 
-                    Ok(Params::GetUserAgent(__DS::<super::schema::get_user_agent::Params>(de)?)),
-                "ping.ping" => 
-                    Ok(Params::Ping_Ping(__DS::<super::schema::ping::ping::Params>(de)?)),
-                "ping" => 
-                    Ok(Params::Ping(__DS::<super::schema::ping::Params>(de)?)),
-                "record_mood" => 
-                    Ok(Params::RecordMood(__DS::<super::schema::record_mood::Params>(de)?)),
-                "cookies.get" => 
-                    Ok(Params::Cookies_Get(__DS::<super::schema::cookies::get::Params>(de)?)),
-                "universe.earth.country.city.new_york" => 
-                    Ok(Params::Universe_Earth_Country_City_NewYork(__DS::<super::schema::universe::earth::country::city::new_york::Params>(de)?)),
-                "session.login.solve_totp" => 
-                    Ok(Params::Session_Login_SolveTotp(__DS::<super::schema::session::login::solve_totp::Params>(de)?)),
-                "session.login" => 
-                    Ok(Params::Session_Login(__DS::<super::schema::session::login::Params>(de)?)),
-                _ =>
-                    Err(::lavish::erased_serde::Error::custom(format!("unknown method: {}", method))),
+    }
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for Params {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            let len = rd.read_array_len()?;
+            if len != 2 {
+                unreachable!();
             }
+            let typ: u32 = rd.read_int()?;
+            match typ {
+                0 => 
+                Ok(Params::GetCookies(Self::subread()?))
+                1 => 
+                Ok(Params::Reverse(Self::subread()?))
+                2 => 
+                Ok(Params::GetUserAgent(Self::subread()?))
+                3 => 
+                Ok(Params::Ping_Ping(Self::subread()?))
+                4 => 
+                Ok(Params::Ping(Self::subread()?))
+                5 => 
+                Ok(Params::RecordMood(Self::subread()?))
+                6 => 
+                Ok(Params::Cookies_Get(Self::subread()?))
+                7 => 
+                Ok(Params::Universe_Earth_Country_City_NewYork(Self::subread()?))
+                8 => 
+                Ok(Params::Session_Login_SolveTotp(Self::subread()?))
+                9 => 
+                Ok(Params::Session_Login(Self::subread()?))
+                _ => unreachable!(),
+            }
+        }
+
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            W: ::std::io::Write,
+        {
+            unimplemented!()
         }
     }
 
-    #[derive(::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     #[allow(non_camel_case_types, unused)]
-    #[serde(untagged)]
     pub enum Results {
         GetCookies(super::schema::get_cookies::Results),
         Reverse(super::schema::reverse::Results),
@@ -98,53 +110,80 @@ pub mod protocol {
                 Results::Session_Login(_) => "session.login",
             }
         }
-        fn deserialize(method: &str, de: &mut ::lavish::erased_serde::Deserializer) -> ::lavish::erased_serde::Result<Self> {
-            use ::lavish::erased_serde::deserialize as __DS;
-            use ::lavish::serde::de::Error;
-
-            match method {
-                "get_cookies" => 
-                    Ok(Results::GetCookies(__DS::<super::schema::get_cookies::Results>(de)?)),
-                "reverse" => 
-                    Ok(Results::Reverse(__DS::<super::schema::reverse::Results>(de)?)),
-                "get_user_agent" => 
-                    Ok(Results::GetUserAgent(__DS::<super::schema::get_user_agent::Results>(de)?)),
-                "ping.ping" => 
-                    Ok(Results::Ping_Ping(__DS::<super::schema::ping::ping::Results>(de)?)),
-                "ping" => 
-                    Ok(Results::Ping(__DS::<super::schema::ping::Results>(de)?)),
-                "record_mood" => 
-                    Ok(Results::RecordMood(__DS::<super::schema::record_mood::Results>(de)?)),
-                "cookies.get" => 
-                    Ok(Results::Cookies_Get(__DS::<super::schema::cookies::get::Results>(de)?)),
-                "universe.earth.country.city.new_york" => 
-                    Ok(Results::Universe_Earth_Country_City_NewYork(__DS::<super::schema::universe::earth::country::city::new_york::Results>(de)?)),
-                "session.login.solve_totp" => 
-                    Ok(Results::Session_Login_SolveTotp(__DS::<super::schema::session::login::solve_totp::Results>(de)?)),
-                "session.login" => 
-                    Ok(Results::Session_Login(__DS::<super::schema::session::login::Results>(de)?)),
-                _ =>
-                    Err(::lavish::erased_serde::Error::custom(format!("unknown method: {}", method))),
+    }
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for Results {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            let len = rd.read_array_len()?;
+            if len != 2 {
+                unreachable!();
             }
+            let typ: u32 = rd.read_int()?;
+            match typ {
+                0 => 
+                Ok(Results::GetCookies(Self::subread()?))
+                1 => 
+                Ok(Results::Reverse(Self::subread()?))
+                2 => 
+                Ok(Results::GetUserAgent(Self::subread()?))
+                3 => 
+                Ok(Results::Ping_Ping(Self::subread()?))
+                4 => 
+                Ok(Results::Ping(Self::subread()?))
+                5 => 
+                Ok(Results::RecordMood(Self::subread()?))
+                6 => 
+                Ok(Results::Cookies_Get(Self::subread()?))
+                7 => 
+                Ok(Results::Universe_Earth_Country_City_NewYork(Self::subread()?))
+                8 => 
+                Ok(Results::Session_Login_SolveTotp(Self::subread()?))
+                9 => 
+                Ok(Results::Session_Login(Self::subread()?))
+                _ => unreachable!(),
+            }
+        }
+
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            W: ::std::io::Write,
+        {
+            unimplemented!()
         }
     }
 
-    #[derive(::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     #[allow(non_camel_case_types, unused)]
-    #[serde(untagged)]
     pub enum NotificationParams {}
     impl ::lavish::Atom for NotificationParams {
         fn method(&self) -> &'static str {
             panic!("no variants for NotificationParams")
         }
-        fn deserialize(method: &str, de: &mut ::lavish::erased_serde::Deserializer) -> ::lavish::erased_serde::Result<Self> {
-            use ::lavish::erased_serde::deserialize as __DS;
-            use ::lavish::serde::de::Error;
-
-            match method {
-                _ =>
-                    Err(::lavish::erased_serde::Error::custom(format!("unknown method: {}", method))),
+    }
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for NotificationParams {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            let len = rd.read_array_len()?;
+            if len != 2 {
+                unreachable!();
             }
+            let typ: u32 = rd.read_int()?;
+            match typ {
+                _ => unreachable!(),
+            }
+        }
+
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            W: ::std::io::Write,
+        {
+            unimplemented!()
         }
     }
 
@@ -171,82 +210,82 @@ pub mod protocol {
         pub phantom: std::marker::PhantomData<(P, R)>,
     }
 
-    use ::lavish::facts::{OffsetList, TranslationTable};
-    pub struct TranslationTables {
+    use ::lavish::facts::{OffsetList, TypeMapping};
+    pub struct ProtocolMapping {
         // structs
-        pub Cookie: TranslationTable,
-        pub Emoji: TranslationTable,
-        pub Container: TranslationTable,
-        pub Containee: TranslationTable,
-        pub MoodRecord: TranslationTable,
-        pub AllIntegers: TranslationTable,
-        pub Bools: TranslationTable,
-        pub AllComplex: TranslationTable,
-        pub GetCookies_Params: TranslationTable,
-        pub GetCookies_Results: TranslationTable,
-        pub Reverse_Params: TranslationTable,
-        pub Reverse_Results: TranslationTable,
-        pub GetUserAgent_Params: TranslationTable,
-        pub GetUserAgent_Results: TranslationTable,
-        pub Ping_Params: TranslationTable,
-        pub Ping_Results: TranslationTable,
-        pub Ping_Ping_Params: TranslationTable,
-        pub Ping_Ping_Results: TranslationTable,
-        pub RecordMood_Params: TranslationTable,
-        pub RecordMood_Results: TranslationTable,
-        pub Cookies_Get_Params: TranslationTable,
-        pub Cookies_Get_Results: TranslationTable,
-        pub Universe_Earth_Country_City_NewYork_Params: TranslationTable,
-        pub Universe_Earth_Country_City_NewYork_Results: TranslationTable,
-        pub Session_Login_Params: TranslationTable,
-        pub Session_Login_Results: TranslationTable,
-        pub Session_Login_SolveTotp_Params: TranslationTable,
-        pub Session_Login_SolveTotp_Results: TranslationTable,
+        pub Cookie: TypeMapping,
+        pub Emoji: TypeMapping,
+        pub Container: TypeMapping,
+        pub Containee: TypeMapping,
+        pub MoodRecord: TypeMapping,
+        pub AllIntegers: TypeMapping,
+        pub Bools: TypeMapping,
+        pub AllComplex: TypeMapping,
+        pub GetCookies_Params: TypeMapping,
+        pub GetCookies_Results: TypeMapping,
+        pub Reverse_Params: TypeMapping,
+        pub Reverse_Results: TypeMapping,
+        pub GetUserAgent_Params: TypeMapping,
+        pub GetUserAgent_Results: TypeMapping,
+        pub Ping_Params: TypeMapping,
+        pub Ping_Results: TypeMapping,
+        pub Ping_Ping_Params: TypeMapping,
+        pub Ping_Ping_Results: TypeMapping,
+        pub RecordMood_Params: TypeMapping,
+        pub RecordMood_Results: TypeMapping,
+        pub Cookies_Get_Params: TypeMapping,
+        pub Cookies_Get_Results: TypeMapping,
+        pub Universe_Earth_Country_City_NewYork_Params: TypeMapping,
+        pub Universe_Earth_Country_City_NewYork_Results: TypeMapping,
+        pub Session_Login_Params: TypeMapping,
+        pub Session_Login_Results: TypeMapping,
+        pub Session_Login_SolveTotp_Params: TypeMapping,
+        pub Session_Login_SolveTotp_Results: TypeMapping,
         // enums
-        pub Mood: TranslationTable,
+        pub Mood: TypeMapping,
     }
 
-    impl TranslationTables {
-        pub fn identity() -> Self {
+    impl Default for ProtocolMapping {
+        pub fn default() -> Self {
             Self {
                 // structs
-                Cookie: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
-                Emoji: TranslationTable::Mapped(OffsetList(vec![0, 1])),
-                Container: TranslationTable::Mapped(OffsetList(vec![0, 1])),
-                Containee: TranslationTable::Mapped(OffsetList(vec![0, 1])),
-                MoodRecord: TranslationTable::Mapped(OffsetList(vec![0, 1])),
-                AllIntegers: TranslationTable::Mapped(OffsetList(vec![0, 1, 2, 3, 4, 5, 6, 7])),
-                Bools: TranslationTable::Mapped(OffsetList(vec![0])),
-                AllComplex: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
-                GetCookies_Params: TranslationTable::Mapped(OffsetList(vec![])),
-                GetCookies_Results: TranslationTable::Mapped(OffsetList(vec![0])),
-                Reverse_Params: TranslationTable::Mapped(OffsetList(vec![0])),
-                Reverse_Results: TranslationTable::Mapped(OffsetList(vec![0])),
-                GetUserAgent_Params: TranslationTable::Mapped(OffsetList(vec![])),
-                GetUserAgent_Results: TranslationTable::Mapped(OffsetList(vec![0])),
-                Ping_Params: TranslationTable::Mapped(OffsetList(vec![])),
-                Ping_Results: TranslationTable::Mapped(OffsetList(vec![])),
-                Ping_Ping_Params: TranslationTable::Mapped(OffsetList(vec![])),
-                Ping_Ping_Results: TranslationTable::Mapped(OffsetList(vec![])),
-                RecordMood_Params: TranslationTable::Mapped(OffsetList(vec![0])),
-                RecordMood_Results: TranslationTable::Mapped(OffsetList(vec![])),
-                Cookies_Get_Params: TranslationTable::Mapped(OffsetList(vec![])),
-                Cookies_Get_Results: TranslationTable::Mapped(OffsetList(vec![0])),
-                Universe_Earth_Country_City_NewYork_Params: TranslationTable::Mapped(OffsetList(vec![])),
-                Universe_Earth_Country_City_NewYork_Results: TranslationTable::Mapped(OffsetList(vec![])),
-                Session_Login_Params: TranslationTable::Mapped(OffsetList(vec![0, 1])),
-                Session_Login_Results: TranslationTable::Mapped(OffsetList(vec![])),
-                Session_Login_SolveTotp_Params: TranslationTable::Mapped(OffsetList(vec![])),
-                Session_Login_SolveTotp_Results: TranslationTable::Mapped(OffsetList(vec![0])),
+                Cookie: TypeMapping::Mapped(OffsetList(vec![0, 1, 2])),
+                Emoji: TypeMapping::Mapped(OffsetList(vec![0, 1])),
+                Container: TypeMapping::Mapped(OffsetList(vec![0, 1])),
+                Containee: TypeMapping::Mapped(OffsetList(vec![0, 1])),
+                MoodRecord: TypeMapping::Mapped(OffsetList(vec![0, 1])),
+                AllIntegers: TypeMapping::Mapped(OffsetList(vec![0, 1, 2, 3, 4, 5, 6, 7])),
+                Bools: TypeMapping::Mapped(OffsetList(vec![0])),
+                AllComplex: TypeMapping::Mapped(OffsetList(vec![0, 1, 2])),
+                GetCookies_Params: TypeMapping::Mapped(OffsetList(vec![])),
+                GetCookies_Results: TypeMapping::Mapped(OffsetList(vec![0])),
+                Reverse_Params: TypeMapping::Mapped(OffsetList(vec![0])),
+                Reverse_Results: TypeMapping::Mapped(OffsetList(vec![0])),
+                GetUserAgent_Params: TypeMapping::Mapped(OffsetList(vec![])),
+                GetUserAgent_Results: TypeMapping::Mapped(OffsetList(vec![0])),
+                Ping_Params: TypeMapping::Mapped(OffsetList(vec![])),
+                Ping_Results: TypeMapping::Mapped(OffsetList(vec![])),
+                Ping_Ping_Params: TypeMapping::Mapped(OffsetList(vec![])),
+                Ping_Ping_Results: TypeMapping::Mapped(OffsetList(vec![])),
+                RecordMood_Params: TypeMapping::Mapped(OffsetList(vec![0])),
+                RecordMood_Results: TypeMapping::Mapped(OffsetList(vec![])),
+                Cookies_Get_Params: TypeMapping::Mapped(OffsetList(vec![])),
+                Cookies_Get_Results: TypeMapping::Mapped(OffsetList(vec![0])),
+                Universe_Earth_Country_City_NewYork_Params: TypeMapping::Mapped(OffsetList(vec![])),
+                Universe_Earth_Country_City_NewYork_Results: TypeMapping::Mapped(OffsetList(vec![])),
+                Session_Login_Params: TypeMapping::Mapped(OffsetList(vec![0, 1])),
+                Session_Login_Results: TypeMapping::Mapped(OffsetList(vec![])),
+                Session_Login_SolveTotp_Params: TypeMapping::Mapped(OffsetList(vec![])),
+                Session_Login_SolveTotp_Results: TypeMapping::Mapped(OffsetList(vec![0])),
                 // enums
-                Mood: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
+                Mood: TypeMapping::Mapped(OffsetList(vec![0, 1, 2])),
             }
         }
     }
 }
 
 pub mod schema {
-    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     pub struct Cookie {
         /// The key of the cookie
         pub key: String,
@@ -257,7 +296,7 @@ pub mod schema {
         pub comment: Option<String>,
     }
 
-    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Cookie {
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for Cookie {
         fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
         where
             Self: Sized,
@@ -271,26 +310,25 @@ pub mod schema {
             })
         }
 
-        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
         where
-            Self: Sized,
             W: ::std::io::Write,
         {
-            tt.Cookie.write(wr, |wr, i| match i {
-                0 => self.key.write(tt, wr),
-                1 => self.value.write(tt, wr),
-                2 => self.comment.write(tt, wr),
+            mapping.Cookie.write(wr, |wr, i| match i {
+                0 => self.key.write(mapping, wr),
+                1 => self.value.write(mapping, wr),
+                2 => self.comment.write(mapping, wr),
                 _ => unreachable!(),
             })
         }
     }
-    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     pub struct Emoji {
         pub shortcode: String,
         pub image_url: String,
     }
 
-    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Emoji {
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for Emoji {
         fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
         where
             Self: Sized,
@@ -303,25 +341,24 @@ pub mod schema {
             })
         }
 
-        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
         where
-            Self: Sized,
             W: ::std::io::Write,
         {
-            tt.Emoji.write(wr, |wr, i| match i {
-                0 => self.shortcode.write(tt, wr),
-                1 => self.image_url.write(tt, wr),
+            mapping.Emoji.write(wr, |wr, i| match i {
+                0 => self.shortcode.write(mapping, wr),
+                1 => self.image_url.write(mapping, wr),
                 _ => unreachable!(),
             })
         }
     }
-    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     pub struct Container {
         pub left: Containee,
         pub right: Containee,
     }
 
-    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Container {
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for Container {
         fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
         where
             Self: Sized,
@@ -334,25 +371,24 @@ pub mod schema {
             })
         }
 
-        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
         where
-            Self: Sized,
             W: ::std::io::Write,
         {
-            tt.Container.write(wr, |wr, i| match i {
-                0 => self.left.write(tt, wr),
-                1 => self.right.write(tt, wr),
+            mapping.Container.write(wr, |wr, i| match i {
+                0 => self.left.write(mapping, wr),
+                1 => self.right.write(mapping, wr),
                 _ => unreachable!(),
             })
         }
     }
-    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     pub struct Containee {
         pub name: String,
         pub scores: Vec<i64>,
     }
 
-    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Containee {
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for Containee {
         fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
         where
             Self: Sized,
@@ -365,25 +401,24 @@ pub mod schema {
             })
         }
 
-        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
         where
-            Self: Sized,
             W: ::std::io::Write,
         {
-            tt.Containee.write(wr, |wr, i| match i {
-                0 => self.name.write(tt, wr),
-                1 => self.scores.write(tt, wr),
+            mapping.Containee.write(wr, |wr, i| match i {
+                0 => self.name.write(mapping, wr),
+                1 => self.scores.write(mapping, wr),
                 _ => unreachable!(),
             })
         }
     }
-    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     pub struct MoodRecord {
         pub day: ::lavish::chrono::DateTime<::lavish::chrono::offset::Utc>,
         pub mood: Mood,
     }
 
-    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for MoodRecord {
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for MoodRecord {
         fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
         where
             Self: Sized,
@@ -396,19 +431,18 @@ pub mod schema {
             })
         }
 
-        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
         where
-            Self: Sized,
             W: ::std::io::Write,
         {
-            tt.MoodRecord.write(wr, |wr, i| match i {
-                0 => self.day.write(tt, wr),
-                1 => self.mood.write(tt, wr),
+            mapping.MoodRecord.write(wr, |wr, i| match i {
+                0 => self.day.write(mapping, wr),
+                1 => self.mood.write(mapping, wr),
                 _ => unreachable!(),
             })
         }
     }
-    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     pub struct AllIntegers {
         pub field_i8: i8,
         pub field_i16: i16,
@@ -420,7 +454,7 @@ pub mod schema {
         pub field_u64: u64,
     }
 
-    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for AllIntegers {
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for AllIntegers {
         fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
         where
             Self: Sized,
@@ -439,30 +473,29 @@ pub mod schema {
             })
         }
 
-        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
         where
-            Self: Sized,
             W: ::std::io::Write,
         {
-            tt.AllIntegers.write(wr, |wr, i| match i {
-                0 => self.field_i8.write(tt, wr),
-                1 => self.field_i16.write(tt, wr),
-                2 => self.field_i32.write(tt, wr),
-                3 => self.field_i64.write(tt, wr),
-                4 => self.field_u8.write(tt, wr),
-                5 => self.field_u16.write(tt, wr),
-                6 => self.field_u32.write(tt, wr),
-                7 => self.field_u64.write(tt, wr),
+            mapping.AllIntegers.write(wr, |wr, i| match i {
+                0 => self.field_i8.write(mapping, wr),
+                1 => self.field_i16.write(mapping, wr),
+                2 => self.field_i32.write(mapping, wr),
+                3 => self.field_i64.write(mapping, wr),
+                4 => self.field_u8.write(mapping, wr),
+                5 => self.field_u16.write(mapping, wr),
+                6 => self.field_u32.write(mapping, wr),
+                7 => self.field_u64.write(mapping, wr),
                 _ => unreachable!(),
             })
         }
     }
-    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     pub struct Bools {
         pub field_bool: bool,
     }
 
-    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Bools {
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for Bools {
         fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
         where
             Self: Sized,
@@ -474,25 +507,24 @@ pub mod schema {
             })
         }
 
-        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
         where
-            Self: Sized,
             W: ::std::io::Write,
         {
-            tt.Bools.write(wr, |wr, i| match i {
-                0 => self.field_bool.write(tt, wr),
+            mapping.Bools.write(wr, |wr, i| match i {
+                0 => self.field_bool.write(mapping, wr),
                 _ => unreachable!(),
             })
         }
     }
-    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    #[derive(Clone, Debug)]
     pub struct AllComplex {
         pub field_array: Vec<i64>,
         pub field_option: Option<i64>,
         pub field_map: ::std::collections::HashMap<i64, i64>,
     }
 
-    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for AllComplex {
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for AllComplex {
         fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
         where
             Self: Sized,
@@ -506,20 +538,19 @@ pub mod schema {
             })
         }
 
-        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
         where
-            Self: Sized,
             W: ::std::io::Write,
         {
-            tt.AllComplex.write(wr, |wr, i| match i {
-                0 => self.field_array.write(tt, wr),
-                1 => self.field_option.write(tt, wr),
-                2 => self.field_map.write(tt, wr),
+            mapping.AllComplex.write(wr, |wr, i| match i {
+                0 => self.field_array.write(mapping, wr),
+                1 => self.field_option.write(mapping, wr),
+                2 => self.field_map.write(mapping, wr),
                 _ => unreachable!(),
             })
         }
     }
-    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Copy, Debug)]
+    #[derive(Clone, Copy, Debug)]
     #[repr(u32)]
     pub enum Mood {
         Good = 0,
@@ -527,7 +558,7 @@ pub mod schema {
         Bad = 2,
     }
 
-    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Mood {
+    impl ::lavish::facts::Factual<super::protocol::ProtocolMapping> for Mood {
         fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
         where
             Self: Sized,
@@ -543,15 +574,15 @@ pub mod schema {
             })
         }
 
-        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        fn write<W>(&self, mapping: &super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
         where
             Self: Sized,
             W: ::std::io::Write,
         {
-            let offsets = tt.Mood.validate()?;
+            let offsets = mapping.Mood.validate()?;
             match offsets.get(*self as usize)
             {
-                Some(value) => value.write(tt, wr),
+                Some(value) => value.write(mapping, wr),
                 None => Err(::lavish::facts::Error::IncompatibleSchema(format!("Enum variant for Mood not known by the peer: {:#?}", self))),
             }
         }
@@ -561,11 +592,11 @@ pub mod schema {
         pub fn method() -> super::super::protocol::Slottable<Params, Results> {
             super::super::protocol::Slottable { phantom: std::marker::PhantomData }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Params {
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Params {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -576,22 +607,21 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.GetCookies_Params.write(wr, |wr, i| match i {
+                mapping.GetCookies_Params.write(wr, |wr, i| match i {
                     _ => unreachable!(),
                 })
             }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Results {
             pub cookies: Vec<super::Cookie>,
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Results {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -603,13 +633,12 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.GetCookies_Results.write(wr, |wr, i| match i {
-                    0 => self.cookies.write(tt, wr),
+                mapping.GetCookies_Results.write(wr, |wr, i| match i {
+                    0 => self.cookies.write(mapping, wr),
                     _ => unreachable!(),
                 })
             }
@@ -647,12 +676,12 @@ pub mod schema {
         pub fn method() -> super::super::protocol::Slottable<Params, Results> {
             super::super::protocol::Slottable { phantom: std::marker::PhantomData }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Params {
             pub s: String,
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Params {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -664,23 +693,22 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.Reverse_Params.write(wr, |wr, i| match i {
-                    0 => self.s.write(tt, wr),
+                mapping.Reverse_Params.write(wr, |wr, i| match i {
+                    0 => self.s.write(mapping, wr),
                     _ => unreachable!(),
                 })
             }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Results {
             pub s: String,
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Results {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -692,13 +720,12 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.Reverse_Results.write(wr, |wr, i| match i {
-                    0 => self.s.write(tt, wr),
+                mapping.Reverse_Results.write(wr, |wr, i| match i {
+                    0 => self.s.write(mapping, wr),
                     _ => unreachable!(),
                 })
             }
@@ -736,11 +763,11 @@ pub mod schema {
         pub fn method() -> super::super::protocol::Slottable<Params, Results> {
             super::super::protocol::Slottable { phantom: std::marker::PhantomData }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Params {
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Params {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -751,22 +778,21 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.GetUserAgent_Params.write(wr, |wr, i| match i {
+                mapping.GetUserAgent_Params.write(wr, |wr, i| match i {
                     _ => unreachable!(),
                 })
             }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Results {
             pub user_agent: String,
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Results {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -778,13 +804,12 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.GetUserAgent_Results.write(wr, |wr, i| match i {
-                    0 => self.user_agent.write(tt, wr),
+                mapping.GetUserAgent_Results.write(wr, |wr, i| match i {
+                    0 => self.user_agent.write(mapping, wr),
                     _ => unreachable!(),
                 })
             }
@@ -822,11 +847,11 @@ pub mod schema {
         pub fn method() -> super::super::protocol::Slottable<Params, Results> {
             super::super::protocol::Slottable { phantom: std::marker::PhantomData }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Params {
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Params {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -837,21 +862,20 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.Ping_Params.write(wr, |wr, i| match i {
+                mapping.Ping_Params.write(wr, |wr, i| match i {
                     _ => unreachable!(),
                 })
             }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Results {
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Results {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -862,12 +886,11 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.Ping_Results.write(wr, |wr, i| match i {
+                mapping.Ping_Results.write(wr, |wr, i| match i {
                     _ => unreachable!(),
                 })
             }
@@ -905,11 +928,11 @@ pub mod schema {
             pub fn method() -> super::super::super::protocol::Slottable<Params, Results> {
                 super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
             }
-            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+            #[derive(Clone, Debug)]
             pub struct Params {
             }
 
-            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Params {
+            impl ::lavish::facts::Factual<super::super::super::protocol::ProtocolMapping> for Params {
                 fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                 where
                     Self: Sized,
@@ -920,21 +943,20 @@ pub mod schema {
                     })
                 }
 
-                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                fn write<W>(&self, mapping: &super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                 where
-                    Self: Sized,
                     W: ::std::io::Write,
                 {
-                    tt.Ping_Ping_Params.write(wr, |wr, i| match i {
+                    mapping.Ping_Ping_Params.write(wr, |wr, i| match i {
                         _ => unreachable!(),
                     })
                 }
             }
-            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+            #[derive(Clone, Debug)]
             pub struct Results {
             }
 
-            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Results {
+            impl ::lavish::facts::Factual<super::super::super::protocol::ProtocolMapping> for Results {
                 fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                 where
                     Self: Sized,
@@ -945,12 +967,11 @@ pub mod schema {
                     })
                 }
 
-                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                fn write<W>(&self, mapping: &super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                 where
-                    Self: Sized,
                     W: ::std::io::Write,
                 {
-                    tt.Ping_Ping_Results.write(wr, |wr, i| match i {
+                    mapping.Ping_Ping_Results.write(wr, |wr, i| match i {
                         _ => unreachable!(),
                     })
                 }
@@ -989,12 +1010,12 @@ pub mod schema {
         pub fn method() -> super::super::protocol::Slottable<Params, Results> {
             super::super::protocol::Slottable { phantom: std::marker::PhantomData }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Params {
             pub mood: super::MoodRecord,
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Params {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -1006,22 +1027,21 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.RecordMood_Params.write(wr, |wr, i| match i {
-                    0 => self.mood.write(tt, wr),
+                mapping.RecordMood_Params.write(wr, |wr, i| match i {
+                    0 => self.mood.write(mapping, wr),
                     _ => unreachable!(),
                 })
             }
         }
-        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        #[derive(Clone, Debug)]
         pub struct Results {
         }
 
-        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+        impl ::lavish::facts::Factual<super::super::protocol::ProtocolMapping> for Results {
             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
             where
                 Self: Sized,
@@ -1032,12 +1052,11 @@ pub mod schema {
                 })
             }
 
-            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            fn write<W>(&self, mapping: &super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
             where
-                Self: Sized,
                 W: ::std::io::Write,
             {
-                tt.RecordMood_Results.write(wr, |wr, i| match i {
+                mapping.RecordMood_Results.write(wr, |wr, i| match i {
                     _ => unreachable!(),
                 })
             }
@@ -1076,11 +1095,11 @@ pub mod schema {
             pub fn method() -> super::super::super::protocol::Slottable<Params, Results> {
                 super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
             }
-            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+            #[derive(Clone, Debug)]
             pub struct Params {
             }
 
-            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Params {
+            impl ::lavish::facts::Factual<super::super::super::protocol::ProtocolMapping> for Params {
                 fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                 where
                     Self: Sized,
@@ -1091,22 +1110,21 @@ pub mod schema {
                     })
                 }
 
-                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                fn write<W>(&self, mapping: &super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                 where
-                    Self: Sized,
                     W: ::std::io::Write,
                 {
-                    tt.Cookies_Get_Params.write(wr, |wr, i| match i {
+                    mapping.Cookies_Get_Params.write(wr, |wr, i| match i {
                         _ => unreachable!(),
                     })
                 }
             }
-            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+            #[derive(Clone, Debug)]
             pub struct Results {
                 pub cookies: Vec<super::super::Cookie>,
             }
 
-            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Results {
+            impl ::lavish::facts::Factual<super::super::super::protocol::ProtocolMapping> for Results {
                 fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                 where
                     Self: Sized,
@@ -1118,13 +1136,12 @@ pub mod schema {
                     })
                 }
 
-                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                fn write<W>(&self, mapping: &super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                 where
-                    Self: Sized,
                     W: ::std::io::Write,
                 {
-                    tt.Cookies_Get_Results.write(wr, |wr, i| match i {
-                        0 => self.cookies.write(tt, wr),
+                    mapping.Cookies_Get_Results.write(wr, |wr, i| match i {
+                        0 => self.cookies.write(mapping, wr),
                         _ => unreachable!(),
                     })
                 }
@@ -1167,11 +1184,11 @@ pub mod schema {
                         pub fn method() -> super::super::super::super::super::super::protocol::Slottable<Params, Results> {
                             super::super::super::super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
                         }
-                        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+                        #[derive(Clone, Debug)]
                         pub struct Params {
                         }
 
-                        impl ::lavish::facts::Factual<super::super::super::super::super::super::protocol::TranslationTables> for Params {
+                        impl ::lavish::facts::Factual<super::super::super::super::super::super::protocol::ProtocolMapping> for Params {
                             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                             where
                                 Self: Sized,
@@ -1182,21 +1199,20 @@ pub mod schema {
                                 })
                             }
 
-                            fn write<W>(&self, tt: &super::super::super::super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                            fn write<W>(&self, mapping: &super::super::super::super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                             where
-                                Self: Sized,
                                 W: ::std::io::Write,
                             {
-                                tt.Universe_Earth_Country_City_NewYork_Params.write(wr, |wr, i| match i {
+                                mapping.Universe_Earth_Country_City_NewYork_Params.write(wr, |wr, i| match i {
                                     _ => unreachable!(),
                                 })
                             }
                         }
-                        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+                        #[derive(Clone, Debug)]
                         pub struct Results {
                         }
 
-                        impl ::lavish::facts::Factual<super::super::super::super::super::super::protocol::TranslationTables> for Results {
+                        impl ::lavish::facts::Factual<super::super::super::super::super::super::protocol::ProtocolMapping> for Results {
                             fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                             where
                                 Self: Sized,
@@ -1207,12 +1223,11 @@ pub mod schema {
                                 })
                             }
 
-                            fn write<W>(&self, tt: &super::super::super::super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                            fn write<W>(&self, mapping: &super::super::super::super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                             where
-                                Self: Sized,
                                 W: ::std::io::Write,
                             {
-                                tt.Universe_Earth_Country_City_NewYork_Results.write(wr, |wr, i| match i {
+                                mapping.Universe_Earth_Country_City_NewYork_Results.write(wr, |wr, i| match i {
                                     _ => unreachable!(),
                                 })
                             }
@@ -1255,13 +1270,13 @@ pub mod schema {
             pub fn method() -> super::super::super::protocol::Slottable<Params, Results> {
                 super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
             }
-            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+            #[derive(Clone, Debug)]
             pub struct Params {
                 pub username: String,
                 pub password: String,
             }
 
-            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Params {
+            impl ::lavish::facts::Factual<super::super::super::protocol::ProtocolMapping> for Params {
                 fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                 where
                     Self: Sized,
@@ -1274,23 +1289,22 @@ pub mod schema {
                     })
                 }
 
-                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                fn write<W>(&self, mapping: &super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                 where
-                    Self: Sized,
                     W: ::std::io::Write,
                 {
-                    tt.Session_Login_Params.write(wr, |wr, i| match i {
-                        0 => self.username.write(tt, wr),
-                        1 => self.password.write(tt, wr),
+                    mapping.Session_Login_Params.write(wr, |wr, i| match i {
+                        0 => self.username.write(mapping, wr),
+                        1 => self.password.write(mapping, wr),
                         _ => unreachable!(),
                     })
                 }
             }
-            #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+            #[derive(Clone, Debug)]
             pub struct Results {
             }
 
-            impl ::lavish::facts::Factual<super::super::super::protocol::TranslationTables> for Results {
+            impl ::lavish::facts::Factual<super::super::super::protocol::ProtocolMapping> for Results {
                 fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                 where
                     Self: Sized,
@@ -1301,12 +1315,11 @@ pub mod schema {
                     })
                 }
 
-                fn write<W>(&self, tt: &super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                fn write<W>(&self, mapping: &super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                 where
-                    Self: Sized,
                     W: ::std::io::Write,
                 {
-                    tt.Session_Login_Results.write(wr, |wr, i| match i {
+                    mapping.Session_Login_Results.write(wr, |wr, i| match i {
                         _ => unreachable!(),
                     })
                 }
@@ -1344,11 +1357,11 @@ pub mod schema {
                 pub fn method() -> super::super::super::super::protocol::Slottable<Params, Results> {
                     super::super::super::super::protocol::Slottable { phantom: std::marker::PhantomData }
                 }
-                #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+                #[derive(Clone, Debug)]
                 pub struct Params {
                 }
 
-                impl ::lavish::facts::Factual<super::super::super::super::protocol::TranslationTables> for Params {
+                impl ::lavish::facts::Factual<super::super::super::super::protocol::ProtocolMapping> for Params {
                     fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                     where
                         Self: Sized,
@@ -1359,22 +1372,21 @@ pub mod schema {
                         })
                     }
 
-                    fn write<W>(&self, tt: &super::super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                    fn write<W>(&self, mapping: &super::super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                     where
-                        Self: Sized,
                         W: ::std::io::Write,
                     {
-                        tt.Session_Login_SolveTotp_Params.write(wr, |wr, i| match i {
+                        mapping.Session_Login_SolveTotp_Params.write(wr, |wr, i| match i {
                             _ => unreachable!(),
                         })
                     }
                 }
-                #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+                #[derive(Clone, Debug)]
                 pub struct Results {
                     pub result: String,
                 }
 
-                impl ::lavish::facts::Factual<super::super::super::super::protocol::TranslationTables> for Results {
+                impl ::lavish::facts::Factual<super::super::super::super::protocol::ProtocolMapping> for Results {
                     fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
                     where
                         Self: Sized,
@@ -1386,13 +1398,12 @@ pub mod schema {
                         })
                     }
 
-                    fn write<W>(&self, tt: &super::super::super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+                    fn write<W>(&self, mapping: &super::super::super::super::protocol::ProtocolMapping, wr: &mut W) -> Result<(), ::lavish::facts::Error>
                     where
-                        Self: Sized,
                         W: ::std::io::Write,
                     {
-                        tt.Session_Login_SolveTotp_Results.write(wr, |wr, i| match i {
-                            0 => self.result.write(tt, wr),
+                        mapping.Session_Login_SolveTotp_Results.write(wr, |wr, i| match i {
+                            0 => self.result.write(mapping, wr),
                             _ => unreachable!(),
                         })
                     }
