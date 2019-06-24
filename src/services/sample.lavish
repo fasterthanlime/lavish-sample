@@ -94,3 +94,5 @@ namespace session {
     }
 }
 
+server fn record_mood(mood: MoodRecord)
+

@@ -16,6 +16,7 @@ pub mod protocol {
         GetUserAgent(super::schema::get_user_agent::Params),
         Ping_Ping(super::schema::ping::ping::Params),
         Ping(super::schema::ping::Params),
+        RecordMood(super::schema::record_mood::Params),
         Cookies_Get(super::schema::cookies::get::Params),
         Universe_Earth_Country_City_NewYork(super::schema::universe::earth::country::city::new_york::Params),
         Session_Login_SolveTotp(super::schema::session::login::solve_totp::Params),
@@ -29,6 +30,7 @@ pub mod protocol {
                 Params::GetUserAgent(_) => "get_user_agent",
                 Params::Ping_Ping(_) => "ping.ping",
                 Params::Ping(_) => "ping",
+                Params::RecordMood(_) => "record_mood",
                 Params::Cookies_Get(_) => "cookies.get",
                 Params::Universe_Earth_Country_City_NewYork(_) => "universe.earth.country.city.new_york",
                 Params::Session_Login_SolveTotp(_) => "session.login.solve_totp",
@@ -50,6 +52,8 @@ pub mod protocol {
                     Ok(Params::Ping_Ping(__DS::<super::schema::ping::ping::Params>(de)?)),
                 "ping" => 
                     Ok(Params::Ping(__DS::<super::schema::ping::Params>(de)?)),
+                "record_mood" => 
+                    Ok(Params::RecordMood(__DS::<super::schema::record_mood::Params>(de)?)),
                 "cookies.get" => 
                     Ok(Params::Cookies_Get(__DS::<super::schema::cookies::get::Params>(de)?)),
                 "universe.earth.country.city.new_york" => 
@@ -73,6 +77,7 @@ pub mod protocol {
         GetUserAgent(super::schema::get_user_agent::Results),
         Ping_Ping(super::schema::ping::ping::Results),
         Ping(super::schema::ping::Results),
+        RecordMood(super::schema::record_mood::Results),
         Cookies_Get(super::schema::cookies::get::Results),
         Universe_Earth_Country_City_NewYork(super::schema::universe::earth::country::city::new_york::Results),
         Session_Login_SolveTotp(super::schema::session::login::solve_totp::Results),
@@ -86,6 +91,7 @@ pub mod protocol {
                 Results::GetUserAgent(_) => "get_user_agent",
                 Results::Ping_Ping(_) => "ping.ping",
                 Results::Ping(_) => "ping",
+                Results::RecordMood(_) => "record_mood",
                 Results::Cookies_Get(_) => "cookies.get",
                 Results::Universe_Earth_Country_City_NewYork(_) => "universe.earth.country.city.new_york",
                 Results::Session_Login_SolveTotp(_) => "session.login.solve_totp",
@@ -107,6 +113,8 @@ pub mod protocol {
                     Ok(Results::Ping_Ping(__DS::<super::schema::ping::ping::Results>(de)?)),
                 "ping" => 
                     Ok(Results::Ping(__DS::<super::schema::ping::Results>(de)?)),
+                "record_mood" => 
+                    Ok(Results::RecordMood(__DS::<super::schema::record_mood::Results>(de)?)),
                 "cookies.get" => 
                     Ok(Results::Cookies_Get(__DS::<super::schema::cookies::get::Results>(de)?)),
                 "universe.earth.country.city.new_york" => 
@@ -184,6 +192,8 @@ pub mod protocol {
         pub Ping_Results: TranslationTable,
         pub Ping_Ping_Params: TranslationTable,
         pub Ping_Ping_Results: TranslationTable,
+        pub RecordMood_Params: TranslationTable,
+        pub RecordMood_Results: TranslationTable,
         pub Cookies_Get_Params: TranslationTable,
         pub Cookies_Get_Results: TranslationTable,
         pub Universe_Earth_Country_City_NewYork_Params: TranslationTable,
@@ -218,6 +228,8 @@ pub mod protocol {
                 Ping_Results: TranslationTable::Mapped(OffsetList(vec![])),
                 Ping_Ping_Params: TranslationTable::Mapped(OffsetList(vec![])),
                 Ping_Ping_Results: TranslationTable::Mapped(OffsetList(vec![])),
+                RecordMood_Params: TranslationTable::Mapped(OffsetList(vec![0])),
+                RecordMood_Results: TranslationTable::Mapped(OffsetList(vec![])),
                 Cookies_Get_Params: TranslationTable::Mapped(OffsetList(vec![])),
                 Cookies_Get_Results: TranslationTable::Mapped(OffsetList(vec![0])),
                 Universe_Earth_Country_City_NewYork_Params: TranslationTable::Mapped(OffsetList(vec![])),
@@ -968,6 +980,92 @@ pub mod schema {
                         super::super::super::protocol::Params::Ping_Ping(p) => Some(p),
                         _ => None,
                     }
+                }
+            }
+        }
+    }
+    pub use record_mood::method as record_mood;
+    pub mod record_mood {
+        pub fn method() -> super::super::protocol::Slottable<Params, Results> {
+            super::super::protocol::Slottable { phantom: std::marker::PhantomData }
+        }
+        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        pub struct Params {
+            pub mood: super::MoodRecord,
+        }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Params {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(1)?;
+                Ok(Self {
+                    mood: Self::subread(rd)?,
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.RecordMood_Params.write(wr, |wr, i| match i {
+                    0 => self.mood.write(tt, wr),
+                    _ => unreachable!(),
+                })
+            }
+        }
+        #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+        pub struct Results {
+        }
+
+        impl ::lavish::facts::Factual<super::super::protocol::TranslationTables> for Results {
+            fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+            where
+                Self: Sized,
+                R: ::std::io::Read,
+            {
+                rd.expect_array_len(0)?;
+                Ok(Self {
+                })
+            }
+
+            fn write<W>(&self, tt: &super::super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+            where
+                Self: Sized,
+                W: ::std::io::Write,
+            {
+                tt.RecordMood_Results.write(wr, |wr, i| match i {
+                    _ => unreachable!(),
+                })
+            }
+        }
+
+        impl super::super::protocol::Callable<Results> for Params {
+            fn upcast_params(self) -> super::super::protocol::Params {
+                super::super::protocol::Params::RecordMood(self)
+            }
+            fn downcast_results(results: super::super::protocol::Results) -> Option<Results> {
+                match results {
+                    super::super::protocol::Results::RecordMood(r) => Some(r),
+                    _ => None,
+                }
+            }
+        }
+
+        impl super::super::protocol::Implementable<Params> for Results {
+            fn method() -> &'static str {
+                "record_mood"
+            }
+            fn upcast_results(self) -> super::super::protocol::Results {
+                super::super::protocol::Results::RecordMood(self)
+            }
+            fn downcast_params(params: super::super::protocol::Params) -> Option<Params> {
+                match params {
+                    super::super::protocol::Params::RecordMood(p) => Some(p),
+                    _ => None,
                 }
             }
         }

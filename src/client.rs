@@ -49,5 +49,12 @@ where
     println!("Pinging server");
     client.call(sample::ping::Params {})?;
 
+    client.call(sample::record_mood::Params {
+        mood: sample::MoodRecord {
+            mood: sample::Mood::Good,
+            day: ::lavish::chrono::offset::Utc::now(),
+        },
+    })?;
+
     Ok(())
 }

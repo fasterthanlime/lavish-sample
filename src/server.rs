@@ -40,5 +40,13 @@ pub fn router() -> sample::server::Router<()> {
 
         Ok(sample::ping::Results {})
     });
+
+    r.handle(sample::record_mood, move |call| {
+        let mood = call.params.mood;
+        println!("Recording mood {:#?} for day {:#?}", mood.mood, mood.day);
+
+        Ok(sample::record_mood::Results {})
+    });
+
     r
 }
