@@ -10,15 +10,21 @@ run: build
 	./target/debug/lavish-sample
 
 bench: schema
+	@echo "Doing release build"
 	cargo build --release
+	@echo "Running sample"
 	RUST_BACKTRACE=full ./target/release/lavish-sample
 
 build: schema
+	@echo "Doing debug build"
 	cargo build
 
 doc: schema
+	@echo "Building documentations"
 	cargo doc --no-deps
 
 schema:
-	(cd ../lavish-compiler && cargo build)
-	../lavish-compiler/target/debug/lavish build src/services
+	@echo "Installing latest lavish..."
+	cargo install --path ../lavish-compiler --force
+	@echo "Building schema"
+	lavish build src/services

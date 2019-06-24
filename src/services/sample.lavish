@@ -38,6 +38,16 @@ struct AllIntegers {
     field_u64: u64,
 }
 
+struct Bools {
+    field_bool: bool,
+}
+
+struct AllComplex {
+    field_array: array<i64>,
+    field_option: option<i64>,
+    field_map: map<i64, i64>,
+}
+
 namespace cookies {
     server fn get() -> (cookies: array<Cookie>)
 }

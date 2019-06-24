@@ -170,6 +170,8 @@ pub mod protocol {
         pub Container: TranslationTable,
         pub Containee: TranslationTable,
         pub AllIntegers: TranslationTable,
+        pub Bools: TranslationTable,
+        pub AllComplex: TranslationTable,
         pub GetCookies_Params: TranslationTable,
         pub GetCookies_Results: TranslationTable,
         pub Reverse_Params: TranslationTable,
@@ -198,6 +200,8 @@ pub mod protocol {
                 Container: TranslationTable::Mapped(OffsetList(vec![0, 1])),
                 Containee: TranslationTable::Mapped(OffsetList(vec![0, 1])),
                 AllIntegers: TranslationTable::Mapped(OffsetList(vec![0, 1, 2, 3, 4, 5, 6, 7])),
+                Bools: TranslationTable::Mapped(OffsetList(vec![0])),
+                AllComplex: TranslationTable::Mapped(OffsetList(vec![0, 1, 2])),
                 GetCookies_Params: TranslationTable::Mapped(OffsetList(vec![])),
                 GetCookies_Results: TranslationTable::Mapped(OffsetList(vec![0])),
                 Reverse_Params: TranslationTable::Mapped(OffsetList(vec![0])),
@@ -398,6 +402,68 @@ pub mod schema {
                 5 => self.field_u16.write(tt, wr),
                 6 => self.field_u32.write(tt, wr),
                 7 => self.field_u64.write(tt, wr),
+                _ => unreachable!(),
+            })
+        }
+    }
+    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    pub struct Bools {
+        pub field_bool: bool,
+    }
+
+    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for Bools {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            rd.expect_array_len(1)?;
+            Ok(Self {
+                field_bool: Self::subread(rd)?,
+            })
+        }
+
+        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            Self: Sized,
+            W: ::std::io::Write,
+        {
+            tt.Bools.write(wr, |wr, i| match i {
+                0 => self.field_bool.write(tt, wr),
+                _ => unreachable!(),
+            })
+        }
+    }
+    #[derive(::lavish::serde_derive::Deserialize, ::lavish::serde_derive::Serialize, Clone, Debug)]
+    pub struct AllComplex {
+        pub field_array: Vec<i64>,
+        pub field_option: Option<i64>,
+        pub field_map: ::std::collections::HashMap<i64, i64>,
+    }
+
+    impl ::lavish::facts::Factual<super::protocol::TranslationTables> for AllComplex {
+        fn read<R>(rd: &mut ::lavish::facts::Reader<R>) -> Result<Self, ::lavish::facts::Error>
+        where
+            Self: Sized,
+            R: ::std::io::Read,
+        {
+            rd.expect_array_len(3)?;
+            Ok(Self {
+                field_array: Self::subread(rd)?,
+                field_option: Self::subread(rd)?,
+                field_map: Self::subread(rd)?,
+            })
+        }
+
+        fn write<W>(&self, tt: &super::protocol::TranslationTables, wr: &mut W) -> Result<(), ::lavish::facts::Error>
+        where
+            Self: Sized,
+            W: ::std::io::Write,
+        {
+            tt.AllComplex.write(wr, |wr, i| match i {
+                0 => self.field_array.write(tt, wr),
+                1 => self.field_option.write(tt, wr),
+                2 => self.field_map.write(tt, wr),
                 _ => unreachable!(),
             })
         }
