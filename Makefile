@@ -25,6 +25,6 @@ doc: schema
 
 schema:
 	@echo "Installing latest lavish..."
-	cargo install --path ../lavish-compiler --force
+	(cd ../lavish-compiler && cargo build)
 	@echo "Building schema"
-	lavish build src/services
+	../lavish-compiler/target/debug/lavish build src/services

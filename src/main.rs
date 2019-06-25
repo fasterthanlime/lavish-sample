@@ -18,10 +18,10 @@ fn main() {
 
 use lavish::facts::{self, Factual};
 use pretty_hex::PrettyHex;
-use services::sample::protocol::TranslationTables;
+use services::sample::protocol::ProtocolMapping;
 
-fn get_translation_tables() -> TranslationTables {
-    TranslationTables::identity()
+fn get_protocol_mapping() -> ProtocolMapping {
+    ProtocolMapping::default()
 }
 
 fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
@@ -35,22 +35,8 @@ fn serialize_sample() -> Result<(), Box<dyn Error + 'static>> {
 
     {
         let mut buf = Buf::new();
-        let tt = get_translation_tables();
+        let tt = get_protocol_mapping();
         cookies.write(&tt, &mut buf)?;
-        print_payload(&buf[..]);
-    }
-
-    {
-        let mut buf = Buf::new();
-        let mut ser = rmp_serde::encode::Serializer::new(&mut buf);
-        serde::Serialize::serialize(&cookies, &mut ser)?;
-        print_payload(&buf[..]);
-    }
-
-    {
-        let mut buf = Buf::new();
-        let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
-        serde::Serialize::serialize(&cookies, &mut ser)?;
         print_payload(&buf[..]);
     }
 
@@ -117,7 +103,7 @@ mod benchmarks {
 
     fn ser_facts(bench: &mut Bencher) {
         let mut buf = Buf::new();
-        let tt = get_translation_tables();
+        let tt = get_protocol_mapping();
         bench.iter(|| {
             buf.consume(buf.len());
             EMOJIS.write(&tt, &mut buf).unwrap();
@@ -126,7 +112,7 @@ mod benchmarks {
 
     fn deser_facts(bench: &mut Bencher) {
         let mut buf = Buf::new();
-        let tt = get_translation_tables();
+        let tt = get_protocol_mapping();
         EMOJIS.write(&tt, &mut buf).unwrap();
 
         bench.iter(|| {
@@ -136,63 +122,8 @@ mod benchmarks {
         });
     }
 
-    fn ser_serde_index(bench: &mut Bencher) {
-        let mut buf = Buf::new();
-        bench.iter(|| {
-            buf.consume(buf.len());
-            let mut ser = rmp_serde::encode::Serializer::new(&mut buf);
-            serde::Serialize::serialize(&*EMOJIS, &mut ser).unwrap()
-        });
-    }
-
-    fn deser_serde_index(bench: &mut Bencher) {
-        let mut buf = Buf::new();
-        {
-            let mut ser = rmp_serde::encode::Serializer::new(&mut buf);
-            serde::Serialize::serialize(&*EMOJIS, &mut ser).unwrap();
-        }
-
-        bench.iter(|| {
-            use serde::Deserialize;
-            // !!!!! This is cheating !!!!!
-            // let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
-            let mut slice = &buf[..];
-            let mut deser = rmp_serde::decode::Deserializer::from_read(&mut slice);
-
-            Vec::<services::sample::Emoji>::deserialize(&mut deser).unwrap();
-        });
-    }
-
-    fn ser_serde_named(bench: &mut Bencher) {
-        let mut buf = Buf::new();
-        bench.iter(|| {
-            buf.consume(buf.len());
-            let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
-            serde::Serialize::serialize(&*EMOJIS, &mut ser).unwrap();
-        });
-    }
-
-    fn deser_serde_named(bench: &mut Bencher) {
-        let mut buf = Buf::new();
-        {
-            let mut ser = rmp_serde::encode::Serializer::new_named(&mut buf);
-            serde::Serialize::serialize(&*EMOJIS, &mut ser).unwrap();
-        }
-
-        bench.iter(|| {
-            use serde::Deserialize;
-
-            // !!!!! This is cheating !!!!!
-            // let mut deser = rmp_serde::decode::Deserializer::from_slice(&buf[..]);
-            let mut slice = &buf[..];
-            let mut deser = rmp_serde::decode::Deserializer::from_read(&mut slice);
-
-            Vec::<services::sample::Emoji>::deserialize(&mut deser).unwrap();
-        });
-    }
-
-    benchmark_group!(ser, ser_facts, ser_serde_index, ser_serde_named);
-    benchmark_group!(deser, deser_facts, deser_serde_index, deser_serde_named,);
+    benchmark_group!(ser, ser_facts);
+    benchmark_group!(deser, deser_facts);
     benchmark_main!(ser, deser);
 
     pub fn run() {

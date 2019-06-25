@@ -21,7 +21,7 @@ pub mod protocol {
         Session_Login_SolveTotp(super::schema::session::login::solve_totp::Params),
         Session_Login(super::schema::session::login::Params),
     }
-    impl ::lavish::Atom for Params {
+    impl ::lavish::Atom<ProtocolMapping> for Params {
         fn method(&self) -> &'static str {
             match self {
                 Params::GetCookies(_) => "get_cookies",
@@ -49,26 +49,16 @@ pub mod protocol {
             }
             let typ: u32 = rd.read_int()?;
             match typ {
-                0 => 
-                Ok(Params::GetCookies(Self::subread()?))
-                1 => 
-                Ok(Params::Reverse(Self::subread()?))
-                2 => 
-                Ok(Params::GetUserAgent(Self::subread()?))
-                3 => 
-                Ok(Params::Ping_Ping(Self::subread()?))
-                4 => 
-                Ok(Params::Ping(Self::subread()?))
-                5 => 
-                Ok(Params::RecordMood(Self::subread()?))
-                6 => 
-                Ok(Params::Cookies_Get(Self::subread()?))
-                7 => 
-                Ok(Params::Universe_Earth_Country_City_NewYork(Self::subread()?))
-                8 => 
-                Ok(Params::Session_Login_SolveTotp(Self::subread()?))
-                9 => 
-                Ok(Params::Session_Login(Self::subread()?))
+                0 => Ok(Params::GetCookies(Self::subread(rd)?)),
+                1 => Ok(Params::Reverse(Self::subread(rd)?)),
+                2 => Ok(Params::GetUserAgent(Self::subread(rd)?)),
+                3 => Ok(Params::Ping_Ping(Self::subread(rd)?)),
+                4 => Ok(Params::Ping(Self::subread(rd)?)),
+                5 => Ok(Params::RecordMood(Self::subread(rd)?)),
+                6 => Ok(Params::Cookies_Get(Self::subread(rd)?)),
+                7 => Ok(Params::Universe_Earth_Country_City_NewYork(Self::subread(rd)?)),
+                8 => Ok(Params::Session_Login_SolveTotp(Self::subread(rd)?)),
+                9 => Ok(Params::Session_Login(Self::subread(rd)?)),
                 _ => unreachable!(),
             }
         }
@@ -77,7 +67,30 @@ pub mod protocol {
         where
             W: ::std::io::Write,
         {
-            unimplemented!()
+            let o = &mapping.__Params;
+            match self {
+                Params::GetCookies(value) =>
+                    o.write_union(wr, mapping, "Params", "GetCookies", 0, value),
+                Params::Reverse(value) =>
+                    o.write_union(wr, mapping, "Params", "Reverse", 1, value),
+                Params::GetUserAgent(value) =>
+                    o.write_union(wr, mapping, "Params", "GetUserAgent", 2, value),
+                Params::Ping_Ping(value) =>
+                    o.write_union(wr, mapping, "Params", "Ping_Ping", 3, value),
+                Params::Ping(value) =>
+                    o.write_union(wr, mapping, "Params", "Ping", 4, value),
+                Params::RecordMood(value) =>
+                    o.write_union(wr, mapping, "Params", "RecordMood", 5, value),
+                Params::Cookies_Get(value) =>
+                    o.write_union(wr, mapping, "Params", "Cookies_Get", 6, value),
+                Params::Universe_Earth_Country_City_NewYork(value) =>
+                    o.write_union(wr, mapping, "Params", "Universe_Earth_Country_City_NewYork", 7, value),
+                Params::Session_Login_SolveTotp(value) =>
+                    o.write_union(wr, mapping, "Params", "Session_Login_SolveTotp", 8, value),
+                Params::Session_Login(value) =>
+                    o.write_union(wr, mapping, "Params", "Session_Login", 9, value),
+                _ => unreachable!(),
+            }
         }
     }
 
@@ -95,7 +108,7 @@ pub mod protocol {
         Session_Login_SolveTotp(super::schema::session::login::solve_totp::Results),
         Session_Login(super::schema::session::login::Results),
     }
-    impl ::lavish::Atom for Results {
+    impl ::lavish::Atom<ProtocolMapping> for Results {
         fn method(&self) -> &'static str {
             match self {
                 Results::GetCookies(_) => "get_cookies",
@@ -123,26 +136,16 @@ pub mod protocol {
             }
             let typ: u32 = rd.read_int()?;
             match typ {
-                0 => 
-                Ok(Results::GetCookies(Self::subread()?))
-                1 => 
-                Ok(Results::Reverse(Self::subread()?))
-                2 => 
-                Ok(Results::GetUserAgent(Self::subread()?))
-                3 => 
-                Ok(Results::Ping_Ping(Self::subread()?))
-                4 => 
-                Ok(Results::Ping(Self::subread()?))
-                5 => 
-                Ok(Results::RecordMood(Self::subread()?))
-                6 => 
-                Ok(Results::Cookies_Get(Self::subread()?))
-                7 => 
-                Ok(Results::Universe_Earth_Country_City_NewYork(Self::subread()?))
-                8 => 
-                Ok(Results::Session_Login_SolveTotp(Self::subread()?))
-                9 => 
-                Ok(Results::Session_Login(Self::subread()?))
+                0 => Ok(Results::GetCookies(Self::subread(rd)?)),
+                1 => Ok(Results::Reverse(Self::subread(rd)?)),
+                2 => Ok(Results::GetUserAgent(Self::subread(rd)?)),
+                3 => Ok(Results::Ping_Ping(Self::subread(rd)?)),
+                4 => Ok(Results::Ping(Self::subread(rd)?)),
+                5 => Ok(Results::RecordMood(Self::subread(rd)?)),
+                6 => Ok(Results::Cookies_Get(Self::subread(rd)?)),
+                7 => Ok(Results::Universe_Earth_Country_City_NewYork(Self::subread(rd)?)),
+                8 => Ok(Results::Session_Login_SolveTotp(Self::subread(rd)?)),
+                9 => Ok(Results::Session_Login(Self::subread(rd)?)),
                 _ => unreachable!(),
             }
         }
@@ -151,14 +154,37 @@ pub mod protocol {
         where
             W: ::std::io::Write,
         {
-            unimplemented!()
+            let o = &mapping.__Results;
+            match self {
+                Results::GetCookies(value) =>
+                    o.write_union(wr, mapping, "Results", "GetCookies", 0, value),
+                Results::Reverse(value) =>
+                    o.write_union(wr, mapping, "Results", "Reverse", 1, value),
+                Results::GetUserAgent(value) =>
+                    o.write_union(wr, mapping, "Results", "GetUserAgent", 2, value),
+                Results::Ping_Ping(value) =>
+                    o.write_union(wr, mapping, "Results", "Ping_Ping", 3, value),
+                Results::Ping(value) =>
+                    o.write_union(wr, mapping, "Results", "Ping", 4, value),
+                Results::RecordMood(value) =>
+                    o.write_union(wr, mapping, "Results", "RecordMood", 5, value),
+                Results::Cookies_Get(value) =>
+                    o.write_union(wr, mapping, "Results", "Cookies_Get", 6, value),
+                Results::Universe_Earth_Country_City_NewYork(value) =>
+                    o.write_union(wr, mapping, "Results", "Universe_Earth_Country_City_NewYork", 7, value),
+                Results::Session_Login_SolveTotp(value) =>
+                    o.write_union(wr, mapping, "Results", "Session_Login_SolveTotp", 8, value),
+                Results::Session_Login(value) =>
+                    o.write_union(wr, mapping, "Results", "Session_Login", 9, value),
+                _ => unreachable!(),
+            }
         }
     }
 
     #[derive(Clone, Debug)]
     #[allow(non_camel_case_types, unused)]
     pub enum NotificationParams {}
-    impl ::lavish::Atom for NotificationParams {
+    impl ::lavish::Atom<ProtocolMapping> for NotificationParams {
         fn method(&self) -> &'static str {
             panic!("no variants for NotificationParams")
         }
@@ -183,12 +209,15 @@ pub mod protocol {
         where
             W: ::std::io::Write,
         {
-            unimplemented!()
+            let o = &mapping.__NotificationParams;
+            match self {
+                _ => unreachable!(),
+            }
         }
     }
 
-    pub type Caller = ::lavish::Caller<super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
-    pub type Handler<CL> = ::lavish::Handler<CL, super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
+    pub type Caller = ::lavish::Caller<super::protocol::ProtocolMapping, super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
+    pub type Handler<CL> = ::lavish::Handler<CL, super::protocol::ProtocolMapping, super::protocol::Params, super::protocol::NotificationParams, super::protocol::Results>;
     pub trait Callable<R>
     {
         fn upcast_params(self) -> Params;
@@ -211,7 +240,12 @@ pub mod protocol {
     }
 
     use ::lavish::facts::{OffsetList, TypeMapping};
+    #[derive(Debug)]
     pub struct ProtocolMapping {
+        // builtins
+        pub __Params: TypeMapping,
+        pub __Results: TypeMapping,
+        pub __NotificationParams: TypeMapping,
         // structs
         pub Cookie: TypeMapping,
         pub Emoji: TypeMapping,
@@ -246,8 +280,12 @@ pub mod protocol {
     }
 
     impl Default for ProtocolMapping {
-        pub fn default() -> Self {
+        fn default() -> Self {
             Self {
+                // builtins
+                __Params: TypeMapping::Mapped(OffsetList(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])),
+                __Results: TypeMapping::Mapped(OffsetList(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])),
+                __NotificationParams: TypeMapping::Mapped(OffsetList(vec![])),
                 // structs
                 Cookie: TypeMapping::Mapped(OffsetList(vec![0, 1, 2])),
                 Emoji: TypeMapping::Mapped(OffsetList(vec![0, 1])),
@@ -282,6 +320,7 @@ pub mod protocol {
             }
         }
     }
+    impl ::lavish::facts::Mapping for ProtocolMapping {}
 }
 
 pub mod schema {
@@ -1512,7 +1551,7 @@ pub mod schema {
                 }));
             }
         }
-        impl<T> ::lavish::Handler<Client, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Router<T>
+        impl<T> ::lavish::Handler<Client, super::super::protocol::ProtocolMapping, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Router<T>
         where
             T: Send + Sync + 'static,
         {
@@ -1607,7 +1646,7 @@ pub mod schema {
                 }));
             }
         }
-        impl<T> ::lavish::Handler<Client, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Router<T>
+        impl<T> ::lavish::Handler<Client, super::super::protocol::ProtocolMapping, super::super::protocol::Params, super::super::protocol::NotificationParams, super::super::protocol::Results> for Router<T>
         where
             T: Send + Sync + 'static,
         {
