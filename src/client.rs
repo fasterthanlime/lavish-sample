@@ -56,5 +56,6 @@ where
         },
     })?;
 
+    println!("Client returning");
     Ok(())
 }
